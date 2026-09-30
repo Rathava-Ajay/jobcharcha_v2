@@ -10,6 +10,7 @@ import { ProtectedRoute } from './components/routing/ProtectedRoute';
 import { ScrollToTop } from './components/routing/ScrollToTop';
 import { AnalyticsPageView } from './components/routing/AnalyticsPageView';
 import { MobileTabBar } from './components/MobileTabBar';
+import { DeadlineReminderBanner } from './components/DeadlineReminderBanner';
 
 // The landing page is the primary entry and is prerendered — keep it eager so first paint
 // has no lazy-chunk round-trip. Every other route is code-split: the homepage no longer
@@ -197,6 +198,7 @@ export default function App() {
         </Routes>
       </Suspense>
       <MobileTabBar />
+      <DeadlineReminderBanner />
     </AuthProvider>
   );
 }
