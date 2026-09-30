@@ -50,11 +50,11 @@ RETURN THIS EXACT JSON STRUCTURE:
   "syllabusLink": "direct URL of the syllabus PDF/page if the notification gives one, else null",
   "state": "state name, e.g. 'Gujarat' (use 'All India' for central recruitments), or null",
   "district": "district name only if the posting is for ONE district, else null",
-  "minAge": 18,
-  "maxAge": 33,
+  "minAge": "number — minimum age for General category, or null if not stated",
+  "maxAge": "number — maximum age for General category (before relaxation), or null if not stated",
   "experienceRequired": "number of years of experience required (0 if freshers can apply), or null if the notification is silent",
-  "minSalary": 25500,
-  "maxSalary": 81100,
+  "minSalary": "number — lowest monthly pay figure, or null if not stated",
+  "maxSalary": "number — highest monthly pay figure, or null for fixed pay / not stated",
   "salaryType": "Month | Year | Fixed Month (for fixed-pay 5-year contract posts) — or null",
   "applicationFeeAmount": "the General/UR category fee as a plain number (e.g. 500); 0 if no fee for anyone; null if not mentioned",
   "applicationFeeDetails": "one short plain-text line: payment mode(s), refund rule, fee deadline — e.g. 'Pay online via Net Banking / UPI / Card or by challan at post office. Fee is non-refundable.' — or null",
@@ -118,7 +118,7 @@ STRICT RULES:
 14. If any field is truly not in the notification, use null (never invent facts — SEO fields like keywords/FAQs may still be generated from context)
 15. Return PURE JSON only — no text before or after, no code fences
 16. No trailing commas; all strings in double quotes only
-17. SELF-CHECK before returning (fix silently, do not print the checklist): lastDate equals importantDates.applicationEnd when both are known; vacancyBreakdown totals sum to totalPosts; minAge < maxAge; minSalary <= maxSalary; every URL starts with https:// or http://; no field contains the placeholder text from this template (e.g. "Post Name 1", "Rs. 000", "YYYY-MM-DD or null")`;
+17. SELF-CHECK before returning (fix silently, do not print the checklist): lastDate equals importantDates.applicationEnd when both are known; vacancyBreakdown totals sum to totalPosts; minAge < maxAge; minSalary <= maxSalary; every URL starts with https:// or http://; minAge/maxAge/minSalary/maxSalary are real numbers taken from THIS notification (write the number itself, e.g. 33 — not a string, and null if the notification does not state it); no field contains the placeholder text from this template (e.g. "Post Name 1", "Rs. 000", "YYYY-MM-DD or null")`;
 
 /** Master SEO extraction prompt for Result posts — same schema philosophy as the Job Post prompt,
  * swapping in result-specific facts (result date, cut-off marks, selected candidates) per the

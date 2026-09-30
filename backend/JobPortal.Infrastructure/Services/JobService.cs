@@ -508,7 +508,8 @@ public class JobService : IJobService
             catch (JsonException) { /* malformed/legacy JSON — ignore, scalar-column dates still render */ }
         }
 
-        if (extra?.ApplicationEnd is not null) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
+        // "Last Date to Apply" is always added below from j.LastDate — skip an identical Application End row.
+        if (extra?.ApplicationEnd is not null && extra.ApplicationEnd.Value.Date != j.LastDate.Date) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
         if (extra?.FeePaymentEnd is not null) dates.Add(new ImportantDateDto { Label = "Fee Payment Last Date", Date = extra.FeePaymentEnd.Value.ToString("yyyy-MM-dd") });
         dates.Add(new ImportantDateDto { Label = "Last Date to Apply", Date = j.LastDate.ToString("yyyy-MM-dd") });
         if (extra?.AdmitCardDate is not null) dates.Add(new ImportantDateDto { Label = "Admit Card Date", Date = extra.AdmitCardDate.Value.ToString("yyyy-MM-dd") });

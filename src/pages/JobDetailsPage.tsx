@@ -115,7 +115,8 @@ export default function JobDetailsPage() {
     ? (job.minAge !== undefined && job.maxAge !== undefined ? `${job.minAge}–${job.maxAge} Yrs`
       : job.maxAge !== undefined ? `Max ${job.maxAge} Yrs` : `Min ${job.minAge} Yrs`)
     : undefined;
-  const feeHeadline = feeTable?.[0]?.fee ?? (job.applicationFee !== undefined ? `${fmtMoney(job.applicationFee)}/-` : undefined);
+  const feeText = job.applicationFee === 0 ? 'Nil (No Fee)' : `${fmtMoney(job.applicationFee)}/-`;
+  const feeHeadline = feeTable?.[0]?.fee ?? (job.applicationFee !== undefined ? feeText : undefined);
   const stats: StatTile[] = [
     { label: 'Total Posts', value: job.vacancyCount > 0 ? job.vacancyCount.toLocaleString('en-IN') : '—' },
     ageText
@@ -346,7 +347,7 @@ export default function JobDetailsPage() {
               {feeTable ? (
                 <PortalList items={feeTable.map((r) => <>{r.category}: <b className="text-emerald-800">{r.fee}</b></>)} />
               ) : job.applicationFee !== undefined ? (
-                <PortalList items={[<>Application Fee: <b className="text-emerald-800">{fmtMoney(job.applicationFee)}/-</b></>]} />
+                <PortalList items={[<>Application Fee: <b className="text-emerald-800">{feeText}</b></>]} />
               ) : null}
               {job.applicationFeeDetails && <p className="mt-3 font-medium text-slate-600">{job.applicationFeeDetails}</p>}
             </PortalBox>
@@ -362,7 +363,9 @@ export default function JobDetailsPage() {
                   items={[
                     job.minAge !== undefined && <>Minimum Age: <b>{job.minAge} Years</b></>,
                     job.maxAge !== undefined && <>Maximum Age: <b>{job.maxAge} Years</b></>,
-                    job.experienceRequired !== undefined && <>Experience: <b>{job.experienceRequired}+ Years</b></>,
+                    job.experienceRequired !== undefined && (job.experienceRequired > 0
+                      ? <>Experience: <b>{job.experienceRequired}+ Years</b></>
+                      : <>Experience: <b>Not required (freshers can apply)</b></>),
                     'Age relaxation for reserved categories as per the official notification.',
                   ].filter(Boolean) as React.ReactNode[]}
                 />

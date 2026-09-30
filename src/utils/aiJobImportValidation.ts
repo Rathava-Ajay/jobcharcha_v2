@@ -111,17 +111,29 @@ function toNumber(v: unknown, fallback = 0): number {
 }
 
 /** Positive number or null — the AI sometimes sends "18", "₹25,500" or 0 for "not given". */
+/** First number in a value: 18 → 18, "₹25,500" → 25500, "33 years" → 33. Takes only the FIRST
+ * number so a range the AI wrote as text ("18-33") can't collapse into 1833. */
+function firstNumber(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v !== 'string') return null;
+  const m = v.match(/\d[\d,]*(?:\.\d+)?/);
+  return m ? Number(m[0].replace(/,/g, '')) : null;
+}
+
 function toPositiveNumberOrNull(v: unknown): number | null {
-  const n = typeof v === 'string' ? Number(v.replace(/[^\d.]/g, '')) : v;
-  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null;
+  const n = firstNumber(v);
+  return n !== null && n > 0 ? n : null;
 }
 
 /** Like toPositiveNumberOrNull but keeps 0 (a fee of 0 or "0 years experience" is a real value). */
 function toNonNegativeNumberOrNull(v: unknown): number | null {
-  if (v === null || v === undefined || v === '') return null;
-  const n = typeof v === 'string' ? Number(v.replace(/[^\d.]/g, '')) : v;
-  return typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
+  if (typeof v === 'string' && /^\s*(nil|free|no fee|none)\b/i.test(v)) return 0;
+  const n = firstNumber(v);
+  return n !== null && n >= 0 ? n : null;
 }
+
+/** Whole-number fields (backend int columns reject 32.5). */
+const toWhole = (n: number | null) => (n === null ? null : Math.round(n));
 
 const toTrimmedOrNull = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
 
@@ -277,9 +289,9 @@ export function validateAiJobImport(rawText: string): ValidationResult {
     syllabusLink: toTrimmedOrNull(obj.syllabusLink),
     state: toTrimmedOrNull(obj.state),
     district: toTrimmedOrNull(obj.district),
-    minAge: toPositiveNumberOrNull(obj.minAge),
-    maxAge: toPositiveNumberOrNull(obj.maxAge),
-    experienceRequired: toNonNegativeNumberOrNull(obj.experienceRequired),
+    minAge: toWhole(toPositiveNumberOrNull(obj.minAge)),
+    maxAge: toWhole(toPositiveNumberOrNull(obj.maxAge)),
+    experienceRequired: toWhole(toNonNegativeNumberOrNull(obj.experienceRequired)),
     minSalary: toPositiveNumberOrNull(obj.minSalary),
     maxSalary: toPositiveNumberOrNull(obj.maxSalary),
     salaryType: toTrimmedOrNull(obj.salaryType),
