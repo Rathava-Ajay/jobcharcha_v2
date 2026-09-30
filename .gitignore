@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# App configuration — real values (secrets, connection strings, prod origins) live in
+# environment variables / the host secret store, never in git. Only the placeholder
+# template appsettings.Example.json is committed.
+appsettings.json
+appsettings.*.json
+!appsettings.Example.json
+/.vs
