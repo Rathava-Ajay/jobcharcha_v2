@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
 import { ScrollToTop } from './components/routing/ScrollToTop';
 import { AnalyticsPageView } from './components/routing/AnalyticsPageView';
+import { MobileTabBar } from './components/MobileTabBar';
 
 // The landing page is the primary entry and is prerendered — keep it eager so first paint
 // has no lazy-chunk round-trip. Every other route is code-split: the homepage no longer
@@ -52,6 +53,7 @@ const RefundPolicyPage = lazy(() => import('./pages/RefundPolicyPage'));
 const ShippingDeliveryPage = lazy(() => import('./pages/ShippingDeliveryPage'));
 const EmployerJobPostingRulesPage = lazy(() => import('./pages/EmployerJobPostingRulesPage'));
 const SitemapPage = lazy(() => import('./pages/SitemapPage'));
+const SavedJobsPage = lazy(() => import('./pages/SavedJobsPage'));
 const AspirantDashboardPage = lazy(() => import('./pages/AspirantDashboardPage'));
 const AspirantCareerHubPage = lazy(() => import('./pages/AspirantCareerHubPage'));
 const EmployerDashboardPage = lazy(() => import('./pages/EmployerDashboardPage'));
@@ -116,6 +118,7 @@ export default function App() {
           <Route path="/shipping-policy" element={<ShippingDeliveryPage />} />
           <Route path="/employer-job-posting-rules" element={<EmployerJobPostingRulesPage />} />
           <Route path="/sitemap" element={<SitemapPage />} />
+          <Route path="/saved-jobs" element={<SavedJobsPage />} />
 
           <Route
             path="/dashboard/aspirant"
@@ -193,6 +196,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
+      <MobileTabBar />
     </AuthProvider>
   );
 }

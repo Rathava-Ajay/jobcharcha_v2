@@ -13,7 +13,21 @@
     "jobalerts": "Job Alerts",
     "more": "More",
     "toggleMenu": "Toggle navigation menu",
-    "language": "Language"
+    "language": "Language",
+    "home": "Home",
+    "dailyquiz": "Daily Quiz",
+    "oldpapers": "Old Papers",
+    "practice": "Practice Questions",
+    "cutoff": "Cut-off Predictor",
+    "saved": "Saved Jobs",
+    "search": "Search jobs, results, admit cards…",
+    "examtracker": "Exam Tracker",
+    "login": "Login",
+    "tests": "Tests",
+    "menu": "Menu",
+    "prepare": "Prepare",
+    "explore": "Explore",
+    "more2": "More"
   },
   "hero": {
     "badge": "JobCharcha • Central & State Government Recruitment 2026",

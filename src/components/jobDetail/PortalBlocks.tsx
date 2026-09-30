@@ -1,4 +1,5 @@
 import React from 'react';
+import { daysUntil } from '../../utils/dates';
 
 /**
  * Building blocks for the classic govt-portal style job detail pages: bordered
@@ -190,25 +191,8 @@ export const LinksTable: React.FC<{ links: PortalLink[] }> = ({ links }) => (
   </table>
 );
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-/** "2026-10-24" → "24 Oct 2026". Anything that isn't an ISO date (e.g. "Dec 2026 (tentative)") passes through. */
-export function fmtPortalDate(value?: string | null): string {
-  if (!value) return '';
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
-  if (!m) return value;
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
-}
-
-/** Whole days from today (local) until an ISO date; negative once it has passed, null if unparsable. */
-export function daysUntil(value?: string | null): number | null {
-  const m = value ? /^(\d{4})-(\d{2})-(\d{2})/.exec(value) : null;
-  if (!m) return null;
-  const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return Math.round((target.getTime() - today.getTime()) / 86_400_000);
-}
+/** Date helpers live in utils/dates; re-exported under the names the job pages already use. */
+export { fmtDate as fmtPortalDate, daysUntil } from '../../utils/dates';
 
 export function deadlineNote(value?: string | null): { note: string; tone: 'default' | 'alert' | 'muted' } | null {
   const d = daysUntil(value);
