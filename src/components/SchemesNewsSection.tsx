@@ -22,9 +22,7 @@ export const SchemesNewsSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-12 bg-gradient-to-b from-blue-50 via-blue-50/40 to-white border-t border-slate-200 relative overflow-hidden">
-      <div className="absolute -top-24 -right-24 w-72 h-72 bg-blue-300/25 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute top-40 -left-24 w-72 h-72 bg-cyan-300/20 rounded-full blur-3xl pointer-events-none"></div>
+    <section className="py-10 sm:py-12 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
 
         {/* Header */}

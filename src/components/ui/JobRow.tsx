@@ -32,7 +32,7 @@ export const JobRow: React.FC<{ job: Job; showCta?: boolean }> = ({ job, showCta
           {job.isFeatured && <Pill tone="amber">Featured</Pill>}
           {fresh && <Pill tone="green">New</Pill>}
           {job.isUrgent && <Pill tone="red">Urgent</Pill>}
-          <DeadlinePill date={job.lastDate} className="sm:hidden" />
+          <span className="sm:hidden inline-flex"><DeadlinePill date={job.lastDate} /></span>
         </div>
         <h3 className="text-[15px] font-bold text-slate-900 leading-snug">
           <Link to={to} className="after:absolute after:inset-0 hover:text-emerald-800">
@@ -50,7 +50,7 @@ export const JobRow: React.FC<{ job: Job; showCta?: boolean }> = ({ job, showCta
       </div>
       <div className="flex flex-col items-end justify-between gap-2 shrink-0">
         <div className="flex items-center gap-2">
-          <DeadlinePill date={job.lastDate} className="hidden sm:inline-flex" />
+          <span className="hidden sm:inline-flex"><DeadlinePill date={job.lastDate} /></span>
           <button
             type="button"
             onClick={() => toggle({ slug: job.slug ?? job.id, title: job.title, org: job.companyOrDept, lastDate: job.lastDate })}
@@ -84,7 +84,7 @@ export const PrivateJobRow: React.FC<{ job: ApiPublicEmployerJobListItem }> = ({
           {job.isFeatured && <Pill tone="amber">Featured</Pill>}
           {fresh && <Pill tone="green">New</Pill>}
           {job.isUrgent && <Pill tone="red">Urgent hiring</Pill>}
-          {job.lastDate && <DeadlinePill date={job.lastDate} className="sm:hidden" />}
+          {job.lastDate && <span className="sm:hidden inline-flex"><DeadlinePill date={job.lastDate} /></span>}
         </div>
         <h3 className="text-[15px] font-bold text-slate-900 leading-snug">
           <Link to={`/private-jobs/${job.slug}`} className="after:absolute after:inset-0 hover:text-indigo-800">{job.title}</Link>
@@ -100,7 +100,7 @@ export const PrivateJobRow: React.FC<{ job: ApiPublicEmployerJobListItem }> = ({
         </div>
       </div>
       <div className="flex flex-col items-end justify-between gap-2 shrink-0">
-        {job.lastDate ? <DeadlinePill date={job.lastDate} className="hidden sm:inline-flex" /> : <Pill tone="grey" className="hidden sm:inline-flex">Open</Pill>}
+        {job.lastDate ? <span className="hidden sm:inline-flex"><DeadlinePill date={job.lastDate} /></span> : <Pill tone="grey" className="hidden sm:inline-flex">Open</Pill>}
         <span className="hidden md:inline-flex items-center gap-0.5 text-[13px] font-bold text-indigo-700 border border-slate-200 rounded-lg px-3 py-1.5 bg-white">
           View job <ChevronRight className="w-3.5 h-3.5" />
         </span>

@@ -24,6 +24,8 @@ export function orgInitials(name: string): string {
   const paren = /\(([A-Z0-9]{2,5})\)/.exec(name);
   if (paren) return paren[1].slice(0, 4);
   const words = name.replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter((w) => w && !/^(of|and|the|&|for)$/i.test(w));
+  const acronym = words.find((w) => /^[A-Z0-9]{2,5}$/.test(w));
+  if (acronym) return acronym;
   if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
   return words.slice(0, 3).map((w) => w[0]).join('').toUpperCase();
 }
@@ -35,9 +37,10 @@ export const OrgAvatar: React.FC<{ name: string; logo?: string | null; size?: 's
   }
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const initials = orgInitials(name);
   return (
-    <span aria-hidden className={cx(dim, AVATAR_TONES[h % AVATAR_TONES.length], 'grid place-items-center font-extrabold shrink-0 tracking-tight', className)}>
-      {orgInitials(name)}
+    <span aria-hidden className={cx(dim, AVATAR_TONES[h % AVATAR_TONES.length], 'grid place-items-center font-extrabold shrink-0 tracking-tight', initials.length >= 5 && '!text-[9.5px] tracking-tighter', initials.length === 4 && size !== 'lg' && '!text-[10.5px]', className)}>
+      {initials}
     </span>
   );
 };

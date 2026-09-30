@@ -122,43 +122,40 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
   };
 
   return (
-    <section className="py-16 bg-slate-900 text-white relative overflow-hidden">
+    <section className="py-12 sm:py-16 relative">
 
-      {/* Background accents */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-purple-500/10 blur-[120px] pointer-events-none rounded-full"></div>
-      <div className="absolute bottom-0 left-10 w-96 h-96 bg-emerald-500/10 blur-[120px] pointer-events-none rounded-full"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-1.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-semibold mb-3">
-            <Layers className="w-3.5 h-3.5 text-purple-400" />
+          <div className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 px-3 py-1 rounded-full text-xs font-bold mb-3">
+            <Layers className="w-3.5 h-3.5" />
             <span>Transparent Subscription & Job Posting Plans</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
             Choose the Perfect Plan for Your Journey
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-2">
+          <p className="text-sm text-slate-500 mt-2">
             No hidden fees. Instant access to 800+ CBT Mock Test Series or Employer Candidate Resume Unlocks.
           </p>
 
           {/* Role & Billing Toggles */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             {/* Role Switcher */}
-            <div className="bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-semibold flex items-center">
+            <div className="bg-slate-200/60 p-1 rounded-xl text-[13px] font-semibold flex items-center">
               <button
                 onClick={() => setActiveRole('aspirant')}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  activeRole === 'aspirant' ? 'bg-emerald-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:text-white'
+                className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${
+                  activeRole === 'aspirant' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 For Job Aspirants
               </button>
               <button
                 onClick={() => setActiveRole('employer')}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  activeRole === 'employer' ? 'bg-indigo-600 text-white font-bold shadow-md' : 'text-slate-300 hover:text-white'
+                className={`px-4 py-2 rounded-lg transition-all cursor-pointer ${
+                  activeRole === 'employer' ? 'bg-white text-slate-900 font-bold shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
                 For Employers & Recruiters
@@ -170,32 +167,32 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
 
         {/* Aspirant plans — real AspirantPlan data + Razorpay */}
         {activeRole === 'aspirant' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 max-w-4xl mx-auto">
             {aspirantPlans.map((plan, idx) => (
               <div
                 key={plan.id}
-                className={`card-3d-dark card-3d-hoverable border rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative ${
-                  idx === 0 ? 'border-emerald-400 ring-2 ring-emerald-500/30 scale-102' : 'border-slate-700'
+                className={`bg-white border rounded-2xl p-6 sm:p-7 flex flex-col justify-between relative ${
+                  idx === 0 ? 'border-emerald-500 ring-4 ring-emerald-500/10' : 'border-slate-200'
                 }`}
               >
                 {plan.unlocksAllTests && (
-                  <span className="absolute -top-3.5 right-6 bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
+                  <span className="absolute -top-3.5 right-6 bg-emerald-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full">
                     All Tests Unlocked
                   </span>
                 )}
 
                 <div>
-                  <h3 className="text-xl font-black text-white">{plan.name}</h3>
+                  <h3 className="text-lg font-extrabold text-slate-900">{plan.name}</h3>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-white">₹{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-semibold">/ {plan.durationDays} days</span>
+                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900">₹{plan.price}</span>
+                    <span className="text-sm text-slate-500 font-semibold">/ {plan.durationDays} days</span>
                   </div>
 
                   {plan.description && (
-                    <ul className="mt-6 space-y-3 text-xs text-slate-300">
+                    <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
                       {plan.description.split(/\n|\.\s+/).filter(Boolean).map((feat) => (
                         <li key={feat} className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                          <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                           <span>{feat.trim()}</span>
                         </li>
                       ))}
@@ -203,13 +200,13 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
                   )}
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-slate-700">
+                <div className="mt-6 pt-4 border-t border-slate-100">
                   <button
                     onClick={() => handleAspirantCheckout(plan)}
-                    className={`btn-3d w-full text-xs font-black py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`w-full text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                       idx === 0
-                        ? 'btn-3d-emerald bg-emerald-500 hover:bg-emerald-400 text-slate-950'
-                        : 'btn-3d-white bg-white hover:bg-slate-100 text-slate-950'
+                        ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
                     }`}
                   >
                     <CreditCard className="w-4 h-4" />
@@ -219,7 +216,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
               </div>
             ))}
             {aspirantPlans.length === 0 && (
-              <div className="col-span-full text-center text-xs text-slate-400 py-8">
+              <div className="col-span-full text-center text-sm text-slate-400 py-8 bg-white border border-dashed border-slate-200 rounded-2xl">
                 {aspirantPlansLoading ? 'Loading plans…' : 'No subscription plans are available right now. Please check back soon.'}
               </div>
             )}
@@ -228,49 +225,49 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
 
         {/* Employer plans — real EmployerPlan catalog data + Razorpay */}
         {activeRole === 'employer' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 max-w-4xl mx-auto">
             {employerPlans.map((plan, idx) => (
               <div
                 key={plan.id}
-                className={`card-3d-dark card-3d-hoverable border rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative ${
-                  idx === 0 ? 'border-emerald-400 ring-2 ring-emerald-500/30 scale-102' : 'border-slate-700'
+                className={`bg-white border rounded-2xl p-6 sm:p-7 flex flex-col justify-between relative ${
+                  idx === 0 ? 'border-emerald-500 ring-4 ring-emerald-500/10' : 'border-slate-200'
                 }`}
               >
                 {plan.isUnlimitedCredits && (
-                  <span className="absolute -top-3.5 right-6 bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
+                  <span className="absolute -top-3.5 right-6 bg-emerald-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full">
                     Unlimited Credits
                   </span>
                 )}
 
                 <div>
-                  <h3 className="text-xl font-black text-white">{plan.name}</h3>
+                  <h3 className="text-lg font-extrabold text-slate-900">{plan.name}</h3>
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-white">₹{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-semibold">/ {plan.durationDays} days</span>
+                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900">₹{plan.price}</span>
+                    <span className="text-sm text-slate-500 font-semibold">/ {plan.durationDays} days</span>
                   </div>
 
-                  <ul className="mt-6 space-y-3 text-xs text-slate-300">
+                  <ul className="mt-5 space-y-2.5 text-sm text-slate-600">
                     {plan.description && (
-                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>{plan.description}</span></li>
+                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>{plan.description}</span></li>
                     )}
                     <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span>{plan.isUnlimitedCredits ? 'Unlimited' : plan.includedCredits} candidate contact credits</span>
                     </li>
-                    <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>Up to {plan.maxActiveJobs} active job postings</span></li>
+                    <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>Up to {plan.maxActiveJobs} active job postings</span></li>
                     {plan.maxFeaturedJobs > 0 && (
-                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>{plan.maxFeaturedJobs} featured job slot{plan.maxFeaturedJobs === 1 ? '' : 's'}</span></li>
+                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" /><span>{plan.maxFeaturedJobs} featured job slot{plan.maxFeaturedJobs === 1 ? '' : 's'}</span></li>
                     )}
                   </ul>
                 </div>
 
-                <div className="mt-8 pt-4 border-t border-slate-700">
+                <div className="mt-6 pt-4 border-t border-slate-100">
                   <button
                     onClick={() => handleEmployerCheckout(plan)}
-                    className={`btn-3d w-full text-xs font-black py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`w-full text-sm font-bold py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                       idx === 0
-                        ? 'btn-3d-emerald bg-emerald-500 hover:bg-emerald-400 text-slate-950'
-                        : 'btn-3d-white bg-white hover:bg-slate-100 text-slate-950'
+                        ? 'bg-emerald-700 hover:bg-emerald-800 text-white'
+                        : 'bg-slate-900 hover:bg-slate-800 text-white'
                     }`}
                   >
                     <CreditCard className="w-4 h-4" />
@@ -280,7 +277,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
               </div>
             ))}
             {employerPlans.length === 0 && (
-              <div className="col-span-full text-center text-xs text-slate-400 py-8">
+              <div className="col-span-full text-center text-sm text-slate-400 py-8 bg-white border border-dashed border-slate-200 rounded-2xl">
                 {employerPlansLoading ? 'Loading plans…' : 'No employer plans are available right now. Please check back soon.'}
               </div>
             )}

@@ -55,7 +55,7 @@ public class JobService : IJobService
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var term = query.Search.Trim();
-            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term));
+            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term) || j.Category.Name.Contains(term));
         }
         if (!string.IsNullOrWhiteSpace(query.Category) && query.Category != "All")
             q = q.Where(j => j.Category.Name == query.Category || j.Category.Slug == query.Category);
@@ -72,14 +72,31 @@ public class JobService : IJobService
         if (query.FeaturedOnly == true)
             q = q.Where(j => j.IsFeatured);
 
+        var today = DateTime.UtcNow.Date;
+        if (query.OpenOnly == true || query.ClosingWithinDays.HasValue)
+            q = q.Where(j => j.LastDate >= today);
+        if (query.ClosingWithinDays is > 0)
+        {
+            var until = today.AddDays(query.ClosingWithinDays.Value + 1);
+            q = q.Where(j => j.LastDate < until);
+        }
+
         var totalCount = await q.CountAsync();
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var items = await q
-            .OrderByDescending(j => j.IsFeatured)
-            .ThenByDescending(j => j.PostedDate)
+        IOrderedQueryable<Job> ordered = query.Sort?.ToLowerInvariant() switch
+        {
+            // Soonest deadline first, but never lead with jobs that already closed.
+            "deadline" => q.OrderBy(j => j.LastDate < today).ThenBy(j => j.LastDate),
+            "popular" => q.OrderByDescending(j => j.Views),
+            "posts" => q.OrderByDescending(j => j.TotalPosts ?? 0),
+            _ => q.OrderByDescending(j => j.IsFeatured).ThenByDescending(j => j.PostedDate),
+        };
+
+        var items = await ordered
+            .ThenByDescending(j => j.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

@@ -89,6 +89,12 @@ export interface JobQuery {
   minSalary?: number;
   maxSalary?: number;
   featuredOnly?: boolean;
+  /** newest (default) | deadline (soonest last date first) | popular | posts */
+  sort?: 'newest' | 'deadline' | 'popular' | 'posts';
+  /** Only jobs closing within N days (implies open only). */
+  closingWithinDays?: number;
+  /** Hide jobs whose last date has passed. */
+  openOnly?: boolean;
   page?: number;
   pageSize?: number;
 }
