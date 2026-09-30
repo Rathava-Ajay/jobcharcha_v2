@@ -11,7 +11,9 @@ import { getPublicEmployerJobBySlug, ApiPublicEmployerJobDetail } from '../api/e
 import { applyToJob } from '../api/jobApplications';
 import { getSavedJobIds, saveJob, unsaveJob } from '../api/savedJobs';
 import { ApiError } from '../api/client';
-import { PortalBox, KeyValueTable, KeyValueRow, LinksTable } from '../components/jobDetail/PortalBlocks';
+import {
+  PortalBox, KeyValueTable, KeyValueRow, LinksTable, StatsStrip, StatTile, MobileActionBar, fmtPortalDate, deadlineNote,
+} from '../components/jobDetail/PortalBlocks';
 
 const EMPLOYMENT_TYPE: Record<string, string> = {
   'full-time': 'FULL_TIME', 'part-time': 'PART_TIME', contract: 'CONTRACTOR',
@@ -151,7 +153,7 @@ export default function PrivateJobDetailsPage() {
   const metaDescription = `${job.title} at ${job.companyName} — ${job.jobType}, ${job.workMode}, ${job.city}, ${job.state}. `
     + `${job.openings ? `${job.openings} opening${job.openings === 1 ? '' : 's'}. ` : ''}Apply online on JobCharcha.`;
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtDate = (d: string) => fmtPortalDate(d.slice(0, 10));
   const lastDateText = job.lastDate ? fmtDate(job.lastDate) : 'Open until filled';
   const skills = (job.skills ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -170,10 +172,18 @@ export default function PrivateJobDetailsPage() {
     { label: 'Last Date to Apply', value: lastDateText, highlight: !!job.lastDate },
   ];
 
+  const deadline = deadlineNote(job.lastDate);
+  const stats: StatTile[] = [
+    { label: 'Salary', value: <span className="text-sm sm:text-lg">{salaryText}</span>, note: job.isSalaryNegotiable && !job.hideSalary ? 'Negotiable' : undefined },
+    { label: 'Openings', value: job.openings ? job.openings : '—' },
+    { label: 'Experience', value: <span className="text-sm sm:text-lg">{job.experienceRequired || 'Freshers OK'}</span> },
+    { label: 'Apply By', value: <span className="text-sm sm:text-lg">{lastDateText}</span>, note: deadline?.note, tone: deadline?.tone },
+  ];
+
   const textBody = 'whitespace-pre-line font-medium';
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col pb-16 sm:pb-0">
       <SeoHead
         title={`${job.title} at ${job.companyName} | JobCharcha`}
         description={metaDescription}
@@ -183,13 +193,13 @@ export default function PrivateJobDetailsPage() {
       />
       <Navbar user={user} />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 space-y-4">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-8 space-y-3 sm:space-y-4">
         <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer">
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
 
         {/* Title block */}
-        <header className="bg-white border-2 border-indigo-700/40 text-center px-4 py-5 sm:px-8 sm:py-6">
+        <header className="bg-white border sm:border-2 border-indigo-700/40 border-t-4 sm:border-t-4 border-t-indigo-700 text-center px-3 py-4 sm:px-8 sm:py-6">
           <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
             <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-indigo-700 text-white">
               Private Job • {job.jobType} • {job.workMode}
@@ -215,7 +225,7 @@ export default function PrivateJobDetailsPage() {
             <span>Salary: <b className="text-slate-800">{salaryText}</b></span>
             <span>Last Date: <b className="text-red-700">{lastDateText}</b></span>
           </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-4 hidden sm:flex flex-wrap items-center justify-center gap-2">
             <a href="#apply" className="inline-flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs sm:text-sm font-extrabold px-4 py-2">
               {alreadyApplied ? 'Application Status' : 'Apply Now'}
             </a>
@@ -231,6 +241,8 @@ export default function PrivateJobDetailsPage() {
             </button>
           </div>
         </header>
+
+        <StatsStrip stats={stats} />
 
         <PortalBox title="Job Overview" tone="indigo" flush>
           <KeyValueTable rows={overviewRows} />
@@ -331,6 +343,16 @@ export default function PrivateJobDetailsPage() {
           </PortalBox>
         )}
       </main>
+
+      <MobileActionBar>
+        <a href="#apply" className="flex-1 inline-flex items-center justify-center bg-indigo-700 active:bg-indigo-800 text-white text-sm font-extrabold py-2.5">
+          {alreadyApplied ? 'Applied ✓' : 'Apply Now'}
+        </a>
+        <button onClick={toggleSave} disabled={savingBookmark} aria-label={saved ? 'Remove from saved' : 'Save this job'}
+          className={`inline-flex items-center justify-center gap-1.5 border-2 px-4 text-sm font-extrabold cursor-pointer ${saved ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-300 text-slate-700'}`}>
+          <Bookmark className={`w-4 h-4 ${saved ? 'fill-amber-400' : ''}`} /> {saved ? 'Saved' : 'Save'}
+        </button>
+      </MobileActionBar>
 
       <Footer />
     </div>

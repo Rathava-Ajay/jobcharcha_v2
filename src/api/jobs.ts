@@ -136,6 +136,7 @@ export interface AiImportImportantDates {
   admitCardDate?: string | null;
   examDate?: string | null;
   resultDate?: string | null;
+  otherDates?: { label: string; date: string }[];
 }
 
 export interface AiImportJobPayload {
@@ -156,6 +157,19 @@ export interface AiImportJobPayload {
   applyLink?: string | null;
   officialNotificationPdf?: string | null;
   notificationFileName?: string | null;
+  advertisementNumber?: string | null;
+  officialWebsite?: string | null;
+  syllabusLink?: string | null;
+  state?: string | null;
+  district?: string | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+  experienceRequired?: number | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  salaryType?: string | null;
+  applicationFeeAmount?: number | null;
+  applicationFeeDetails?: string | null;
   shortDescription: string;
   overview: string;
   keyHighlights?: string | null;

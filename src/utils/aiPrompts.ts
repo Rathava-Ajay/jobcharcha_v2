@@ -19,7 +19,7 @@ SEO WRITING RULES (apply to all text fields):
 - Use numbers in headings/titles where possible (post count, year) — numbers boost CTR.
 - Avoid keyword stuffing — max 1 keyword mention per 100 words in description body.
 - Write in simple, scannable language (grade 8 reading level) — short sentences, bullet points, no jargon walls.
-- The six content fields below (overview, keyHighlights, eligibilityDetails, howToApply, importantNotes, documentsRequired) are rendered as SEPARATE sections on the live page — do not repeat the same fact word-for-word across more than one of them. Also never restate as prose what the STRUCTURED fields further down this schema already cover as their own dedicated section on the page — vacancyBreakdown/categoryWiseVacancy → "Vacancy Breakdown", applicationFee → "Application Fee", examPattern → "Exam Pattern", selectionProcess → "Selection Process", importantDates → "Key Exam & Application Dates". Extract real facts into THOSE structured fields (don't leave them empty when the notification has the data) instead of dumping the same facts into overview/eligibilityDetails as paragraphs.
+- The six content fields below (overview, keyHighlights, eligibilityDetails, howToApply, importantNotes, documentsRequired) are rendered as SEPARATE sections on the live page — do not repeat the same fact word-for-word across more than one of them. Also never restate as prose what the STRUCTURED fields further down this schema already cover as their own dedicated section on the page — vacancyBreakdown/categoryWiseVacancy → "Vacancy Details" table, applicationFee/applicationFeeDetails → "Application Fee" box, examPattern → "Exam Pattern" table, selectionProcess → "Selection Process" steps, importantDates → "Important Dates" box, minAge/maxAge → "Age Limit" box, minSalary/maxSalary/salaryBreakdown → "Salary / Pay Scale" box, advertisementNumber/department/totalPosts/qualification/salary/location/lastDate → "Recruitment Overview" table at the top of the page. Extract real facts into THOSE structured fields (don't leave them empty when the notification has the data) instead of dumping the same facts into overview/eligibilityDetails as paragraphs.
 - Depth bar: each of these six fields should be as thorough as the source notification actually allows — a detailed multi-page notification should produce a detailed multi-item field, not a thin 2-3 line summary. Never pad with invented filler to hit a length target, but never compress real detail down to a token summary either. Prefer several short, labelled sub-points over one dense paragraph.
 - Return clean semantic HTML only. Allowed tags everywhere: <p>, <ul>, <ol>, <li>, <strong>, <a>, <hr>. No markdown (no "**", no "-" bullets), no tailwind classes, no inline styles, no <div>/<span>.
 - Extra allowance ONLY inside "eligibilityDetails": when the notification gives DIFFERENT numeric values per category (e.g. minimum marks/CGPA by General/SC/ST/OBC/PwD/EWS, or maximum age by category), present that as a real HTML table instead of prose — wrap it in <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">, use <th>/<td style="border:1px solid #ddd;padding:8px;text-align:left">, one table per fact type (a marks table and a separate age table, if both exist). If the notification gives only ONE flat value for everyone, just write a <p> — don't build a one-row table.
@@ -42,14 +42,28 @@ RETURN THIS EXACT JSON STRUCTURE:
   "ageLimit": "age limit exactly as mentioned",
   "qualification": "qualification required",
   "location": "Gujarat or specific city",
-  "lastDate": "YYYY-MM-DD format",
+  "lastDate": "YYYY-MM-DD format — the last date to SUBMIT the online application (same value as importantDates.applicationEnd)",
   "applyLink": "official apply URL or null",
+
+  "advertisementNumber": "Advt. No. / Notification No. exactly as printed (e.g. 'GSSSB/202526/347'), or null",
+  "officialWebsite": "home page of the recruiting body (e.g. 'https://gsssb.gujarat.gov.in'), or null — full URL with https://",
+  "syllabusLink": "direct URL of the syllabus PDF/page if the notification gives one, else null",
+  "state": "state name, e.g. 'Gujarat' (use 'All India' for central recruitments), or null",
+  "district": "district name only if the posting is for ONE district, else null",
+  "minAge": 18,
+  "maxAge": 33,
+  "experienceRequired": "number of years of experience required (0 if freshers can apply), or null if the notification is silent",
+  "minSalary": 25500,
+  "maxSalary": 81100,
+  "salaryType": "Month | Year | Fixed Month (for fixed-pay 5-year contract posts) — or null",
+  "applicationFeeAmount": "the General/UR category fee as a plain number (e.g. 500); 0 if no fee for anyone; null if not mentioned",
+  "applicationFeeDetails": "one short plain-text line: payment mode(s), refund rule, fee deadline — e.g. 'Pay online via Net Banking / UPI / Card or by challan at post office. Fee is non-refundable.' — or null",
 
   "shortDescription": "2-3 sentence summary, max 400 chars, first sentence must stand alone as a direct-answer Google snippet. Must include: org name, post count, key qualification, last date.",
 
   "overview": "HTML, 2-4 short <p> paragraphs (NOT a wall of text, NOT a multi-section document — the structured fields below carry the depth). Paragraph 1: direct-answer intro repeating the focus keyword naturally in the first sentence — org name, post count/programme name, key qualification, last date. Paragraph 2 (only if the notification supports it): concrete context prose that has nowhere else to go in this schema — advertisement number, notification date, department/work-area or engineering-discipline breadth, programme type (e.g. campus recruitment vs direct recruitment), location/state or domicile preference, post-training career growth for trainee-style posts. Never restate vacancy counts, fee, exam pattern, selection stages, or date lists here — those get their own sections from the structured fields.",
 
-  "keyHighlights": "HTML, a single <ul> with 6-10 <li> items (as many genuinely distinct quick facts as the notification supports). Each item is one short punchy fact for a quick-scan summary: organization, post name, total posts, application mode, job location, qualification, salary/stipend headline figure, age limit headline figure, last date, official website. e.g. '<ul><li><strong>Organization:</strong> Gujarat Secondary and Higher Secondary Education Board</li><li><strong>Total Posts:</strong> 1181</li></ul>'",
+  "keyHighlights": "HTML, a single <ul> with 4-8 <li> items. The page ALREADY shows organization, post name, total posts, qualification, salary, location, age and last date in its overview table and stats strip — so do NOT repeat those. Use this list for the scan-worthy facts a candidate would otherwise miss: e.g. 'No fee for women / SC / ST', 'Negative marking: 0.25 per wrong answer', 'Knowledge of Gujarati & Hindi mandatory', 'CCC computer certificate required at appointment', 'Fixed pay ₹26,000 for first 5 years', 'Female candidates: 33% reservation', 'Only one application per candidate'. e.g. '<ul><li><strong>No application fee</strong> for women, SC, ST, PwD and Ex-servicemen</li></ul>'",
 
   "eligibilityDetails": "HTML — the full eligibility deep-dive, richer than the short 'qualification' field. Always cover, each as its own <p> or <ul> block with a <strong> label: (1) exact qualification per post/discipline including any 'OR' alternative qualification paths (e.g. diploma-holders laterally eligible) and any minimum-percentage/CGPA cutoff; (2) minimum and maximum age with the as-on-date if given; (3) age relaxation and marks relaxation by category (SC/ST/OBC/PwD/EWS/Ex-servicemen/Transgender); (4) any programme-type restriction (e.g. full-time only, distance/part-time excluded) or existing-employee exclusion, if the notification states one. Use the category-wise <table> allowance above when marks or age genuinely differ by category — otherwise plain <p>/<ul> text. Never leave this thinner than what the notification actually contains.",
 
@@ -69,7 +83,7 @@ RETURN THIS EXACT JSON STRUCTURE:
   "selectionProcess": ["Preliminary Examination", "Main Examination", "Document Verification"],
   "examPattern": [{"paper": "Paper I", "subject": "General Awareness / Reasoning / English", "questions": 100, "marks": 100, "duration": "1 hour", "type": "MCQ"}],
   "salaryBreakdown": {"basicPay": "Rs. 00,000", "da": "as per rules", "hra": "as per rules", "grossSalary": "Rs. 00,000 approx", "netSalary": "Rs. 00,000 approx"},
-  "importantDates": {"notificationDate": "YYYY-MM-DD or null", "applicationStart": "YYYY-MM-DD or null", "applicationEnd": "YYYY-MM-DD or null", "feePaymentEnd": "YYYY-MM-DD or null", "admitCardDate": "YYYY-MM-DD or null", "examDate": "YYYY-MM-DD or null", "resultDate": "YYYY-MM-DD or null"},
+  "importantDates": {"notificationDate": "YYYY-MM-DD or null", "applicationStart": "YYYY-MM-DD or null", "applicationEnd": "YYYY-MM-DD or null", "feePaymentEnd": "YYYY-MM-DD or null", "admitCardDate": "YYYY-MM-DD or null", "examDate": "YYYY-MM-DD or null", "resultDate": "YYYY-MM-DD or null", "otherDates": [{"label": "Correction Window", "date": "2026-11-02 to 2026-11-05"}, {"label": "Tier 1 Exam", "date": "December 2026 (Tentative)"}]},
 
   "metaTitle": "SEO title, max 60 chars, format: '[Focus Keyword] | JobCharcha' — front-load the keyword",
   "metaDescription": "SEO meta description, max 155 chars, include focus keyword + a call to action like 'Apply Online Now'",
@@ -90,11 +104,12 @@ STRICT RULES:
 2. totalPosts, examPattern.questions/marks → numbers, not strings
 3. autoPublish always true
 4. vacancyBreakdown → one row per post type; faqSchema → one object per FAQ pair
-5. If SC/ST/OBC breakdown not given, use 0 for each
+5. If SC/ST/OBC breakdown not given, use 0 for each (the page hides all-zero columns). "total" of every vacancyBreakdown row must be filled, and the row totals must add up to totalPosts. Use the post name only in "postName" (e.g. "Junior Clerk"), never "Post 1"
+5b. minAge, maxAge, experienceRequired, minSalary, maxSalary, applicationFeeAmount → plain numbers (no "₹", no commas, no "years"), or null. Use the GENERAL category's age range for minAge/maxAge (relaxations go in eligibilityDetails). For a pay level like "Level 4 (₹25,500–81,100)" → minSalary 25500, maxSalary 81100. For fixed pay "₹26,000 fixed for 5 years" → minSalary 26000, maxSalary null, salaryType "Fixed Month"
 6. selectionProcess must be an array of strings, in order
 7. examPattern → empty array [] if not in notification
 8. salaryBreakdown → all null if salary not mentioned
-9. importantDates → all null for any date not in notification
+9. importantDates → null for any date not in notification. Convert DD/MM/YYYY and "24th October 2026" style dates to YYYY-MM-DD. A date without an exact day ("December 2026", "tentative", "will be announced later") must NOT be forced into a YYYY-MM-DD slot — put it in importantDates.otherDates as free text instead. Also use otherDates for milestones with no slot above (correction window, interview, skill test, document verification)
 10. overview, keyHighlights, eligibilityDetails, howToApply, importantNotes, documentsRequired → clean semantic HTML only (<p>/<ul>/<ol>/<li>/<strong>/<a>/<hr>, plus the <table> allowance described above but ONLY inside eligibilityDetails), never markdown, never plain "- bullet" text, never repeat the same fact across more than one of these fields
 11. overview and howToApply are always required (never null/empty); keyHighlights, eligibilityDetails, importantNotes, documentsRequired → null only if the notification truly gives nothing to put there — but populate them whenever the notification has the content, don't leave them null out of laziness
 11b. Match the depth of the source: a long, detailed notification (multiple pages, many clauses) must produce long, detailed eligibilityDetails/howToApply/importantNotes/documentsRequired — a short one-page notification should produce correspondingly short fields. Do not compress real multi-point detail into a token 2-item list.
@@ -102,7 +117,8 @@ STRICT RULES:
 13. secondaryKeywords, lsiKeywords, internalLinkAnchors — real search-realistic phrases, not generic filler
 14. If any field is truly not in the notification, use null (never invent facts — SEO fields like keywords/FAQs may still be generated from context)
 15. Return PURE JSON only — no text before or after, no code fences
-16. No trailing commas; all strings in double quotes only`;
+16. No trailing commas; all strings in double quotes only
+17. SELF-CHECK before returning (fix silently, do not print the checklist): lastDate equals importantDates.applicationEnd when both are known; vacancyBreakdown totals sum to totalPosts; minAge < maxAge; minSalary <= maxSalary; every URL starts with https:// or http://; no field contains the placeholder text from this template (e.g. "Post Name 1", "Rs. 000", "YYYY-MM-DD or null")`;
 
 /** Master SEO extraction prompt for Result posts — same schema philosophy as the Job Post prompt,
  * swapping in result-specific facts (result date, cut-off marks, selected candidates) per the

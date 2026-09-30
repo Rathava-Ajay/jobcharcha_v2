@@ -218,8 +218,21 @@ public class JobService : IJobService
             DuplicateFingerprint = fingerprint,
             CategoryId = request.CategoryId,
             Location = request.Location,
+            State = NullIfBlank(request.State),
+            District = NullIfBlank(request.District),
             TotalPosts = request.TotalPosts,
             Salary = request.Salary,
+            MinSalary = request.MinSalary > 0 ? request.MinSalary : null,
+            MaxSalary = request.MaxSalary > 0 ? request.MaxSalary : null,
+            SalaryType = NullIfBlank(request.SalaryType),
+            MinAge = request.MinAge > 0 ? request.MinAge : null,
+            MaxAge = request.MaxAge > 0 ? request.MaxAge : null,
+            ExperienceRequired = request.ExperienceRequired >= 0 ? request.ExperienceRequired : null,
+            AdvertisementNumber = NullIfBlank(request.AdvertisementNumber),
+            OfficialWebsite = NullIfBlank(request.OfficialWebsite),
+            SyllabusPdf = NullIfBlank(request.SyllabusLink),
+            ApplicationFee = request.ApplicationFeeAmount >= 0 ? request.ApplicationFeeAmount : null,
+            ApplicationFeeDetails = NullIfBlank(request.ApplicationFeeDetails),
             QualificationRequired = request.Qualification,
             DetailedEligibility = !string.IsNullOrWhiteSpace(request.EligibilityDetails) ? request.EligibilityDetails : eligibility,
             PostedDate = DateTime.UtcNow,
@@ -478,6 +491,8 @@ public class JobService : IJobService
         MetaKeywords = j.MetaKeywords,
     };
 
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static List<ImportantDateDto> BuildImportantDates(Job j)
     {
         var dates = new List<ImportantDateDto>();
@@ -500,6 +515,11 @@ public class JobService : IJobService
         if (j.ExamDate.HasValue) dates.Add(new ImportantDateDto { Label = "Exam Date", Date = j.ExamDate.Value.ToString("yyyy-MM-dd") });
         if (j.InterviewDate.HasValue) dates.Add(new ImportantDateDto { Label = "Interview Date", Date = j.InterviewDate.Value.ToString("yyyy-MM-dd") });
         if (extra?.ResultDate is not null) dates.Add(new ImportantDateDto { Label = "Result Date", Date = extra.ResultDate.Value.ToString("yyyy-MM-dd") });
+        foreach (var other in extra?.OtherDates ?? new())
+        {
+            if (!string.IsNullOrWhiteSpace(other.Label) && !string.IsNullOrWhiteSpace(other.Date))
+                dates.Add(new ImportantDateDto { Label = other.Label.Trim(), Date = other.Date.Trim() });
+        }
         return dates;
     }
 

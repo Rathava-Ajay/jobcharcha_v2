@@ -18,6 +18,7 @@ import { DocumentPreview } from '../components/DocumentPreview';
 import { AdUnit } from '../components/ads/AdUnit';
 import {
   PortalBox, KeyValueTable, DataTable, PortalList, LinksTable, PortalLink, KeyValueRow,
+  StatsStrip, StatTile, SectionNav, MobileActionBar, fmtPortalDate, deadlineNote,
 } from '../components/jobDetail/PortalBlocks';
 
 const fmtMoney = (v?: number) => v === undefined ? undefined : `₹${v.toLocaleString('en-IN')}`;
@@ -106,7 +107,26 @@ export default function JobDetailsPage() {
     { label: 'Job Location', value: job.location },
     { label: 'Category', value: job.category },
     { label: 'Mode of Apply', value: job.applyUrl ? 'Online' : 'As per notification' },
-    { label: 'Last Date to Apply', value: job.lastDate, highlight: true },
+    { label: 'Last Date to Apply', value: fmtPortalDate(job.lastDate), highlight: true },
+  ];
+
+  const deadline = deadlineNote(job.lastDate);
+  const ageText = hasAgeInfo
+    ? (job.minAge !== undefined && job.maxAge !== undefined ? `${job.minAge}–${job.maxAge} Yrs`
+      : job.maxAge !== undefined ? `Max ${job.maxAge} Yrs` : `Min ${job.minAge} Yrs`)
+    : undefined;
+  const feeHeadline = feeTable?.[0]?.fee ?? (job.applicationFee !== undefined ? `${fmtMoney(job.applicationFee)}/-` : undefined);
+  const stats: StatTile[] = [
+    { label: 'Total Posts', value: job.vacancyCount > 0 ? job.vacancyCount.toLocaleString('en-IN') : '—' },
+    ageText
+      ? { label: 'Age Limit', value: ageText }
+      : { label: 'Qualification', value: <span className="text-sm sm:text-base">{job.qualification}</span> },
+    hasSalaryRange
+      ? { label: 'Salary', value: <span className="text-sm sm:text-lg">{fmtMoney(job.minSalary ?? job.maxSalary)}{job.maxSalary && job.minSalary ? '+' : ''}</span>, note: job.salaryType ? `per ${job.salaryType.toLowerCase()}` : undefined, tone: 'muted' }
+      : feeHeadline
+        ? { label: 'Application Fee', value: <span className="text-sm sm:text-lg">{feeHeadline}</span>, note: feeTable && feeTable.length > 1 ? feeTable[0].category : undefined, tone: 'muted' }
+        : { label: 'Location', value: <span className="text-sm sm:text-lg">{job.location}</span> },
+    { label: 'Last Date', value: <span className="text-sm sm:text-lg">{fmtPortalDate(job.lastDate)}</span>, note: deadline?.note, tone: deadline?.tone },
   ];
 
   const hasFee = !!feeTable || job.applicationFee !== undefined || !!job.applicationFeeDetails;
@@ -119,6 +139,19 @@ export default function JobDetailsPage() {
     { label: 'Gross Salary', value: salaryBreakdown.grossSalary },
     { label: 'Net Salary', value: salaryBreakdown.netSalary },
   ].filter((r) => r.value) : [];
+
+  const navItems = [
+    { id: 'dates', label: 'Dates' },
+    ...(hasFee ? [{ id: 'fee', label: 'Fee' }] : []),
+    ...(hasAgeBox ? [{ id: 'age', label: 'Age Limit' }] : []),
+    { id: 'vacancy', label: 'Vacancy' },
+    { id: 'eligibility', label: 'Eligibility' },
+    ...(hasSalaryBox ? [{ id: 'salary', label: 'Salary' }] : []),
+    { id: 'selection', label: 'Selection' },
+    { id: 'apply', label: 'How to Apply' },
+    ...(links.length > 0 ? [{ id: 'links', label: 'Links' }] : []),
+    ...(faqEntries ? [{ id: 'faq', label: 'FAQ' }] : []),
+  ];
 
   // Google Jobs wants an ISO-8601 validThrough; job.lastDate is a bare yyyy-MM-dd from the API.
   const validThrough = /^\d{4}-\d{2}-\d{2}$/.test(job.lastDate) ? `${job.lastDate}T23:59:59+05:30` : job.lastDate;
@@ -190,7 +223,7 @@ export default function JobDetailsPage() {
 
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className={`min-h-screen bg-slate-100 flex flex-col ${job.applyUrl || job.officialNotificationUrl ? 'pb-16 sm:pb-0' : ''}`}>
       <SeoHead
         title={job.metaTitle || `${job.title} - ${job.vacancyCount} Vacancies | JobCharcha`}
         description={job.metaDescription || job.overview || job.qualification}
@@ -203,7 +236,7 @@ export default function JobDetailsPage() {
       />
       <Navbar user={user} />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 space-y-4">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-8 space-y-3 sm:space-y-4">
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer"
@@ -212,7 +245,7 @@ export default function JobDetailsPage() {
         </button>
 
         {/* Title block */}
-        <header className="bg-white border-2 border-emerald-700/40 text-center px-4 py-5 sm:px-8 sm:py-6">
+        <header className="bg-white border sm:border-2 border-emerald-700/40 border-t-4 sm:border-t-4 border-t-emerald-700 text-center px-3 py-4 sm:px-8 sm:py-6">
           <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
             <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-emerald-700 text-white">
               {job.type === 'public' ? 'Government Recruitment' : 'Private Sector Job'}
@@ -232,8 +265,8 @@ export default function JobDetailsPage() {
             {job.advertisementNumber && (
               <span className="inline-flex items-center gap-0.5"><Hash className="w-3 h-3" />Advt. No: {job.advertisementNumber}</span>
             )}
-            <span>Post Date: <b className="text-slate-800">{job.postedDate}</b></span>
-            <span>Last Date: <b className="text-red-700">{job.lastDate}</b></span>
+            <span>Post Date: <b className="text-slate-800">{fmtPortalDate(job.postedDate)}</b></span>
+            <span>Last Date: <b className="text-red-700">{fmtPortalDate(job.lastDate)}</b></span>
           </p>
 
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
@@ -242,7 +275,7 @@ export default function JobDetailsPage() {
                 href={job.applyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-extrabold px-4 py-2"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-extrabold px-4 py-2"
               >
                 Apply Online <ExternalLink className="w-3.5 h-3.5" />
               </a>
@@ -252,7 +285,7 @@ export default function JobDetailsPage() {
                 href={job.officialNotificationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 text-xs sm:text-sm font-extrabold px-4 py-1.5"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-800 border-2 border-slate-300 text-xs sm:text-sm font-extrabold px-4 py-1.5"
               >
                 <Download className="w-3.5 h-3.5" /> Notification PDF
               </a>
@@ -268,6 +301,9 @@ export default function JobDetailsPage() {
             </button>
           </div>
         </header>
+
+        <StatsStrip stats={stats} />
+        <SectionNav items={navItems} />
 
         {/* Short information */}
         <PortalBox title="Short Information">
@@ -299,14 +335,14 @@ export default function JobDetailsPage() {
 
         {/* Dates | Fee */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PortalBox title="Important Dates" className={hasFee ? '' : 'md:col-span-2'}>
+          <PortalBox id="dates" title="Important Dates" className={hasFee ? '' : 'md:col-span-2'}>
             <PortalList
-              items={importantDates.map((d) => <>{d.label}: <b>{d.date}</b></>)}
+              items={importantDates.map((d) => <>{d.label}: <b>{fmtPortalDate(d.date)}</b></>)}
               highlightIndex={(i) => isLastDateLabel(importantDates[i].label)}
             />
           </PortalBox>
           {hasFee && (
-            <PortalBox title="Application Fee">
+            <PortalBox id="fee" title="Application Fee">
               {feeTable ? (
                 <PortalList items={feeTable.map((r) => <>{r.category}: <b className="text-emerald-800">{r.fee}</b></>)} />
               ) : job.applicationFee !== undefined ? (
@@ -321,7 +357,7 @@ export default function JobDetailsPage() {
         {(hasAgeBox || hasSalaryBox) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {hasAgeBox && (
-              <PortalBox title="Age Limit" className={hasSalaryBox ? '' : 'md:col-span-2'}>
+              <PortalBox id="age" title="Age Limit" className={hasSalaryBox ? '' : 'md:col-span-2'}>
                 <PortalList
                   items={[
                     job.minAge !== undefined && <>Minimum Age: <b>{job.minAge} Years</b></>,
@@ -333,7 +369,7 @@ export default function JobDetailsPage() {
               </PortalBox>
             )}
             {hasSalaryBox && (
-              <PortalBox title="Salary / Pay Scale" className={hasAgeBox ? '' : 'md:col-span-2'}>
+              <PortalBox id="salary" title="Salary / Pay Scale" className={hasAgeBox ? '' : 'md:col-span-2'}>
                 {hasSalaryRange && (
                   <p className="font-extrabold text-emerald-800 text-base">
                     {fmtMoney(job.minSalary)} – {fmtMoney(job.maxSalary)}
@@ -348,11 +384,11 @@ export default function JobDetailsPage() {
         )}
 
         {/* Vacancy details */}
-        <PortalBox title={`Vacancy Details — Total: ${job.vacancyCount.toLocaleString('en-IN')} Posts`} flush={!!vacancyTable}>
+        <PortalBox id="vacancy" title={`Vacancy Details — Total: ${job.vacancyCount.toLocaleString('en-IN')} Posts`} flush={!!vacancyTable}>
           {vacancyTable ? (
             <DataTable
               columns={vacancyTable.columns}
-              rows={vacancyTable.rows.map((row) => vacancyTable.columns.map((c) => row[c]))}
+              rows={vacancyTable.rows.map((row) => vacancyTable.columns.map((c) => (row[c] === 0 && c !== 'Total' ? '—' : row[c])))}
               emphasiseColumn={vacancyTable.columns.indexOf('Total')}
             />
           ) : categoryWise ? (
@@ -369,14 +405,14 @@ export default function JobDetailsPage() {
           )}
         </PortalBox>
 
-        <PortalBox title="Eligibility Criteria">
+        <PortalBox id="eligibility" title="Eligibility Criteria">
           <SafeHtml html={job.eligibility || job.qualification} />
           <p className="mt-3 pt-3 border-t border-dashed border-slate-300 text-xs font-semibold text-slate-500">
             Candidates must hold valid certificates at the time of document verification. Read the official notification before applying.
           </p>
         </PortalBox>
 
-        <PortalBox title="Selection Process">
+        <PortalBox id="selection" title="Selection Process">
           {selectionSteps ? (
             <ol className="space-y-1.5">
               {selectionSteps.map((step, idx) => (
@@ -406,7 +442,7 @@ export default function JobDetailsPage() {
           </PortalBox>
         )}
 
-        <PortalBox title="How to Apply">
+        <PortalBox id="apply" title="How to Apply">
           {job.howToApply ? (
             <SafeHtml html={job.howToApply} className="font-medium" />
           ) : (
@@ -436,7 +472,7 @@ export default function JobDetailsPage() {
         )}
 
         {links.length > 0 && (
-          <PortalBox title="Some Useful Important Links" tone="red" flush>
+          <PortalBox id="links" title="Some Useful Important Links" tone="red" flush>
             <LinksTable links={links} />
             {job.officialNotificationUrl && (
               <DocumentPreview url={job.officialNotificationUrl} variant="inline" className="block px-3 py-2.5" />
@@ -445,7 +481,7 @@ export default function JobDetailsPage() {
         )}
 
         {faqEntries && (
-          <PortalBox title="Frequently Asked Questions">
+          <PortalBox id="faq" title="Frequently Asked Questions">
             <div className="divide-y divide-slate-200">
               {faqEntries.map((f, idx) => (
                 <div key={idx} className="py-2.5 first:pt-0 last:pb-0">
@@ -484,12 +520,33 @@ export default function JobDetailsPage() {
                   {sj.title}
                 </Link>,
                 sj.companyOrDept,
-                <span className="whitespace-nowrap">{sj.lastDate}</span>,
+                <span className="whitespace-nowrap">{fmtPortalDate(sj.lastDate)}</span>,
               ])}
             />
           </PortalBox>
         )}
       </main>
+
+      {(job.applyUrl || job.officialNotificationUrl) && (
+        <MobileActionBar>
+          {job.applyUrl && (
+            <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 bg-emerald-700 active:bg-emerald-800 text-white text-sm font-extrabold py-2.5">
+              Apply Online <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
+          {job.officialNotificationUrl && (
+            <a href={job.officialNotificationUrl} target="_blank" rel="noopener noreferrer"
+              className={`${job.applyUrl ? '' : 'flex-1 '}inline-flex items-center justify-center gap-1.5 border-2 border-slate-300 text-slate-800 text-sm font-extrabold px-3 py-2`}>
+              <Download className="w-4 h-4" /> PDF
+            </a>
+          )}
+          <button onClick={() => handleShare('whatsapp')} aria-label="Share on WhatsApp"
+            className="inline-flex items-center justify-center bg-[#25D366] text-white px-3 cursor-pointer">
+            <MessageCircle className="w-4 h-4" />
+          </button>
+        </MobileActionBar>
+      )}
 
       <Footer />
     </div>
