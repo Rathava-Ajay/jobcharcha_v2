@@ -1,0 +1,9 @@
+[Unit]
+Description=JobCharcha prerender publish-trigger watcher
+
+[Service]
+Type=oneshot
+User=www-data
+EnvironmentFile=-/etc/jobcharcha-prerender.env
+ExecStart=/var/www/jobcharcha/app/deploy/prerender-watch.sh
+TimeoutStartSec=3600

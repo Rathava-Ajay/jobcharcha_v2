@@ -1,0 +1,60 @@
+import { apiFetch } from './client';
+
+export interface ApiNewsListItem {
+  id: number;
+  title: string;
+  slug: string;
+  featuredImage?: string | null;
+  summary: string;
+  categoryName: string;
+  publishedDate: string;
+  isBreaking: boolean;
+  isFeatured: boolean;
+}
+
+export interface ApiNewsDetail extends ApiNewsListItem {
+  titleGujarati?: string | null;
+  content: string;
+  contentGujarati?: string | null;
+  categoryId?: number | null;
+  source?: string | null;
+  sourceLink?: string | null;
+  views: number;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+}
+
+export interface UpsertNewsPayload {
+  title: string;
+  titleGujarati?: string;
+  slug?: string;
+  featuredImage?: string;
+  summary: string;
+  content: string;
+  contentGujarati?: string;
+  categoryId?: number;
+  source?: string;
+  sourceLink?: string;
+  publishedDate?: string;
+  isBreaking?: boolean;
+  isFeatured?: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  metaKeywords?: string;
+  isActive?: boolean;
+}
+
+export const getNews = () => apiFetch<ApiNewsListItem[]>('/api/news');
+export const getNewsBySlug = (slug: string) => apiFetch<ApiNewsDetail>(`/api/news/${encodeURIComponent(slug)}`);
+
+export const adminGetAllNews = () => apiFetch<ApiNewsListItem[]>('/api/news/admin/all', { auth: true });
+
+export const createNews = (payload: UpsertNewsPayload) =>
+  apiFetch<ApiNewsDetail>('/api/news', { method: 'POST', auth: true, body: payload });
+
+export const updateNews = (id: number, payload: UpsertNewsPayload) =>
+  apiFetch<ApiNewsDetail>(`/api/news/${id}`, { method: 'PUT', auth: true, body: payload });
+
+export const deleteNews = (id: number) =>
+  apiFetch<void>(`/api/news/${id}`, { method: 'DELETE', auth: true });

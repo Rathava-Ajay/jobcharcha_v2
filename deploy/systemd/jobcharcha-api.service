@@ -1,0 +1,21 @@
+[Unit]
+Description=JobCharcha .NET API (Kestrel behind Nginx)
+After=network.target
+
+[Service]
+# Adjust WorkingDirectory / ExecStart to wherever `dotnet publish` output was uploaded.
+WorkingDirectory=/var/www/jobcharcha-api
+ExecStart=/usr/bin/dotnet /var/www/jobcharcha-api/JobPortal.Api.dll
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+SyslogIdentifier=jobcharcha-api
+User=www-data
+Group=www-data
+
+# All secrets/config live here — see deploy/jobcharcha-api.env.example.
+# Razorpay__KeyId / Razorpay__KeySecret MUST be set here or every payment 401s.
+EnvironmentFile=/etc/jobcharcha/jobcharcha-api.env
+
+[Install]
+WantedBy=multi-user.target

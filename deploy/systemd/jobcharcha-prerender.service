@@ -1,0 +1,13 @@
+[Unit]
+Description=JobCharcha frontend rebuild + static prerender
+After=network-online.target jobcharcha-api.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+EnvironmentFile=-/etc/jobcharcha-prerender.env
+ExecStart=/usr/bin/flock -n /run/jobcharcha-prerender.lock /var/www/jobcharcha/app/deploy/prerender.sh
+TimeoutStartSec=3600
+Nice=15
+IOSchedulingClass=idle

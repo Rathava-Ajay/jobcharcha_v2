@@ -1,0 +1,6 @@
+{
+  "name": "JobCharcha - Verified Govt Jobs, Admit Cards & Results",
+  "description": "Comprehensive portal for Indian government jobs, SSC, UPSC, Banking, Railway recruitment notifications, admit cards, exam results, CBT mock tests, and youth schemes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

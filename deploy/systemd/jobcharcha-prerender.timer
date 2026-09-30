@@ -1,0 +1,10 @@
+[Unit]
+Description=Full JobCharcha prerender every 3 hours (safety net for the publish trigger)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=3h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

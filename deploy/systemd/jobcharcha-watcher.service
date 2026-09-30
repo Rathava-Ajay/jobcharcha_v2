@@ -1,0 +1,13 @@
+[Unit]
+Description=JobCharcha job-notification watcher agent (scrape watched sources -> draft queue)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=www-data
+RuntimeDirectory=jobcharcha-watcher
+Environment=APP_DIR=/var/www/jobcharcha/app
+ExecStart=/usr/bin/flock -n /run/jobcharcha-watcher/lock /var/www/jobcharcha/app/deploy/run-watcher-agent.sh
+TimeoutStartSec=900
+Nice=10

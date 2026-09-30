@@ -1,0 +1,192 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading, .font-serif {
+    font-family: 'Outfit', sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+/*
+ * 3D design system — deliberately unlayered (outside @layer) so it beats Tailwind's
+ * `@layer utilities` classes (shadow-*, border-*, hover:shadow-*, active:scale-*) already
+ * sprinkled through the JSX, per CSS cascade-layer rules, without having to strip them out
+ * of every component first.
+ */
+
+.card-3d {
+  --c3d-tint: 16, 185, 129;
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 1px 2px 0 rgba(15, 23, 42, 0.05),
+    0 10px 18px -10px rgba(15, 23, 42, 0.14),
+    0 24px 40px -20px rgba(15, 23, 42, 0.16);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(0) translateZ(0);
+  will-change: transform;
+}
+.card-3d:hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 0 0 1px rgba(var(--c3d-tint), 0.35),
+    0 2px 4px 0 rgba(15, 23, 42, 0.06),
+    0 18px 28px -12px rgba(var(--c3d-tint), 0.28),
+    0 36px 64px -24px rgba(15, 23, 42, 0.22);
+}
+.card-3d-indigo { --c3d-tint: 99, 102, 241; }
+.card-3d-amber { --c3d-tint: 245, 158, 11; }
+.card-3d-flat:hover { transform: translateY(-3px); }
+
+/* Same layered shadow as .card-3d but no hover lift — for large static panels
+   (filter bars, form containers) where a wobble on hover would feel unstable. */
+.card-3d-static {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.9) inset,
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 1px 2px 0 rgba(15, 23, 42, 0.05),
+    0 12px 20px -10px rgba(15, 23, 42, 0.14),
+    0 28px 48px -22px rgba(15, 23, 42, 0.18);
+}
+
+.card-3d-dark {
+  position: relative;
+  background: linear-gradient(165deg, #1e293b 0%, #0f172a 100%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 20px 32px -16px rgba(0, 0, 0, 0.55),
+    0 40px 72px -28px rgba(0, 0, 0, 0.5);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-3d-dark.card-3d-hoverable:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.1) inset,
+    0 0 0 1px rgba(16, 185, 129, 0.35),
+    0 24px 40px -16px rgba(16, 185, 129, 0.22),
+    0 48px 80px -28px rgba(0, 0, 0, 0.6);
+}
+
+/* Skeuomorphic "pressable" buttons — a solid colour ledge under the button reads as
+   physical depth, and it compresses on :active instead of Tailwind's flat active:scale-95. */
+.btn-3d {
+  --btn-3d-shade: rgba(0, 0, 0, 0.28);
+  position: relative;
+  box-shadow: 0 4px 0 0 var(--btn-3d-shade), 0 10px 20px -8px rgba(15, 23, 42, 0.35);
+  transform: translateY(0);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.btn-3d:hover { transform: translateY(-2px); box-shadow: 0 6px 0 0 var(--btn-3d-shade), 0 16px 26px -8px rgba(15, 23, 42, 0.38); }
+.btn-3d:active { transform: translateY(3px); box-shadow: 0 1px 0 0 var(--btn-3d-shade), 0 4px 10px -4px rgba(15, 23, 42, 0.35); }
+.btn-3d-emerald { --btn-3d-shade: #047857; }
+.btn-3d-dark { --btn-3d-shade: #020617; }
+.btn-3d-white { --btn-3d-shade: #cbd5e1; }
+.btn-3d-indigo { --btn-3d-shade: #3730a3; }
+.btn-3d-amber { --btn-3d-shade: #b45309; }
+.btn-3d-blue { --btn-3d-shade: #1d4ed8; }
+
+/* Bevelled icon badges / metric tiles: an inner highlight + inner shadow makes a flat
+   colour block read as a raised or inset chip without needing extra markup. */
+.icon-badge-3d {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    inset 0 -2px 4px rgba(15, 23, 42, 0.12),
+    0 4px 8px -3px rgba(15, 23, 42, 0.25),
+    0 1px 2px rgba(15, 23, 42, 0.1);
+}
+.icon-badge-3d-dark {
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+    0 4px 10px -3px rgba(0, 0, 0, 0.5);
+}
+.chip-3d-inset {
+  box-shadow: inset 0 1px 3px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.chip-3d-inset-dark {
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Pure-CSS floating tilt for hero-style feature cards — perspective on the wrapper,
+   rotateX/Y on hover on the child, no JS mouse tracking required. */
+.tilt-3d-wrap { perspective: 1400px; }
+.tilt-3d {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: rotateX(0) rotateY(0) translateY(0);
+  transform-style: preserve-3d;
+}
+.tilt-3d-wrap:hover .tilt-3d {
+  transform: rotateX(3deg) rotateY(-5deg) translateY(-6px);
+}
+
+/* Animated "aurora" backdrop for full-screen auth / gateway pages (see LoginPage).
+   Big blurred colour orbs drift slowly behind the card. Motion is disabled for
+   users who ask for reduced motion — the orbs just sit still. */
+@keyframes auth-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(7%, -9%, 0) scale(1.09); }
+  66%      { transform: translate3d(-6%, 6%, 0) scale(0.94); }
+}
+@keyframes auth-drift-slow {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(-9%, 7%, 0) scale(1.12); }
+}
+.auth-blob      { animation: auth-drift 18s ease-in-out infinite; }
+.auth-blob-slow { animation: auth-drift-slow 26s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .auth-blob, .auth-blob-slow { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Gujarati script support for the mock-test module (and anywhere else that
+   renders CMS Gujarati content). Gujarati glyphs carry matras above and below
+   the baseline, so the Latin default line-height clips/overlaps them. Applied
+   via the .lang-gu class on any text container showing Gujarati. Unlayered so
+   it wins over Tailwind's leading-*/tracking-* utilities already on the JSX.
+   --------------------------------------------------------------------------- */
+.lang-gu {
+  font-family: 'Noto Sans Gujarati', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.9;
+  letter-spacing: 0;
+  word-spacing: 0.02em;
+}
+.lang-gu.lang-gu-tight { line-height: 1.65; }        /* buttons / chips / single-line UI */
+.lang-gu h1, .lang-gu h2, .lang-gu h3 { line-height: 1.6; }
+
+/* Safe-area padding for the sticky bottom action bar on notched phones. */
+.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem); }
+
+/* ---------------------------------------------------------------------------
+   Hero "Live Alert" ticker — the widget auto-rotates through recruitment
+   alerts. The in/out motion is a plain Tailwind transition on the component;
+   only the live-dot pulse and the auto-advance progress bar need keyframes.
+   Unlayered so they win; both stop under prefers-reduced-motion.
+   --------------------------------------------------------------------------- */
+@keyframes ja-alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  70%      { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+}
+.ja-alert-pulse { animation: ja-alert-pulse 2s ease-out infinite; }
+
+@keyframes ja-alert-progress { from { width: 0%; } to { width: 100%; } }
+.ja-alert-progress-bar { animation: ja-alert-progress var(--ja-rotate, 5200ms) linear both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ja-alert-pulse, .ja-alert-progress-bar { animation: none !important; }
+  .ja-alert-progress-bar { width: 100%; }
+}
