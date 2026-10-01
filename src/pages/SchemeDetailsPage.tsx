@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { getGovtSchemeBySlug, ApiGovtScheme } from '../api/govtSchemes';
 
 const Section: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode }> = ({ icon: Icon, title, children }) => (
-  <div className="bg-white shadow-sm rounded-3xl border border-slate-200 p-6 sm:p-7">
+  <div className="bg-white shadow-sm rounded-2xl border border-slate-200 p-6 sm:p-7">
     <div className="flex items-center gap-2.5 mb-4">
       <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
         <Icon className="w-4 h-4" />
@@ -75,7 +75,7 @@ export default function SchemeDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SeoHead
         title={`${scheme.title} — Eligibility & Benefits | JobCharcha`}
         description={metaDescription}
@@ -89,15 +89,14 @@ export default function SchemeDetailsPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
 
-        <div className="bg-slate-900 shadow-lg text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden mb-6">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl"></div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-7 relative mb-5">
           <div className="relative z-10 space-y-2">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md border bg-blue-500/15 text-blue-300 border-blue-500/30">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md border bg-blue-50 text-blue-700 border-blue-100">
               {scheme.category}
             </span>
-            <h1 className="text-xl sm:text-3xl font-heading font-extrabold leading-snug">{scheme.title}</h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-semibold flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-blue-400" /> {scheme.ministry}
+            <h1 className="text-xl sm:text-3xl font-extrabold leading-snug text-slate-900">{scheme.title}</h1>
+            <p className="text-[13px] sm:text-sm text-slate-500 font-semibold flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 text-blue-600" /> {scheme.ministry}
             </p>
           </div>
         </div>
@@ -118,7 +117,7 @@ export default function SchemeDetailsPage() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24 bg-white rounded-3xl border border-slate-200 p-6 space-y-3">
+            <div className="lg:sticky lg:top-24 bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
               <a
                 href={scheme.applyLink}
                 target="_blank"

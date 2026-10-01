@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Check,
-  Layers,
+  Crown,
   CreditCard,
   X,
   Loader2,
@@ -121,171 +121,87 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
     setEmployerCheckoutMessage(null);
   };
 
+  // Nothing to sell yet: don't leave an empty block on the home page.
+  if (!aspirantPlansLoading && !employerPlansLoading && aspirantPlans.length === 0 && employerPlans.length === 0) return null;
+
   return (
-    <section className="py-16 bg-slate-900 text-white relative overflow-hidden">
-
-      {/* Background accents */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-purple-500/10 blur-[120px] pointer-events-none rounded-full"></div>
-      <div className="absolute bottom-0 left-10 w-96 h-96 bg-emerald-500/10 blur-[120px] pointer-events-none rounded-full"></div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-1.5 bg-purple-500/20 text-purple-300 border border-purple-500/30 px-3 py-1 rounded-full text-xs font-semibold mb-3">
-            <Layers className="w-3.5 h-3.5 text-purple-400" />
-            <span>Transparent Subscription & Job Posting Plans</span>
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            Choose the Perfect Plan for Your Journey
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-2">
-            No hidden fees. Instant access to 800+ CBT Mock Test Series or Employer Candidate Resume Unlocks.
-          </p>
-
-          {/* Role & Billing Toggles */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            {/* Role Switcher */}
-            <div className="bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs font-semibold flex items-center">
-              <button
-                onClick={() => setActiveRole('aspirant')}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  activeRole === 'aspirant' ? 'bg-emerald-500 text-slate-950 font-bold shadow-md' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                For Job Aspirants
-              </button>
-              <button
-                onClick={() => setActiveRole('employer')}
-                className={`px-4 py-2 rounded-lg transition-all ${
-                  activeRole === 'employer' ? 'bg-indigo-600 text-white font-bold shadow-md' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                For Employers & Recruiters
-              </button>
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 mt-8 sm:mt-10">
+      <div>
+        {/* One dark membership strip: pitch + role switch on the left, compact pass cards on the right */}
+        <div className="relative overflow-hidden rounded-3xl text-white p-4 sm:p-6 bg-[radial-gradient(520px_260px_at_100%_0%,rgba(99,102,241,0.45),transparent_65%),radial-gradient(420px_240px_at_0%_100%,rgba(245,158,11,0.18),transparent_65%),linear-gradient(135deg,#0b1430,#172554_60%,#1e3a8a)]">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] items-center">
+            <div className="min-w-0">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 border border-amber-300/30 text-amber-200 px-3 py-1 text-[11.5px] font-extrabold uppercase tracking-wider">
+                <Crown className="w-3.5 h-3.5" /> JobCharcha Pro
+              </span>
+              <h2 className="mt-2.5 text-[22px] sm:text-[26px] leading-tight font-extrabold tracking-tight">
+                {activeRole === 'aspirant' ? 'Practise like the real exam.' : 'Hire verified candidates faster.'}
+              </h2>
+              <p className="mt-1.5 text-[13px] text-blue-100/80">
+                {activeRole === 'aspirant' ? 'Unlock every paid mock test with one simple pass.' : 'Post jobs and unlock candidate contacts.'} No hidden fees · UPI, cards & net banking via Razorpay.
+              </p>
+              <div role="tablist" className="mt-4 inline-flex rounded-xl bg-white/10 border border-white/15 p-1 text-[13px] font-bold">
+                {(['aspirant', 'employer'] as const).map((r) => (
+                  <button key={r} type="button" role="tab" aria-selected={activeRole === r} onClick={() => setActiveRole(r)}
+                    className={`px-3.5 py-1.5 rounded-lg cursor-pointer transition-colors ${activeRole === r ? 'bg-white text-slate-900' : 'text-blue-100 hover:text-white'}`}>
+                    {r === 'aspirant' ? 'For aspirants' : 'For employers'}
+                  </button>
+                ))}
+              </div>
             </div>
 
-          </div>
-        </div>
-
-        {/* Aspirant plans — real AspirantPlan data + Razorpay */}
-        {activeRole === 'aspirant' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {aspirantPlans.map((plan, idx) => (
-              <div
-                key={plan.id}
-                className={`card-3d-dark card-3d-hoverable border rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative ${
-                  idx === 0 ? 'border-emerald-400 ring-2 ring-emerald-500/30 scale-102' : 'border-slate-700'
-                }`}
-              >
-                {plan.unlocksAllTests && (
-                  <span className="absolute -top-3.5 right-6 bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
-                    All Tests Unlocked
-                  </span>
-                )}
-
-                <div>
-                  <h3 className="text-xl font-black text-white">{plan.name}</h3>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-white">₹{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-semibold">/ {plan.durationDays} days</span>
-                  </div>
-
-                  {plan.description && (
-                    <ul className="mt-6 space-y-3 text-xs text-slate-300">
-                      {plan.description.split(/\n|\.\s+/).filter(Boolean).map((feat) => (
-                        <li key={feat} className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                          <span>{feat.trim()}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="mt-8 pt-4 border-t border-slate-700">
-                  <button
-                    onClick={() => handleAspirantCheckout(plan)}
-                    className={`btn-3d w-full text-xs font-black py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer ${
-                      idx === 0
-                        ? 'btn-3d-emerald bg-emerald-500 hover:bg-emerald-400 text-slate-950'
-                        : 'btn-3d-white bg-white hover:bg-slate-100 text-slate-950'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Upgrade Plan Now</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {aspirantPlans.length === 0 && (
-              <div className="col-span-full text-center text-xs text-slate-400 py-8">
-                {aspirantPlansLoading ? 'Loading plans…' : 'No subscription plans are available right now. Please check back soon.'}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Employer plans — real EmployerPlan catalog data + Razorpay */}
-        {activeRole === 'employer' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {employerPlans.map((plan, idx) => (
-              <div
-                key={plan.id}
-                className={`card-3d-dark card-3d-hoverable border rounded-3xl p-6 sm:p-8 flex flex-col justify-between relative ${
-                  idx === 0 ? 'border-emerald-400 ring-2 ring-emerald-500/30 scale-102' : 'border-slate-700'
-                }`}
-              >
-                {plan.isUnlimitedCredits && (
-                  <span className="absolute -top-3.5 right-6 bg-emerald-500 text-slate-950 text-[10px] font-black uppercase px-3 py-1 rounded-full shadow-md">
-                    Unlimited Credits
-                  </span>
-                )}
-
-                <div>
-                  <h3 className="text-xl font-black text-white">{plan.name}</h3>
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-white">₹{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-semibold">/ {plan.durationDays} days</span>
-                  </div>
-
-                  <ul className="mt-6 space-y-3 text-xs text-slate-300">
-                    {plan.description && (
-                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>{plan.description}</span></li>
-                    )}
-                    <li className="flex items-start gap-2">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span>{plan.isUnlimitedCredits ? 'Unlimited' : plan.includedCredits} candidate contact credits</span>
-                    </li>
-                    <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>Up to {plan.maxActiveJobs} active job postings</span></li>
-                    {plan.maxFeaturedJobs > 0 && (
-                      <li className="flex items-start gap-2"><Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>{plan.maxFeaturedJobs} featured job slot{plan.maxFeaturedJobs === 1 ? '' : 's'}</span></li>
-                    )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
+              {activeRole === 'aspirant' && aspirantPlans.slice(0, 2).map((plan, idx) => (
+                <PassCard
+                  key={plan.id}
+                  highlight={idx === 0}
+                  badge={plan.unlocksAllTests ? 'All tests unlocked' : undefined}
+                  name={plan.name}
+                  price={plan.price}
+                  days={plan.durationDays}
+                  features={(plan.description ?? '').split(/\n|\.\s+/).map((f) => f.trim().replace(/\.$/, '')).filter(Boolean)}
+                  onBuy={() => handleAspirantCheckout(plan)}
+                />
+              ))}
+              {activeRole === 'employer' && employerPlans.slice(0, 2).map((plan, idx) => (
+                <PassCard
+                  key={plan.id}
+                  highlight={idx === 0}
+                  badge={plan.isUnlimitedCredits ? 'Unlimited credits' : undefined}
+                  name={plan.name}
+                  price={plan.price}
+                  days={plan.durationDays}
+                  features={[
+                    `${plan.isUnlimitedCredits ? 'Unlimited' : plan.includedCredits} candidate contact credits`,
+                    `Up to ${plan.maxActiveJobs} active job postings`,
+                    ...(plan.maxFeaturedJobs > 0 ? [`${plan.maxFeaturedJobs} featured job slot${plan.maxFeaturedJobs === 1 ? '' : 's'}`] : []),
+                    ...(plan.description ? [plan.description] : []),
+                  ]}
+                  onBuy={() => handleEmployerCheckout(plan)}
+                />
+              ))}
+              {/* A single plan: use the free column to spell out what the pass includes */}
+              {(activeRole === 'aspirant' ? aspirantPlans.length : employerPlans.length) === 1 && (
+                <div className="rounded-2xl border border-white/15 bg-white/[0.04] p-4 min-w-0">
+                  <p className="text-[11.5px] font-extrabold uppercase tracking-wider text-blue-200">What you get</p>
+                  <ul className="mt-2.5 space-y-2 text-[13px] text-blue-50/90">
+                    {(activeRole === 'aspirant'
+                      ? ['Real exam pattern with rank & analysis', 'Instant score with answer explanations', 'Practise anytime on mobile or desktop', 'One-time payment — no auto-renewal']
+                      : ['Reach active job seekers in Gujarat', 'Unlock verified candidate contacts', 'Manage postings from your dashboard', 'One-time payment — no auto-renewal']
+                    ).map((f) => (
+                      <li key={f} className="flex gap-2"><Check className="w-4 h-4 shrink-0 mt-0.5 text-emerald-300" />{f}</li>
+                    ))}
                   </ul>
                 </div>
-
-                <div className="mt-8 pt-4 border-t border-slate-700">
-                  <button
-                    onClick={() => handleEmployerCheckout(plan)}
-                    className={`btn-3d w-full text-xs font-black py-3 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer ${
-                      idx === 0
-                        ? 'btn-3d-emerald bg-emerald-500 hover:bg-emerald-400 text-slate-950'
-                        : 'btn-3d-white bg-white hover:bg-slate-100 text-slate-950'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    <span>Upgrade Plan Now</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-            {employerPlans.length === 0 && (
-              <div className="col-span-full text-center text-xs text-slate-400 py-8">
-                {employerPlansLoading ? 'Loading plans…' : 'No employer plans are available right now. Please check back soon.'}
-              </div>
-            )}
+              )}
+              {((activeRole === 'aspirant' && aspirantPlans.length === 0) || (activeRole === 'employer' && employerPlans.length === 0)) && (
+                <p className="sm:col-span-2 rounded-2xl border border-dashed border-white/25 px-4 py-8 text-center text-sm text-blue-100/80">
+                  {(activeRole === 'aspirant' ? aspirantPlansLoading : employerPlansLoading) ? 'Loading plans…' : 'No plans available right now — please check back soon.'}
+                </p>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Employer checkout — real Razorpay order/verify flow */}
         {selectedEmployerPlan && (
@@ -441,3 +357,39 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
     </section>
   );
 };
+
+/** Compact "pass" card used inside the Pro strip. Shows at most three features so cards stay short. */
+const PassCard: React.FC<{
+  highlight: boolean;
+  badge?: string;
+  name: string;
+  price: number;
+  days: number;
+  features: string[];
+  onBuy: () => void;
+}> = ({ highlight, badge, name, price, days, features, onBuy }) => (
+  <div className={`relative min-w-0 rounded-2xl p-4 flex flex-col gap-3 ${highlight ? 'bg-white text-slate-900 shadow-[0_20px_40px_-24px_rgba(0,0,0,0.8)]' : 'bg-white/[0.07] border border-white/15 text-white'}`}>
+    <div className="flex items-start justify-between gap-2 min-w-0">
+      <h3 className="font-extrabold text-[15px] leading-snug line-clamp-2 break-words">{name}</h3>
+      {badge && <span className="shrink-0 rounded-full bg-amber-400 text-slate-900 text-[10px] font-extrabold uppercase px-2 py-0.5 whitespace-nowrap">{badge}</span>}
+    </div>
+    <p className="flex items-baseline gap-1">
+      <span className="text-[28px] leading-none font-black tracking-tight">₹{price.toLocaleString('en-IN')}</span>
+      <span className={`text-[13px] font-semibold ${highlight ? 'text-slate-500' : 'text-blue-100/80'}`}>/ {days} days</span>
+    </p>
+    {features.length > 0 && (
+      <ul className="space-y-1 text-[12.5px]">
+        {features.slice(0, 3).map((f) => (
+          <li key={f} className="flex gap-1.5 min-w-0">
+            <Check className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${highlight ? 'text-emerald-600' : 'text-emerald-300'}`} />
+            <span className={`line-clamp-2 break-words ${highlight ? 'text-slate-600' : 'text-blue-50/90'}`}>{f}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+    <button type="button" onClick={onBuy}
+      className={`mt-auto w-full inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-extrabold cursor-pointer transition-colors ${highlight ? 'bg-amber-400 hover:bg-amber-300 text-slate-900' : 'bg-white/10 hover:bg-white/20 border border-white/25 text-white'}`}>
+      <CreditCard className="w-4 h-4" /> Upgrade now
+    </button>
+  </div>
+);

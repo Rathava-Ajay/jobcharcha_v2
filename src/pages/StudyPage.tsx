@@ -8,7 +8,7 @@ export default function StudyPage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       <main className="flex-1 py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         <StudyMaterialSection />

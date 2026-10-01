@@ -1,8 +1,8 @@
+import { useBodyClass } from '../hooks/useBodyClass';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  Building2, Loader2, ArrowLeft, MapPin, Briefcase, IndianRupee, CalendarDays, ShieldCheck,
-  CheckCircle2, Sparkles, Zap, FileText, ListChecks, Gift, Tags, Paperclip, Download, Bookmark,
+  Loader2, ArrowLeft, ShieldCheck, CheckCircle2, Sparkles, Zap, Bookmark,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
@@ -12,6 +12,16 @@ import { getPublicEmployerJobBySlug, ApiPublicEmployerJobDetail } from '../api/e
 import { applyToJob } from '../api/jobApplications';
 import { getSavedJobIds, saveJob, unsaveJob } from '../api/savedJobs';
 import { ApiError } from '../api/client';
+import { ViewToggle } from '../components/jobDetail/ViewToggle';
+import { useDetailView } from '../utils/localPrefs';
+import { Card, OrgAvatar, Pill, DeadlinePill, btn, cx } from '../components/ui/kit';
+import {
+  Briefcase as BriefcaseIcon, MapPin as MapPinIcon, IndianRupee as RupeeIcon, CalendarDays as CalIcon, FileText as FileIcon,
+  ListChecks as ListIcon, Gift, Tags, Download as DownloadIcon, Share2, GraduationCap, Users as UsersIcon,
+} from 'lucide-react';
+import {
+  PortalBox, KeyValueTable, KeyValueRow, LinksTable, StatsStrip, StatTile, MobileActionBar, fmtPortalDate, deadlineNote,
+} from '../components/jobDetail/PortalBlocks';
 
 const EMPLOYMENT_TYPE: Record<string, string> = {
   'full-time': 'FULL_TIME', 'part-time': 'PART_TIME', contract: 'CONTRACTOR',
@@ -63,23 +73,12 @@ function buildEmployerJobJsonLd(job: ApiPublicEmployerJobDetail) {
   };
 }
 
-const Section: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode }> = ({ icon: Icon, title, children }) => (
-  <div className="bg-white shadow-sm rounded-3xl border border-slate-200 p-6 sm:p-7">
-    <div className="flex items-center gap-2.5 mb-4">
-      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4" />
-      </div>
-      <h2 className="font-heading font-extrabold text-base sm:text-lg text-slate-900">{title}</h2>
-    </div>
-    <div className="text-xs sm:text-sm text-slate-600 leading-relaxed whitespace-pre-line">{children}</div>
-  </div>
-);
-
 export default function PrivateJobDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [job, setJob] = useState<ApiPublicEmployerJobDetail | null>(null);
+  useBodyClass('has-mobile-cta', !!job);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -92,6 +91,7 @@ export default function PrivateJobDetailsPage() {
 
   const [saved, setSaved] = useState(false);
   const [savingBookmark, setSavingBookmark] = useState(false);
+  const [view, setView] = useDetailView();
 
   useEffect(() => {
     if (!slug) return;
@@ -163,8 +163,178 @@ export default function PrivateJobDetailsPage() {
   const metaDescription = `${job.title} at ${job.companyName} — ${job.jobType}, ${job.workMode}, ${job.city}, ${job.state}. `
     + `${job.openings ? `${job.openings} opening${job.openings === 1 ? '' : 's'}. ` : ''}Apply online on JobCharcha.`;
 
+  const fmtDate = (d: string) => fmtPortalDate(d.slice(0, 10));
+  const lastDateText = job.lastDate ? fmtDate(job.lastDate) : 'Open until filled';
+  const skills = (job.skills ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+
+  const overviewRows: KeyValueRow[] = [
+    { label: 'Company', value: <>{job.companyName}{job.isCompanyVerified && <ShieldCheck className="inline w-3.5 h-3.5 text-emerald-600 ml-1 -mt-0.5" />}</> },
+    { label: 'Job Title', value: job.title },
+    ...(job.department ? [{ label: 'Department', value: job.department }] : []),
+    { label: 'Job Type', value: job.jobType },
+    { label: 'Work Mode', value: job.workMode },
+    { label: 'Location', value: `${job.city}, ${job.state}` },
+    { label: 'Salary', value: <>{salaryText}{job.isSalaryNegotiable && !job.hideSalary && <span className="text-slate-500"> (Negotiable)</span>}</> },
+    ...(job.openings ? [{ label: 'Openings', value: `${job.openings} Post${job.openings === 1 ? '' : 's'}` }] : []),
+    { label: 'Qualification', value: job.qualification },
+    ...(job.experienceRequired ? [{ label: 'Experience', value: job.experienceRequired }] : []),
+    { label: 'Posted On', value: fmtDate(job.createdDate) },
+    { label: 'Last Date to Apply', value: lastDateText, highlight: !!job.lastDate },
+  ];
+
+  const deadline = deadlineNote(job.lastDate);
+  const stats: StatTile[] = [
+    { label: 'Salary', value: <span className="text-sm sm:text-lg">{salaryText}</span>, note: job.isSalaryNegotiable && !job.hideSalary ? 'Negotiable' : undefined },
+    { label: 'Openings', value: job.openings ? job.openings : '—' },
+    { label: 'Experience', value: <span className="text-sm sm:text-lg">{job.experienceRequired || 'Freshers OK'}</span> },
+    { label: 'Apply By', value: <span className="text-sm sm:text-lg">{lastDateText}</span>, note: deadline?.note, tone: deadline?.tone },
+  ];
+
+  const textBody = 'whitespace-pre-line font-medium';
+
+  const inputCls = 'w-full bg-white border border-slate-200 focus:border-indigo-600 rounded-xl outline-none px-3 py-2.5 text-sm';
+  const applyInner = alreadyApplied ? (
+    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl p-4 text-center text-sm font-bold flex flex-col items-center gap-2">
+      <CheckCircle2 className="w-6 h-6" />
+      You've applied to this job
+      <Link to="/dashboard/aspirant" className="text-xs font-bold underline">Track it in your dashboard</Link>
+    </div>
+  ) : !user ? (
+    <button type="button" onClick={() => navigate('/login', { state: { from: `/private-jobs/${job.slug}` } })} className={`${btn.primary} w-full py-3 !bg-indigo-700 hover:!bg-indigo-800`}>
+      Login to apply
+    </button>
+  ) : user.role !== 'aspirant' ? (
+    <div className="bg-slate-50 border border-slate-200 rounded-xl text-slate-600 p-4 text-center text-sm font-semibold">Only job-seeker accounts can apply to jobs.</div>
+  ) : !user.resumeUrl ? (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl text-amber-900 p-4 text-sm font-semibold space-y-2 text-center">
+      <p>Add your résumé once — then apply to any job in one tap.</p>
+      <button type="button" onClick={() => navigate('/dashboard/aspirant')} className={`${btn.primary} w-full !bg-amber-600 hover:!bg-amber-700`}>Upload résumé</button>
+    </div>
+  ) : showApplyForm ? (
+    <form onSubmit={handleApply} className="space-y-3">
+      {applyError && <div className="bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold px-3 py-2">{applyError}</div>}
+      <label className="block text-xs font-bold text-slate-700">Cover letter (optional)
+        <textarea value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} rows={4} className={`${inputCls} mt-1 font-normal`} />
+      </label>
+      <label className="block text-xs font-bold text-slate-700">Expected salary (optional)
+        <input value={expectedSalary} onChange={(e) => setExpectedSalary(e.target.value)} className={`${inputCls} mt-1 font-normal`} />
+      </label>
+      <button type="submit" disabled={applying} className={`${btn.primary} w-full py-3 !bg-indigo-700 hover:!bg-indigo-800`}>
+        {applying ? 'Submitting…' : 'Submit application'}
+      </button>
+    </form>
+  ) : (
+    <button type="button" onClick={() => setShowApplyForm(true)} className={`${btn.primary} w-full py-3 !bg-indigo-700 hover:!bg-indigo-800`}>Apply now</button>
+  );
+
+
+  const share = () => {
+    const url = `${window.location.origin}/private-jobs/${job.slug}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${job.title} at ${job.companyName} — apply here: ${url}`)}`, '_blank');
+  };
+
+  const PSection: React.FC<{ icon: React.ElementType; title: string; children: React.ReactNode; id?: string }> = ({ icon: Icon, title, children, id }) => (
+    <Card id={id} className="p-4 sm:p-5 scroll-mt-24">
+      <h2 className="flex items-center gap-2 text-[16px] sm:text-[17px] font-extrabold mb-3"><Icon className="w-5 h-5 text-indigo-600" />{title}</h2>
+      <div className="text-[14.5px] leading-relaxed text-slate-700">{children}</div>
+    </Card>
+  );
+
+  const modernFacts = [
+    { icon: RupeeIcon, label: 'Salary', value: salaryText + (job.isSalaryNegotiable && !job.hideSalary ? ' (negotiable)' : '') },
+    { icon: BriefcaseIcon, label: 'Job type', value: `${job.jobType} · ${job.workMode}` },
+    { icon: UsersIcon, label: 'Experience', value: job.experienceRequired || 'Freshers can apply' },
+    { icon: CalIcon, label: 'Apply by', value: lastDateText, alert: !!job.lastDate },
+  ];
+
+  const modernView = (
+    <div className="flex-1 pb-20 lg:pb-0">
+      <section className="bg-white border-b border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+          <div className="flex gap-3.5 sm:gap-4 items-start">
+            <OrgAvatar name={job.companyName} logo={job.companyLogo} size="lg" className="max-sm:w-11 max-sm:h-11 max-sm:text-xs" />
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap gap-1.5">
+                {job.isCompanyVerified && <Pill tone="green" icon={ShieldCheck}>Verified company</Pill>}
+                {job.lastDate && <DeadlinePill date={job.lastDate} />}
+                {job.isUrgent && <Pill tone="red" icon={Zap}>Urgent hiring</Pill>}
+                {job.isFeatured && <Pill tone="amber" icon={Sparkles}>Featured</Pill>}
+              </div>
+              <h1 className="mt-2 text-[21px] sm:text-[28px] font-extrabold leading-tight text-slate-900">{job.title}</h1>
+              <p className="text-[13px] sm:text-sm text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                <span className="font-semibold text-slate-700">{job.companyName}</span>
+                <span>·</span><MapPinIcon className="w-3.5 h-3.5" />{job.city}{job.state ? `, ${job.state}` : ''}
+                <span>·</span>Posted {fmtDate(job.createdDate)}
+              </p>
+            </div>
+            <div className="hidden md:flex gap-2 shrink-0">
+              <button type="button" onClick={toggleSave} disabled={savingBookmark} aria-pressed={saved} className={cx(btn.secondary, saved && 'border-amber-300 bg-amber-50 text-amber-800')}>
+                <Bookmark className={cx('w-4 h-4', saved && 'fill-amber-400 text-amber-500')} /> {saved ? 'Saved' : 'Save'}
+              </button>
+              <button type="button" onClick={share} className={btn.secondary}><Share2 className="w-4 h-4" /> Share</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 mt-4 sm:mt-5 rounded-2xl border border-slate-200 overflow-hidden bg-slate-200 gap-px">
+            {modernFacts.map((f) => (
+              <div key={f.label} className="bg-white px-3.5 py-3">
+                <span className="flex items-center gap-1.5 text-xs text-slate-500"><f.icon className="w-3.5 h-3.5" />{f.label}</span>
+                <span className={cx('block mt-0.5 font-bold text-[15px] leading-snug break-words', f.alert ? 'text-red-700' : 'text-slate-900')}>{f.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 sm:py-6 grid lg:grid-cols-[1fr_330px] gap-6 items-start">
+        <div className="space-y-4 min-w-0">
+          <PSection icon={FileIcon} title="About the job"><div className="whitespace-pre-line">{job.description}</div></PSection>
+          {job.requirements && <PSection icon={ListIcon} title="Responsibilities & requirements"><div className="whitespace-pre-line">{job.requirements}</div></PSection>}
+          <PSection icon={GraduationCap} title="Qualification">
+            <p>{job.qualification}</p>
+            {job.experienceRequired && <p className="mt-1 text-slate-500">Experience: {job.experienceRequired}</p>}
+            {job.openings ? <p className="mt-1 text-slate-500">Openings: {job.openings}</p> : null}
+          </PSection>
+          {skills.length > 0 && (
+            <PSection icon={Tags} title="Key skills">
+              <div className="flex flex-wrap gap-2">{skills.map((sk) => <span key={sk} className="rounded-full bg-indigo-50 text-indigo-800 px-3 py-1 text-[13px] font-semibold">{sk}</span>)}</div>
+            </PSection>
+          )}
+          {job.benefits && <PSection icon={Gift} title="Perks & benefits"><div className="whitespace-pre-line">{job.benefits}</div></PSection>}
+          {job.attachmentUrl && (
+            <a href={job.attachmentUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 font-semibold hover:border-indigo-500">
+              <DownloadIcon className="w-5 h-5 text-indigo-600" /> <span className="flex-1 truncate">{job.attachmentName || 'Job details document'}</span>
+            </a>
+          )}
+          <div className="lg:hidden" id="apply-m"><Card className="p-5"><p className="font-extrabold mb-3">Apply for this job</p>{applyInner}</Card></div>
+        </div>
+        <aside className="hidden lg:block sticky top-20 space-y-4">
+          <Card className="p-5" id="apply">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] text-slate-500">Apply by</span>
+              {job.lastDate && <DeadlinePill date={job.lastDate} />}
+            </div>
+            <p className="text-xl font-extrabold mt-1 mb-4">{lastDateText}</p>
+            {applyInner}
+          </Card>
+          <Card className="p-5 text-[13px] text-slate-600">
+            <p className="font-bold text-slate-900 mb-1 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Stay safe</p>
+            Genuine employers never ask for money to apply or for an interview. Report anything suspicious to support@jobcharcha.com.
+          </Card>
+        </aside>
+      </div>
+
+      <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2">
+        <button type="button" onClick={toggleSave} disabled={savingBookmark} aria-pressed={saved} aria-label={saved ? 'Remove from saved' : 'Save job'}
+          className={cx('w-12 h-12 rounded-xl border grid place-items-center shrink-0 cursor-pointer', saved ? 'border-amber-300 bg-amber-50 text-amber-600' : 'border-slate-200 text-slate-600')}>
+          <Bookmark className={cx('w-5 h-5', saved && 'fill-amber-400')} />
+        </button>
+        <a href="#apply-m" className={cx(btn.primary, 'flex-1 h-12 text-[15px] !bg-indigo-700')}>{alreadyApplied ? 'Applied ✓' : 'Apply now'}</a>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SeoHead
         title={`${job.title} at ${job.companyName} | JobCharcha`}
         description={metaDescription}
@@ -173,164 +343,118 @@ export default function PrivateJobDetailsPage() {
         jsonLd={buildEmployerJobJsonLd(job)}
       />
       <Navbar user={user} />
+      <ViewToggle view={view} onChange={setView} backTo="/private-jobs" backLabel="Private jobs" />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-4 cursor-pointer">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
-        </button>
+      {view === 'modern' ? modernView : (
+      <div className="flex-1 pb-16 sm:pb-0">
+      <main className="max-w-5xl mx-auto w-full px-3 sm:px-6 pt-4 sm:pt-6 pb-8 space-y-3 sm:space-y-4">
 
-        <div className="bg-slate-900 shadow-lg text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden mb-6">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl"></div>
-          <button
-            onClick={toggleSave}
-            disabled={savingBookmark}
-            title={saved ? 'Remove from saved' : 'Save this job'}
-            className={`absolute top-5 right-5 z-10 p-2.5 rounded-2xl border cursor-pointer transition-colors ${
-              saved ? 'bg-amber-500/15 border-amber-500/30 text-amber-300' : 'bg-white/10 border-white/10 text-slate-300 hover:text-white'
-            }`}
-          >
-            <Bookmark className={`w-4 h-4 ${saved ? 'fill-amber-400' : ''}`} />
-          </button>
-          <div className="relative z-10 space-y-2 pr-12">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md border bg-indigo-500/15 text-indigo-300 border-indigo-500/30">
-                {job.jobType} • {job.workMode}
+        {/* Title block */}
+        <header className="bg-white border sm:border-2 border-indigo-700/40 border-t-4 sm:border-t-4 border-t-indigo-700 text-center px-3 py-4 sm:px-8 sm:py-6">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 bg-indigo-700 text-white">
+              Private Job • {job.jobType} • {job.workMode}
+            </span>
+            {job.isFeatured && (
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 inline-flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Featured
               </span>
-              {job.isFeatured && (
-                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Featured
-                </span>
-              )}
-              {job.isUrgent && (
-                <span className="bg-red-500/15 text-red-300 border border-red-500/30 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1">
-                  <Zap className="w-3 h-3" /> Urgent Hiring
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl sm:text-3xl font-heading font-extrabold leading-snug">{job.title}</h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-semibold flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-indigo-400" /> {job.companyName}
-              {job.isCompanyVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />}
-            </p>
+            )}
+            {job.isUrgent && (
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 bg-red-600 text-white inline-flex items-center gap-1">
+                <Zap className="w-3 h-3" /> Urgent Hiring
+              </span>
+            )}
           </div>
-
-          <div className="relative z-10 mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { icon: MapPin, label: 'Location', value: `${job.city}, ${job.state}` },
-              { icon: IndianRupee, label: 'Salary', value: salaryText },
-              { icon: Briefcase, label: 'Openings', value: job.openings ? `${job.openings} posts` : '—' },
-              { icon: CalendarDays, label: 'Apply By', value: job.lastDate ? new Date(job.lastDate).toLocaleDateString() : 'Open' },
-            ].map((item, idx) => (
-              <div key={idx} className="bg-white/5 border border-white/10 rounded-2xl p-3 hover:-translate-y-0.5 transition-transform duration-300">
-                <item.icon className="w-3.5 h-3.5 text-indigo-400 mb-1.5" />
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">{item.label}</span>
-                <span className="font-extrabold text-white text-xs sm:text-sm break-words">{item.value}</span>
-              </div>
-            ))}
+          <p className="font-heading font-extrabold uppercase text-indigo-800 text-sm sm:text-base inline-flex items-center gap-1">
+            {job.companyName}
+            {job.isCompanyVerified && <ShieldCheck className="w-4 h-4 text-emerald-600" aria-label="Verified company" />}
+          </p>
+          <h1 className="font-heading font-extrabold text-red-700 text-xl sm:text-3xl leading-snug mt-1">{job.title}</h1>
+          <p className="mt-2 text-xs sm:text-sm font-semibold text-slate-600 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            <span>{job.city}, {job.state}</span>
+            <span>Salary: <b className="text-slate-800">{salaryText}</b></span>
+            <span>Last Date: <b className="text-red-700">{lastDateText}</b></span>
+          </p>
+          <div className="mt-4 hidden sm:flex flex-wrap items-center justify-center gap-2">
+            <a href="#apply" className="inline-flex items-center gap-1.5 bg-indigo-700 hover:bg-indigo-800 text-white text-xs sm:text-sm font-extrabold px-4 py-2">
+              {alreadyApplied ? 'Application Status' : 'Apply Now'}
+            </a>
+            <button
+              onClick={toggleSave}
+              disabled={savingBookmark}
+              title={saved ? 'Remove from saved' : 'Save this job'}
+              className={`inline-flex items-center gap-1.5 border-2 text-xs sm:text-sm font-extrabold px-3 py-1.5 cursor-pointer ${
+                saved ? 'bg-amber-50 border-amber-400 text-amber-800' : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              <Bookmark className={`w-3.5 h-3.5 ${saved ? 'fill-amber-400' : ''}`} /> {saved ? 'Saved' : 'Save'}
+            </button>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Section icon={FileText} title="Job Description">{job.description}</Section>
-            {job.requirements && <Section icon={ListChecks} title="Key Responsibilities / Requirements">{job.requirements}</Section>}
-            {job.benefits && <Section icon={Gift} title="Perks & Benefits">{job.benefits}</Section>}
-            <Section icon={Briefcase} title="Qualification">
-              {job.qualification}
-              {job.experienceRequired && <div className="mt-2 font-semibold">Experience: {job.experienceRequired}</div>}
-            </Section>
-            {job.skills && (
-              <Section icon={Tags} title="Key Skills">
-                <div className="flex flex-wrap gap-2">
-                  {job.skills.split(',').map((s) => s.trim()).filter(Boolean).map((s, idx) => (
-                    <span key={idx} className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-2.5 py-1 rounded-lg text-[11px] font-bold">
-                      {s}
-                    </span>
+        <StatsStrip stats={stats} />
+
+        <PortalBox title="Job Overview" tone="indigo" flush>
+          <KeyValueTable rows={overviewRows} />
+        </PortalBox>
+
+        <PortalBox title="Job Description" tone="indigo">
+          <div className={textBody}>{job.description}</div>
+        </PortalBox>
+
+        {job.requirements && (
+          <PortalBox title="Key Responsibilities / Requirements" tone="indigo">
+            <div className={textBody}>{job.requirements}</div>
+          </PortalBox>
+        )}
+
+        {(job.benefits || skills.length > 0) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {job.benefits && (
+              <PortalBox title="Perks & Benefits" tone="indigo" className={skills.length > 0 ? '' : 'md:col-span-2'}>
+                <div className={textBody}>{job.benefits}</div>
+              </PortalBox>
+            )}
+            {skills.length > 0 && (
+              <PortalBox title="Key Skills" tone="indigo" className={job.benefits ? '' : 'md:col-span-2'}>
+                <div className="flex flex-wrap gap-1.5">
+                  {skills.map((s, idx) => (
+                    <span key={idx} className="bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 text-xs font-bold">{s}</span>
                   ))}
                 </div>
-              </Section>
-            )}
-            {job.attachmentUrl && (
-              <Section icon={Paperclip} title="Job Details Document">
-                <a
-                  href={job.attachmentUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold px-4 py-2.5 rounded-xl transition-colors"
-                >
-                  <Download className="w-4 h-4 shrink-0" />
-                  <span className="truncate">{job.attachmentName || 'Download attachment'}</span>
-                </a>
-              </Section>
+              </PortalBox>
             )}
           </div>
+        )}
 
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24">
-              <div className="bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
-                {alreadyApplied ? (
-                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl p-4 text-center text-xs font-bold flex flex-col items-center gap-2">
-                    <CheckCircle2 className="w-6 h-6" />
-                    You've applied to this job
-                  </div>
-                ) : !user ? (
-                  <button
-                    onClick={() => navigate('/login', { state: { from: `/private-jobs/${job.slug}` } })}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm px-6 py-3.5 rounded-2xl cursor-pointer"
-                  >
-                    Login to Apply
-                  </button>
-                ) : user.role !== 'aspirant' ? (
-                  <div className="bg-slate-50 border border-slate-200 text-slate-500 rounded-2xl p-4 text-center text-xs font-semibold">
-                    Only aspirant accounts can apply to jobs.
-                  </div>
-                ) : !user.resumeUrl ? (
-                  <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-4 text-xs font-semibold space-y-2">
-                    <p>You need a résumé on file before you can apply.</p>
-                    <button
-                      onClick={() => navigate('/dashboard/aspirant')}
-                      className="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-xl cursor-pointer"
-                    >
-                      Upload résumé
-                    </button>
-                  </div>
-                ) : showApplyForm ? (
-                  <form onSubmit={handleApply} className="space-y-3">
-                    {applyError && <div className="bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-semibold rounded-xl px-3 py-2">{applyError}</div>}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Cover Letter (optional)</label>
-                      <textarea value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} rows={3}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Expected Salary (optional)</label>
-                      <input value={expectedSalary} onChange={(e) => setExpectedSalary(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium" />
-                    </div>
-                    <button type="submit" disabled={applying}
-                      className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white font-black text-sm px-6 py-3 rounded-2xl cursor-pointer">
-                      {applying ? 'Submitting…' : 'Submit Application'}
-                    </button>
-                  </form>
-                ) : (
-                  <button
-                    onClick={() => setShowApplyForm(true)}
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm px-6 py-3.5 rounded-2xl cursor-pointer"
-                  >
-                    Apply Now
-                  </button>
-                )}
-
-                <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                  <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold shrink-0">Job Type</span><span className="font-bold text-slate-800">{job.jobType}</span></div>
-                  <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold shrink-0">Work Mode</span><span className="font-bold text-slate-800">{job.workMode}</span></div>
-                  <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold shrink-0">Posted</span><span className="font-bold text-slate-800">{new Date(job.createdDate).toLocaleDateString()}</span></div>
-                </div>
-              </div>
+        {/* Apply */}
+        <div id="apply" className="scroll-mt-24">
+          <PortalBox title="Apply Online" tone="red">
+            <div className="max-w-md mx-auto">
+              {applyInner}
             </div>
-          </div>
+          </PortalBox>
         </div>
+
+        {job.attachmentUrl && (
+          <PortalBox title="Some Useful Important Links" tone="red" flush>
+            <LinksTable links={[{ label: job.attachmentName || 'Job Details Document', href: job.attachmentUrl, cta: 'Download' }]} />
+          </PortalBox>
+        )}
       </main>
+
+      <MobileActionBar>
+        <a href="#apply" className="flex-1 inline-flex items-center justify-center bg-indigo-700 active:bg-indigo-800 text-white text-sm font-extrabold py-2.5">
+          {alreadyApplied ? 'Applied ✓' : 'Apply Now'}
+        </a>
+        <button onClick={toggleSave} disabled={savingBookmark} aria-label={saved ? 'Remove from saved' : 'Save this job'}
+          className={`inline-flex items-center justify-center gap-1.5 border-2 px-4 text-sm font-extrabold cursor-pointer ${saved ? 'bg-amber-50 border-amber-400 text-amber-800' : 'border-slate-300 text-slate-700'}`}>
+          <Bookmark className={`w-4 h-4 ${saved ? 'fill-amber-400' : ''}`} /> {saved ? 'Saved' : 'Save'}
+        </button>
+      </MobileActionBar>
+      </div>
+      )}
 
       <Footer />
     </div>

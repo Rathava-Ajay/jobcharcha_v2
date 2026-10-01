@@ -27,21 +27,21 @@ export const AdminJobAlertsPanel: React.FC = () => {
   const activeCount = items.filter((i) => i.isActive).length;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900">Job Alert Subscribers</h2>
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Job Alert Subscribers</h2>
         <span className="text-xs font-bold text-slate-500">{activeCount} active / {items.length} total</span>
       </div>
 
       <div className="space-y-3">
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading subscribers…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading subscribers…</div>
         ) : items.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No alert subscribers yet.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No alert subscribers yet.</div>
         ) : items.map((item) => (
-          <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_26px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]">
             <div className="space-y-1">
-              <div className="font-bold text-slate-900 text-sm">{item.name || item.email}</div>
+              <div className="font-bold text-slate-900 text-[15px] break-words">{item.name || item.email}</div>
               <div className="flex flex-wrap items-center gap-3 text-slate-500">
                 <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {item.email}</span>
                 {item.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {item.phone}</span>}

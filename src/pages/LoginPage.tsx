@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
-import { ShieldCheck, User, Building2, UserCheck, Mail, KeyRound, ArrowRight, ArrowLeft } from 'lucide-react';
+import { User, Building2, ShieldCheck, Mail, KeyRound, ArrowRight, ArrowLeft, Eye, EyeOff, UserRound, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { AcknowledgmentCheckbox } from '../components/employer/AcknowledgmentCheckbox';
+import { AuthLayout } from '../components/AuthLayout';
 
 type Role = 'aspirant' | 'employer' | 'admin';
 
-const ROLE_TILES: { id: Role; label: string; icon: React.ElementType; blurb: string }[] = [
-  { id: 'aspirant', label: 'Aspirant', icon: User, blurb: 'Browse jobs, take mock tests, track applications' },
+const ROLE_TABS: { id: Exclude<Role, 'admin'>; label: string; icon: React.ElementType; blurb: string }[] = [
+  { id: 'aspirant', label: 'Job seeker', icon: User, blurb: 'Jobs, alerts, mock tests & your applications' },
   { id: 'employer', label: 'Employer', icon: Building2, blurb: 'Post vacancies & manage applicants' },
-  { id: 'admin', label: 'Admin', icon: UserCheck, blurb: 'Manage the portal & content' },
 ];
 
 const ATTRIBUTION_KEY = 'jobcharcha.signup_attribution';
@@ -21,7 +21,6 @@ export default function LoginPage() {
   const deepLinkIsRole = deepLinkRole === 'aspirant' || deepLinkRole === 'employer';
   const deepLinkRegister = deepLinkIsRole && searchParams.get('mode') === 'register';
 
-  const [step, setStep] = useState<'role' | 'form'>(deepLinkIsRole ? 'form' : 'role');
   const [role, setRole] = useState<Role>(deepLinkIsRole ? (deepLinkRole as Role) : 'aspirant');
   const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>(deepLinkRegister ? 'register' : 'login');
 
@@ -36,6 +35,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const { login, register } = useAuth();
   const navigate = useNavigate();
@@ -61,8 +61,7 @@ export default function LoginPage() {
 
   const handleSelectRole = (r: Role) => {
     setRole(r);
-    setStep('form');
-    setMode('login');
+    if (r === 'admin') setMode('login');
     setError(null);
     setInfo(null);
   };
@@ -138,253 +137,178 @@ export default function LoginPage() {
     }
   };
 
+  const isAuthForm = mode === 'login' || mode === 'register';
+  const heading = mode === 'forgot' || mode === 'reset'
+    ? 'Reset your password'
+    : role === 'admin' ? 'Admin sign in' : mode === 'register' ? 'Create your free account' : 'Welcome back 👋';
+  const subheading = mode === 'forgot'
+    ? "Enter your email and we'll send you a reset code."
+    : mode === 'reset' ? 'Enter the code from your email and choose a new password.'
+    : role === 'admin' ? 'Restricted to JobCharcha staff.'
+    : mode === 'register' ? (role === 'employer' ? 'Post jobs and reach verified candidates.' : 'Save jobs, get alerts and practise for free.')
+    : 'Sign in to your dashboard, saved jobs and tests.';
+
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-950">
-      {/* Aurora backdrop — layered radial washes so the empty space isn't a flat white void */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            'radial-gradient(60% 55% at 14% 16%, rgba(16,185,129,0.42), transparent 60%),' +
-            'radial-gradient(52% 52% at 90% 8%, rgba(56,189,248,0.34), transparent 60%),' +
-            'radial-gradient(55% 60% at 82% 96%, rgba(217,70,239,0.30), transparent 60%),' +
-            'radial-gradient(48% 48% at 22% 100%, rgba(129,140,248,0.34), transparent 60%),' +
-            'radial-gradient(40% 40% at 50% 50%, rgba(16,185,129,0.14), transparent 70%)',
-        }}
-      />
-      {/* Slow-drifting colour orbs */}
-      <div className="auth-blob pointer-events-none absolute -top-32 -left-24 h-[26rem] w-[26rem] rounded-full bg-emerald-500/40 blur-3xl" />
-      <div className="auth-blob-slow pointer-events-none absolute -bottom-44 -right-24 h-[32rem] w-[32rem] rounded-full bg-sky-500/25 blur-3xl" />
-      <div
-        className="auth-blob pointer-events-none absolute -right-16 top-1/4 h-80 w-80 rounded-full bg-fuchsia-500/25 blur-3xl"
-        style={{ animationDelay: '-12s' }}
-      />
-      <div
-        className="auth-blob-slow pointer-events-none absolute bottom-10 left-1/4 h-72 w-72 rounded-full bg-indigo-500/30 blur-3xl"
-        style={{ animationDelay: '-8s' }}
-      />
-      {/* Faint grid, faded out toward the edges */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.12]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.65) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.65) 1px, transparent 1px)',
-          backgroundSize: '46px 46px',
-          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%)',
-        }}
-      />
-      {/* Vignette to seat the card */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(2,6,23,0.6)_100%)]" />
-
-      <div className="relative z-10 bg-white text-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_30px_90px_-25px_rgba(0,0,0,0.65)] ring-1 ring-white/10 border border-slate-200">
-
-        <Link to="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 mb-6">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
-        </Link>
-
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-2 font-bold">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-slate-900">
-            {step === 'role' ? 'Sign in to JobCharcha' : mode === 'register' ? `Join as ${role}` : mode === 'forgot' || mode === 'reset' ? 'Reset Password' : `${role[0].toUpperCase()}${role.slice(1)} Login`}
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            {step === 'role' ? 'Choose how you want to access the portal.' : 'Access job alerts, CBT tests, and your dashboard.'}
-          </p>
-        </div>
-
-        {step === 'role' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {ROLE_TILES.map((tile) => {
-              const Icon = tile.icon;
-              return (
-                <button
-                  key={tile.id}
-                  onClick={() => handleSelectRole(tile.id)}
-                  className="flex flex-col items-center text-center gap-2 p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-900 hover:text-white transition-all group cursor-pointer"
-                >
-                  <Icon className="w-6 h-6 text-emerald-600 group-hover:text-emerald-400" />
-                  <span className="text-xs font-extrabold">{tile.label}</span>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300">{tile.blurb}</span>
-                </button>
-              );
-            })}
-          </div>
-        ) : (
-          <>
-            <button
-              onClick={() => setStep('role')}
-              className="text-[11px] font-bold text-slate-500 hover:text-slate-900 mb-4 flex items-center gap-1 cursor-pointer"
-            >
-              <ArrowLeft className="w-3 h-3" /> Change role
-            </button>
-
-            {error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl px-3 py-2.5 mb-4">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-xl px-3 py-2.5 mb-4">
-                {info}
-              </div>
-            )}
-
-            {mode === 'forgot' ? (
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Registered Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@domain.com"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium"
-                    />
-                  </div>
-                </div>
-                <button type="submit" disabled={submitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md cursor-pointer">
-                  {submitting ? 'Sending…' : 'Send Password Reset Code'}
-                </button>
-                <div className="text-center pt-2">
-                  <button type="button" onClick={() => setMode('login')} className="text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer">
-                    ← Back to Login
-                  </button>
-                </div>
-              </form>
-            ) : mode === 'reset' ? (
-              <form onSubmit={handleResetPassword} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Reset Code</label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text" required value={resetToken} onChange={(e) => setResetToken(e.target.value)}
-                      placeholder="Paste the code emailed to you"
-                      autoComplete="one-time-code"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">New Password</label>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="password" required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      autoComplete="new-password"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium"
-                    />
-                  </div>
-                </div>
-                <button type="submit" disabled={submitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95 cursor-pointer">
-                  {submitting ? 'Resetting…' : 'Reset Password'}
-                </button>
-                <div className="flex items-center justify-between pt-2">
-                  <button type="button" onClick={() => setMode('forgot')} className="text-[11px] text-slate-500 hover:text-slate-900 font-semibold cursor-pointer">
-                    Didn't get a code? Resend
-                  </button>
-                  <button type="button" onClick={() => setMode('login')} className="text-xs text-slate-500 hover:text-slate-900 font-bold cursor-pointer">
-                    ← Back to Login
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-3.5">
-                {mode === 'register' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">First Name</label>
-                      <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Ajay"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium" />
-                    </div>
-                    <div>
-                      <label className="text-xs font-bold text-slate-700 block mb-1">Last Name</label>
-                      <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Rathava"
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium" />
-                    </div>
-                  </div>
-                )}
-
-                {mode === 'register' && role === 'employer' && (
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Company / Organization Name</label>
-                    <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="e.g. EdTech Solutions"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium" />
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Email Address</label>
-                  <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@domain.com"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-bold text-slate-700">Password</label>
-                    {mode === 'login' && role !== 'admin' && (
-                      <button type="button" onClick={() => setMode('forgot')} className="text-[11px] text-emerald-700 font-semibold hover:underline cursor-pointer">
-                        Forgot Password?
-                      </button>
-                    )}
-                  </div>
-                  <div className="relative">
-                    <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                    <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium" />
-                  </div>
-                </div>
-
-                {mode === 'register' && role === 'employer' && (
-                  <AcknowledgmentCheckbox checked={acknowledgedTerms} onChange={setAcknowledgedTerms} />
-                )}
-
-                <button
-                  type="submit"
-                  disabled={submitting || (mode === 'register' && role === 'employer' && !acknowledgedTerms)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer mt-2 flex items-center justify-center gap-2">
-                  <span>{submitting ? 'Please wait…' : mode === 'login' ? `Sign In as ${role.toUpperCase()}` : 'Create Account'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            )}
-
-            {role !== 'admin' && mode !== 'forgot' && mode !== 'reset' && (
-              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
-                {mode === 'login' ? (
-                  <>
-                    <span className="text-slate-500">Don't have an account?</span>
-                    <button type="button" onClick={() => setMode('register')} className="font-bold text-emerald-700 hover:underline cursor-pointer">
-                      Register Free
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-slate-500">Already registered?</span>
-                    <button type="button" onClick={() => setMode('login')} className="font-bold text-emerald-700 hover:underline cursor-pointer">
-                      Sign In Instead
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </>
-        )}
+    <AuthLayout>
+      <div className="mb-5">
+        <h1 className="text-[24px] sm:text-[26px] font-extrabold tracking-tight text-slate-900">{heading}</h1>
+        <p className="mt-1 text-[14px] text-slate-500">{subheading}</p>
       </div>
-    </div>
+
+      {isAuthForm && role !== 'admin' && (
+        <div role="tablist" aria-label="Account type" className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1 mb-5">
+          {ROLE_TABS.map((tab) => {
+            const active = role === tab.id;
+            return (
+              <button key={tab.id} type="button" role="tab" aria-selected={active} onClick={() => handleSelectRole(tab.id)}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 text-[14px] font-bold cursor-pointer transition-all ${active ? 'bg-white text-blue-700 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.18)]' : 'text-slate-500 hover:text-slate-800'}`}>
+                <tab.icon className="w-4 h-4" />{tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {role === 'admin' && isAuthForm && (
+        <div className="flex items-center gap-3 rounded-2xl bg-slate-900 text-white p-3.5 mb-5">
+          <span className="w-9 h-9 rounded-xl bg-white/10 grid place-items-center shrink-0"><ShieldCheck className="w-5 h-5 text-amber-300" /></span>
+          <span className="flex-1 min-w-0 text-[13px] text-slate-300">Admin area — sign in with your staff account.</span>
+          <button type="button" onClick={() => handleSelectRole('aspirant')} className="shrink-0 text-[12.5px] font-bold text-white/90 hover:text-white underline-offset-2 hover:underline cursor-pointer">Not staff?</button>
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="flex gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-[13px] font-semibold rounded-xl px-3.5 py-3 mb-4">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
+        </div>
+      )}
+      {info && (
+        <div role="status" className="flex gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 text-[13px] font-semibold rounded-xl px-3.5 py-3 mb-4">
+          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />{info}
+        </div>
+      )}
+
+      {mode === 'forgot' ? (
+        <form onSubmit={handleForgotPassword} className="space-y-4">
+          <Field label="Registered email address" icon={Mail}>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={INPUT} />
+          </Field>
+          <PrimaryButton disabled={submitting}>{submitting ? 'Sending…' : 'Send reset code'}</PrimaryButton>
+          <BackLink onClick={() => setMode('login')} />
+        </form>
+      ) : mode === 'reset' ? (
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <Field label="Reset code" icon={KeyRound}>
+            <input type="text" required value={resetToken} onChange={(e) => setResetToken(e.target.value)} placeholder="Paste the code emailed to you" autoComplete="one-time-code" className={INPUT} />
+          </Field>
+          <Field label="New password" icon={KeyRound}>
+            <input type={showPassword ? 'text' : 'password'} required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="new-password" className={INPUT + ' pr-11'} />
+            <EyeToggle shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+          </Field>
+          <PrimaryButton disabled={submitting}>{submitting ? 'Resetting…' : 'Reset password'}</PrimaryButton>
+          <div className="flex items-center justify-between">
+            <button type="button" onClick={() => setMode('forgot')} className="text-[13px] text-slate-500 hover:text-slate-900 font-semibold cursor-pointer">Didn't get a code? Resend</button>
+            <BackLink onClick={() => setMode('login')} inline />
+          </div>
+        </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'register' && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="First name" icon={UserRound}>
+                <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ajay" autoComplete="given-name" className={INPUT} />
+              </Field>
+              <Field label="Last name">
+                <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Rathava" autoComplete="family-name" className={INPUT_PLAIN} />
+              </Field>
+            </div>
+          )}
+
+          {mode === 'register' && role === 'employer' && (
+            <Field label="Company / organisation name" icon={Building2}>
+              <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="e.g. EdTech Solutions" autoComplete="organization" className={INPUT} />
+            </Field>
+          )}
+
+          <Field label="Email address" icon={Mail}>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" autoComplete="email" className={INPUT} />
+          </Field>
+
+          <Field
+            label="Password"
+            icon={KeyRound}
+            action={mode === 'login' && role !== 'admin' ? (
+              <button type="button" onClick={() => setMode('forgot')} className="text-[12.5px] text-blue-700 font-bold hover:underline cursor-pointer">Forgot password?</button>
+            ) : undefined}
+          >
+            <input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'register' ? 'At least 6 characters' : '••••••••'} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} className={INPUT + ' pr-11'} />
+            <EyeToggle shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
+          </Field>
+
+          {mode === 'register' && role === 'employer' && (
+            <AcknowledgmentCheckbox checked={acknowledgedTerms} onChange={setAcknowledgedTerms} />
+          )}
+
+          <PrimaryButton disabled={submitting || (mode === 'register' && role === 'employer' && !acknowledgedTerms)}>
+            {submitting ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create free account'}
+          </PrimaryButton>
+        </form>
+      )}
+
+      {isAuthForm && role !== 'admin' && (
+        <p className="mt-5 text-center text-[14px] text-slate-500">
+          {mode === 'login' ? "New to JobCharcha? " : 'Already have an account? '}
+          <button type="button" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(null); setInfo(null); }}
+            className="font-extrabold text-blue-700 hover:underline cursor-pointer">
+            {mode === 'login' ? 'Create a free account' : 'Sign in'}
+          </button>
+        </p>
+      )}
+
+      {isAuthForm && role !== 'admin' && (
+        <div className="mt-5 pt-4 border-t border-slate-100 text-center">
+          <button type="button" onClick={() => handleSelectRole('admin')} className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-slate-400 hover:text-slate-700 cursor-pointer">
+            <ShieldCheck className="w-3.5 h-3.5" /> Admin sign in
+          </button>
+        </div>
+      )}
+    </AuthLayout>
   );
 }
+
+const INPUT = 'w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-3.5 py-3 text-[14.5px] font-medium text-slate-900 placeholder:text-slate-400 placeholder:font-normal outline-none transition-colors hover:border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10';
+const INPUT_PLAIN = INPUT.replace('pl-10', 'pl-3.5');
+
+const Field: React.FC<{ label: string; icon?: React.ElementType; action?: React.ReactNode; children: React.ReactNode }> = ({ label, icon: Icon, action, children }) => (
+  <label className="block">
+    <span className="flex items-center justify-between mb-1.5">
+      <span className="text-[13px] font-bold text-slate-700">{label}</span>
+      {action}
+    </span>
+    <span className="relative block">
+      {Icon && <Icon className="w-[18px] h-[18px] text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />}
+      {children}
+    </span>
+  </label>
+);
+
+const EyeToggle: React.FC<{ shown: boolean; onToggle: () => void }> = ({ shown, onToggle }) => (
+  <button type="button" onClick={onToggle} aria-label={shown ? 'Hide password' : 'Show password'}
+    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg grid place-items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer">
+    {shown ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
+  </button>
+);
+
+const PrimaryButton: React.FC<{ disabled?: boolean; children: React.ReactNode }> = ({ disabled, children }) => (
+  <button type="submit" disabled={disabled}
+    className="w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 text-[15px] font-extrabold text-white bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 shadow-[0_12px_24px_-12px_rgba(37,99,235,0.8)] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer transition-colors">
+    {children} <ArrowRight className="w-4 h-4" />
+  </button>
+);
+
+const BackLink: React.FC<{ onClick: () => void; inline?: boolean }> = ({ onClick, inline }) => (
+  <button type="button" onClick={onClick} className={`${inline ? '' : 'w-full justify-center'} inline-flex items-center gap-1 text-[13px] font-bold text-slate-500 hover:text-slate-900 cursor-pointer`}>
+    <ArrowLeft className="w-4 h-4" /> Back to sign in
+  </button>
+);

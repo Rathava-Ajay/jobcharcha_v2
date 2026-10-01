@@ -55,7 +55,7 @@ public class JobService : IJobService
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var term = query.Search.Trim();
-            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term));
+            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term) || j.Category.Name.Contains(term));
         }
         if (!string.IsNullOrWhiteSpace(query.Category) && query.Category != "All")
             q = q.Where(j => j.Category.Name == query.Category || j.Category.Slug == query.Category);
@@ -72,14 +72,31 @@ public class JobService : IJobService
         if (query.FeaturedOnly == true)
             q = q.Where(j => j.IsFeatured);
 
+        var today = DateTime.UtcNow.Date;
+        if (query.OpenOnly == true || query.ClosingWithinDays.HasValue)
+            q = q.Where(j => j.LastDate >= today);
+        if (query.ClosingWithinDays is > 0)
+        {
+            var until = today.AddDays(query.ClosingWithinDays.Value + 1);
+            q = q.Where(j => j.LastDate < until);
+        }
+
         var totalCount = await q.CountAsync();
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var items = await q
-            .OrderByDescending(j => j.IsFeatured)
-            .ThenByDescending(j => j.PostedDate)
+        IOrderedQueryable<Job> ordered = query.Sort?.ToLowerInvariant() switch
+        {
+            // Soonest deadline first, but never lead with jobs that already closed.
+            "deadline" => q.OrderBy(j => j.LastDate < today).ThenBy(j => j.LastDate),
+            "popular" => q.OrderByDescending(j => j.Views),
+            "posts" => q.OrderByDescending(j => j.TotalPosts ?? 0),
+            _ => q.OrderByDescending(j => j.IsFeatured).ThenByDescending(j => j.PostedDate),
+        };
+
+        var items = await ordered
+            .ThenByDescending(j => j.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -218,8 +235,21 @@ public class JobService : IJobService
             DuplicateFingerprint = fingerprint,
             CategoryId = request.CategoryId,
             Location = request.Location,
+            State = NullIfBlank(request.State),
+            District = NullIfBlank(request.District),
             TotalPosts = request.TotalPosts,
             Salary = request.Salary,
+            MinSalary = request.MinSalary > 0 ? request.MinSalary : null,
+            MaxSalary = request.MaxSalary > 0 ? request.MaxSalary : null,
+            SalaryType = NullIfBlank(request.SalaryType),
+            MinAge = request.MinAge > 0 ? request.MinAge : null,
+            MaxAge = request.MaxAge > 0 ? request.MaxAge : null,
+            ExperienceRequired = request.ExperienceRequired >= 0 ? request.ExperienceRequired : null,
+            AdvertisementNumber = NullIfBlank(request.AdvertisementNumber),
+            OfficialWebsite = NullIfBlank(request.OfficialWebsite),
+            SyllabusPdf = NullIfBlank(request.SyllabusLink),
+            ApplicationFee = request.ApplicationFeeAmount >= 0 ? request.ApplicationFeeAmount : null,
+            ApplicationFeeDetails = NullIfBlank(request.ApplicationFeeDetails),
             QualificationRequired = request.Qualification,
             DetailedEligibility = !string.IsNullOrWhiteSpace(request.EligibilityDetails) ? request.EligibilityDetails : eligibility,
             PostedDate = DateTime.UtcNow,
@@ -478,6 +508,8 @@ public class JobService : IJobService
         MetaKeywords = j.MetaKeywords,
     };
 
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static List<ImportantDateDto> BuildImportantDates(Job j)
     {
         var dates = new List<ImportantDateDto>();
@@ -493,13 +525,19 @@ public class JobService : IJobService
             catch (JsonException) { /* malformed/legacy JSON — ignore, scalar-column dates still render */ }
         }
 
-        if (extra?.ApplicationEnd is not null) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
+        // "Last Date to Apply" is always added below from j.LastDate — skip an identical Application End row.
+        if (extra?.ApplicationEnd is not null && extra.ApplicationEnd.Value.Date != j.LastDate.Date) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
         if (extra?.FeePaymentEnd is not null) dates.Add(new ImportantDateDto { Label = "Fee Payment Last Date", Date = extra.FeePaymentEnd.Value.ToString("yyyy-MM-dd") });
         dates.Add(new ImportantDateDto { Label = "Last Date to Apply", Date = j.LastDate.ToString("yyyy-MM-dd") });
         if (extra?.AdmitCardDate is not null) dates.Add(new ImportantDateDto { Label = "Admit Card Date", Date = extra.AdmitCardDate.Value.ToString("yyyy-MM-dd") });
         if (j.ExamDate.HasValue) dates.Add(new ImportantDateDto { Label = "Exam Date", Date = j.ExamDate.Value.ToString("yyyy-MM-dd") });
         if (j.InterviewDate.HasValue) dates.Add(new ImportantDateDto { Label = "Interview Date", Date = j.InterviewDate.Value.ToString("yyyy-MM-dd") });
         if (extra?.ResultDate is not null) dates.Add(new ImportantDateDto { Label = "Result Date", Date = extra.ResultDate.Value.ToString("yyyy-MM-dd") });
+        foreach (var other in extra?.OtherDates ?? new())
+        {
+            if (!string.IsNullOrWhiteSpace(other.Label) && !string.IsNullOrWhiteSpace(other.Date))
+                dates.Add(new ImportantDateDto { Label = other.Label.Trim(), Date = other.Date.Trim() });
+        }
         return dates;
     }
 

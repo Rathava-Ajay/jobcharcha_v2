@@ -51,6 +51,15 @@ public class ImportantDatesRequest
     public DateTime? AdmitCardDate { get; set; }
     public DateTime? ExamDate { get; set; }
     public DateTime? ResultDate { get; set; }
+    /// <summary>Milestones with no exact day yet ("Tier 1 Exam: December 2026 (tentative)") or with no
+    /// dedicated slot above — shown as-is in the Important Dates box.</summary>
+    public List<OtherDateRequest> OtherDates { get; set; } = new();
+}
+
+public class OtherDateRequest
+{
+    public string Label { get; set; } = null!;
+    public string Date { get; set; } = null!;
 }
 
 /// <summary>
@@ -80,6 +89,22 @@ public class AiImportJobRequest
     public string? ApplyLink { get; set; }
     public string? OfficialNotificationPdf { get; set; }
     public string? NotificationFileName { get; set; }
+
+    // Scalar facts the detail page renders in its own slots (header Advt. No, Age Limit box,
+    // Salary box, stats strip, Important Links table). Optional: older AI output omits them.
+    public string? AdvertisementNumber { get; set; }
+    public string? OfficialWebsite { get; set; }
+    public string? SyllabusLink { get; set; }
+    public string? State { get; set; }
+    public string? District { get; set; }
+    public int? MinAge { get; set; }
+    public int? MaxAge { get; set; }
+    public int? ExperienceRequired { get; set; }
+    public decimal? MinSalary { get; set; }
+    public decimal? MaxSalary { get; set; }
+    public string? SalaryType { get; set; }
+    public decimal? ApplicationFeeAmount { get; set; }
+    public string? ApplicationFeeDetails { get; set; }
 
     public string ShortDescription { get; set; } = null!;
 

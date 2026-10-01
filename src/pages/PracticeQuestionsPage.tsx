@@ -8,6 +8,7 @@ import {
   getPracticeExams, getPracticeSubjects, getPracticeTopics, searchPracticeQuestions,
   ApiPracticeExamOption, ApiPracticeQuestion,
 } from '../api/practiceQuestions';
+import { Select } from '../components/ui/Select';
 
 const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard'];
 const PAGE_SIZE = 10;
@@ -84,19 +85,19 @@ export default function PracticeQuestionsPage() {
   const toggleReveal = (id: number) => setRevealed((prev) => ({ ...prev, [id]: !prev[id] }));
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto">
-          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer">
+      <div className="bg-white border-b border-slate-200 py-5 sm:py-7">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-3 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
           </button>
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
             <ListChecks className="w-3.5 h-3.5" /> Solved Question Bank
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Practice Questions</h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Practice Questions</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">
             Browse previously solved questions by exam, subject and topic — reveal the answer to self-check.
           </p>
         </div>
@@ -115,22 +116,22 @@ export default function PracticeQuestionsPage() {
           <>
             <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 sm:p-6 mb-6 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <select
+                <Select
                   value={selectedExamId ?? ''}
                   onChange={(e) => setSelectedExamId(Number(e.target.value))}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   {exams.map((e) => <option key={e.examId} value={e.examId}>{e.examName} ({e.questionCount})</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   <option value="">All Subjects</option>
                   {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={selectedTopic}
                   onChange={(e) => setSelectedTopic(e.target.value)}
                   disabled={topics.length === 0}
@@ -138,14 +139,14 @@ export default function PracticeQuestionsPage() {
                 >
                   <option value="">All Topics</option>
                   {topics.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                </Select>
               </div>
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />

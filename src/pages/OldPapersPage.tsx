@@ -7,6 +7,7 @@ import { SeoHead } from '../components/SeoHead';
 import { useAuth } from '../context/AuthContext';
 import { getCategories, ApiCategory } from '../api/categories';
 import { searchOldPapers, getOldPaperYears, ApiOldPaperListItem } from '../api/oldPapers';
+import { Select } from '../components/ui/Select';
 
 export default function OldPapersPage() {
   const navigate = useNavigate();
@@ -41,26 +42,26 @@ export default function OldPapersPage() {
   }, [search, selectedCategoryId, selectedYear]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       <SeoHead title="Old Solved Papers | JobCharcha" description="Previous-year solved question papers for government recruitment and competitive exams, with answer keys — free to download." path="/old-papers" />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer">
+      <div className="bg-white border-b border-slate-200 py-5 sm:py-7">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-3 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
           </button>
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
             <FileText className="w-3.5 h-3.5" /> Solved Archives
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Old Solved Papers</h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Old Solved Papers</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">
             {papers.length > 0 ? `${papers.length} papers available` : 'Loading old papers…'} — official question papers with verified answer keys.
           </p>
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-7">
         <div className="flex flex-col lg:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -72,14 +73,14 @@ export default function OldPapersPage() {
               className="w-full bg-white border border-slate-200 rounded-xl text-sm text-slate-900 pl-10 pr-3 py-3 focus:outline-none focus:border-indigo-500 font-medium shadow-2xs"
             />
           </div>
-          <select
+          <Select
             value={selectedYear ?? ''}
             onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : null)}
             className="bg-white border border-slate-200 rounded-xl text-sm text-slate-800 px-3 py-3 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer shadow-2xs"
           >
             <option value="">All Years</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
+          </Select>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">
@@ -131,7 +132,7 @@ export default function OldPapersPage() {
                     )}
                   </div>
                   <h3 className="font-heading font-bold text-slate-900 text-lg">{paper.title}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{paper.examName}{paper.subject ? ` · ${paper.subject}` : ''} &middot; {paper.downloads.toLocaleString()} Downloads</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{paper.examName}{paper.subject ? ` · ${paper.subject}` : ''} &middot; {(paper.downloads ?? 0).toLocaleString()} Downloads</p>
                 </div>
                 <span className="bg-slate-900 text-white font-bold text-xs px-4 py-2.5 rounded-xl inline-flex items-center gap-2 self-start md:self-auto shrink-0">
                   <Download className="w-4 h-4 text-emerald-400" /> View & Download

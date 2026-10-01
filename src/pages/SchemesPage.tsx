@@ -18,26 +18,26 @@ export default function SchemesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       <SeoHead title="Government Schemes | JobCharcha" description="Central and state government welfare schemes, scholarships and youth benefit programs — eligibility, benefits and how to apply." path="/schemes" />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer">
+      <div className="bg-white border-b border-slate-200 py-5 sm:py-7">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-3 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
           </button>
-          <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
             <BookOpen className="w-3.5 h-3.5" /> Government Schemes Portal
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Central & State Government Schemes</h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Central & State Government Schemes</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">
             {schemes.length > 0 ? `${schemes.length} verified schemes` : 'Loading schemes…'} — welfare programs, scholarships, and youth benefits.
           </p>
         </div>
       </div>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-7">
         {loading ? (
           <div className="py-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-blue-600 animate-spin" /></div>
         ) : schemes.length === 0 ? (

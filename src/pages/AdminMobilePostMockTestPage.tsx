@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Sparkles, AlertTriangle, Loader2, Instagram, ClipboardPaste, Send, ChevronRight, Award, ListChecks,
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { AiPostShell } from '../components/admin/AiPostShell';
 import { CopyButton } from '../components/CopyButton';
 import { useAuth } from '../context/AuthContext';
 import { getExams, createTest, ApiExam, UpsertTestPayload } from '../api/tests';
 import { ApiError } from '../api/client';
 import { buildMockTestExtractionPrompt, buildStudyContentCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiMockTestImport, ParsedAiMockTest } from '../utils/aiMockTestImportValidation';
+import { Select } from '../components/ui/Select';
 
 type Step = 'notification' | 'prompt' | 'paste' | 'preview' | 'caption';
 
@@ -121,49 +122,23 @@ export default function AdminMobilePostMockTestPage() {
   }, [parsed, totalQuestions]);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar user={user} />
-
-      <div className="bg-slate-900 text-white py-8 px-4 sm:px-6">
-        <div className="max-w-lg mx-auto">
-          <button onClick={() => navigate('/dashboard/admin')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-3 cursor-pointer">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin
-          </button>
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> AI-Assisted Mobile Posting
-          </div>
-          <h1 className="text-xl sm:text-2xl font-heading font-extrabold tracking-tight">Post a Mock Test via AI</h1>
-
-          <div className="flex items-center gap-1 mt-4 text-[10px] font-bold overflow-x-auto">
-            {STEP_LABELS.map((s, idx) => (
-              <React.Fragment key={s.key}>
-                {idx > 0 && <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />}
-                <span className={`px-2 py-1 rounded-md whitespace-nowrap ${idx === stepIndex ? 'bg-emerald-500 text-slate-950' : idx < stepIndex ? 'text-emerald-400' : 'text-slate-500'}`}>
-                  {s.label}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-6 py-8">
+    <AiPostShell title="Post a mock test via AI" subtitle="Turn a question paper into a full CBT mock test with AI: questions, answers and explanations." steps={STEP_LABELS} stepIndex={stepIndex}>
         {step === 'notification' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">Paste the raw question paper / mock test text</label>
+              <label className="text-[13px] font-bold text-slate-700 block mb-1.5">Paste the raw question paper / mock test text</label>
               <textarea
                 value={notificationText}
                 onChange={(e) => setNotificationText(e.target.value)}
                 rows={10}
                 placeholder="Paste the question paper text — questions, options, and answers — here…"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-3.5 py-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors hover:border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
               />
             </div>
             <button
               onClick={() => setStep('prompt')}
               disabled={notificationText.trim().length < 20}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-[15px] py-3.5 cursor-pointer shadow-[0_12px_24px_-14px_rgba(37,99,235,0.8)] transition-colors"
             >
               Generate Extraction Prompt
             </button>
@@ -171,18 +146,18 @@ export default function AdminMobilePostMockTestPage() {
         )}
 
         {step === 'prompt' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-            <p className="text-xs text-slate-600">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
+            <p className="text-[13.5px] text-slate-600">
               Copy this prompt, paste it into ChatGPT or Claude's app, and send it. Then copy the JSON it returns and come back here.
             </p>
-            <div className="bg-slate-950 text-slate-300 rounded-xl p-3 text-[10px] leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap font-mono">
+            <div className="bg-slate-950 text-slate-200 rounded-xl p-3.5 text-[12px] leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap break-words font-mono">
               {prompt}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <CopyButton text={prompt} label="Copy Prompt" />
               <button
                 onClick={() => setStep('paste')}
-                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 rounded-xl cursor-pointer transition-colors"
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-4 py-3 cursor-pointer"
               >
                 I've pasted it into ChatGPT — Continue
               </button>
@@ -191,9 +166,9 @@ export default function AdminMobilePostMockTestPage() {
         )}
 
         {step === 'paste' && (
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
+              <label className="text-[13px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                 <ClipboardPaste className="w-3.5 h-3.5" /> Paste the JSON the AI returned
               </label>
               <textarea
@@ -201,11 +176,11 @@ export default function AdminMobilePostMockTestPage() {
                 onChange={(e) => setPasteText(e.target.value)}
                 rows={12}
                 placeholder='{"title": "...", "examName": "...", "sections": [...] }'
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-mono text-slate-800 focus:outline-none focus:border-emerald-500"
+                className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-3.5 py-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors hover:border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 font-mono text-[13px]"
               />
             </div>
             {errors.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 space-y-1">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 text-[13px] text-red-700 space-y-1">
                 <div className="font-bold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Fix these before continuing:</div>
                 <ul className="list-disc pl-5 space-y-0.5">
                   {errors.map((e, i) => <li key={i}>{e}</li>)}
@@ -215,7 +190,7 @@ export default function AdminMobilePostMockTestPage() {
             <button
               onClick={handleParse}
               disabled={pasteText.trim().length < 10}
-              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-[15px] py-3.5 cursor-pointer shadow-[0_12px_24px_-14px_rgba(37,99,235,0.8)] transition-colors"
             >
               Parse & Preview
             </button>
@@ -225,7 +200,7 @@ export default function AdminMobilePostMockTestPage() {
         {step === 'preview' && parsed && (
           <div className="space-y-4">
             {warnings.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-[13px] text-amber-800 space-y-1">
                 <div className="font-bold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Warnings (won't block posting):</div>
                 <ul className="list-disc pl-5 space-y-0.5">
                   {warnings.map((w, i) => <li key={i}>{w}</li>)}
@@ -233,32 +208,32 @@ export default function AdminMobilePostMockTestPage() {
               </div>
             )}
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Title</span>
-                <h2 className="font-heading font-bold text-slate-900 text-base">{parsed.title}</h2>
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block">Title</span>
+                <h2 className="font-extrabold text-slate-900 text-[18px] leading-snug break-words">{parsed.title}</h2>
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Exam (confirm or change)</label>
-                <select
+                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1.5">Exam (confirm or change)</label>
+                <Select
                   value={selectedExamId ?? ''}
                   onChange={(e) => setSelectedExamId(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-[14px] font-semibold text-slate-900"
                 >
                   <option value="" disabled>Select an exam…</option>
                   {exams.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </select>
+                </Select>
                 {!selectedExamId && (
-                  <p className="text-[10px] text-amber-700 mt-1">AI suggested "{parsed.examName}" — no confident match found, please pick one.</p>
+                  <p className="text-[12.5px] font-semibold text-amber-700 mt-1.5">AI suggested "{parsed.examName}" — no confident match found, please pick one.</p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Duration</span><span className="font-bold text-slate-800">{parsed.durationMinutes} min</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Marks / Question</span><span className="font-bold text-slate-800">{parsed.marksPerQuestion}</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Negative Marking</span><span className="font-bold text-slate-800">{parsed.negativeMarking}</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Access</span><span className="font-bold text-slate-800">{parsed.isFree ? 'Free' : `₹${parsed.price ?? '—'}`}</span></div>
+              <div className="grid grid-cols-2 gap-2 text-[13.5px] [&>div]:rounded-xl [&>div]:bg-slate-50 [&>div]:px-3 [&>div]:py-2.5 [&>div]:min-w-0 [&>div]:break-words">
+                <div><span className="text-[11px] text-slate-400 uppercase tracking-wide font-bold block">Duration</span><span className="font-bold text-slate-800">{parsed.durationMinutes} min</span></div>
+                <div><span className="text-[11px] text-slate-400 uppercase tracking-wide font-bold block">Marks / Question</span><span className="font-bold text-slate-800">{parsed.marksPerQuestion}</span></div>
+                <div><span className="text-[11px] text-slate-400 uppercase tracking-wide font-bold block">Negative Marking</span><span className="font-bold text-slate-800">{parsed.negativeMarking}</span></div>
+                <div><span className="text-[11px] text-slate-400 uppercase tracking-wide font-bold block">Access</span><span className="font-bold text-slate-800">{parsed.isFree ? 'Free' : `₹${parsed.price ?? '—'}`}</span></div>
               </div>
 
               <div>
@@ -276,12 +251,12 @@ export default function AdminMobilePostMockTestPage() {
                 <p className="text-[11px] text-slate-500 mt-2 font-semibold">Total: {totalQuestions} question{totalQuestions === 1 ? '' : 's'} across {parsed.sections.length} section{parsed.sections.length === 1 ? '' : 's'}</p>
               </div>
 
-              {postError && <div className="text-xs font-semibold text-red-600">{postError}</div>}
+              {postError && <div className="text-[13px] font-semibold text-red-600">{postError}</div>}
 
               <button
                 onClick={handlePost}
                 disabled={posting || !selectedExamId}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-[15px] py-3.5 cursor-pointer shadow-[0_12px_24px_-14px_rgba(37,99,235,0.8)] transition-colors"
               >
                 {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 {posting ? 'Posting…' : 'Post Mock Test'}
@@ -292,35 +267,35 @@ export default function AdminMobilePostMockTestPage() {
 
         {step === 'caption' && parsed && (
           <div className="space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
+            <div className="bg-gradient-to-b from-emerald-50 to-white border border-emerald-200 rounded-2xl p-6 text-center">
               <Award className="w-8 h-8 text-emerald-600 mx-auto mb-1" />
-              <div className="font-black text-sm text-emerald-900">Mock Test Posted Successfully!</div>
+              <div className="font-extrabold text-[18px] text-slate-900">Mock Test Posted Successfully!</div>
               {postedSlug && (
-                <button onClick={() => navigate(`/mock-tests/${postedSlug}`)} className="text-xs font-bold text-emerald-700 underline cursor-pointer mt-1">
+                <button onClick={() => navigate(`/mock-tests/${postedSlug}`)} className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[14px] px-5 py-3 cursor-pointer">
                   View live listing
                 </button>
               )}
             </div>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <Instagram className="w-5 h-5 text-pink-600" />
-                <h2 className="font-heading font-bold text-slate-900 text-base">Instagram Caption</h2>
+                <h2 className="font-extrabold text-slate-900 text-[18px] leading-snug break-words">Instagram Caption</h2>
               </div>
-              <p className="text-xs text-slate-600">Copy this prompt into ChatGPT/Claude, paste the caption it gives you back below, then copy the final caption for Instagram.</p>
-              <div className="bg-slate-950 text-slate-300 rounded-xl p-3 text-[10px] leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap font-mono">
+              <p className="text-[13.5px] text-slate-600">Copy this prompt into ChatGPT/Claude, paste the caption it gives you back below, then copy the final caption for Instagram.</p>
+              <div className="bg-slate-950 text-slate-200 rounded-xl p-3.5 text-[12px] leading-relaxed max-h-72 overflow-y-auto whitespace-pre-wrap break-words font-mono">
                 {captionPrompt}
               </div>
               <CopyButton text={captionPrompt} label="Copy Caption Prompt" />
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Paste the caption ChatGPT returns</label>
+                <label className="text-[13px] font-bold text-slate-700 block mb-1.5">Paste the caption ChatGPT returns</label>
                 <textarea
                   value={captionText}
                   onChange={(e) => setCaptionText(e.target.value)}
                   rows={6}
                   placeholder="Paste the generated Instagram caption here…"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-3.5 py-3 text-[14px] text-slate-900 placeholder:text-slate-400 outline-none transition-colors hover:border-slate-300 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                 />
               </div>
               {captionText.trim().length > 0 && <CopyButton text={captionText} label="Copy Caption" />}
@@ -336,14 +311,13 @@ export default function AdminMobilePostMockTestPage() {
                   setErrors([]);
                   setWarnings([]);
                 }}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl cursor-pointer transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[14px] py-3 cursor-pointer"
               >
                 Post Another Mock Test
               </button>
             </div>
           </div>
         )}
-      </main>
-    </div>
+    </AiPostShell>
   );
 }

@@ -66,8 +66,8 @@ export const AdminWalletPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-      <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
         <Wallet className="w-5 h-5 text-emerald-600" /> Wallet Management
       </h2>
 
@@ -93,7 +93,7 @@ export const AdminWalletPanel: React.FC = () => {
         <div className="space-y-4">
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 flex items-center justify-between">
             <div>
-              <div className="font-bold text-slate-900 text-sm">{result.name}</div>
+              <div className="font-bold text-slate-900 text-[15px] break-words">{result.name}</div>
               <div className="text-xs text-slate-500">{result.email}</div>
             </div>
             <div className="text-right">
@@ -155,7 +155,7 @@ export const AdminWalletPanel: React.FC = () => {
 
       <div className="pt-2 border-t border-slate-100 space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h3 className="text-sm font-heading font-extrabold text-slate-900 flex items-center gap-2">
+          <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
             <ScrollText className="w-4 h-4 text-slate-500" /> Adjustment Audit Trail
           </h3>
           <span className="text-xs font-bold text-slate-500">{auditTotal} record{auditTotal === 1 ? '' : 's'}</span>
@@ -175,9 +175,9 @@ export const AdminWalletPanel: React.FC = () => {
           </button>
         </form>
         {auditLoading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading…</div>
         ) : auditLog.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No admin adjustments recorded yet.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No admin adjustments recorded yet.</div>
         ) : (
           <div className="space-y-1.5">
             {auditLog.map((l) => (

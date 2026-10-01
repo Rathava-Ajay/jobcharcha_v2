@@ -54,7 +54,7 @@ export const WorkExperienceFields: React.FC<Props> = ({ value, onChange }) => {
           </div>
           <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
             <input type="checkbox" checked={row.isCurrent} onChange={(e) => update(i, { isCurrent: e.target.checked })}
-              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
             I currently work here
           </label>
           <div>
@@ -66,7 +66,7 @@ export const WorkExperienceFields: React.FC<Props> = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => onChange([...rows, blank()])}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add work experience
       </button>

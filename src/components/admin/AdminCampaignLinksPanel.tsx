@@ -101,10 +101,10 @@ export const AdminCampaignLinksPanel: React.FC = () => {
   });
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center gap-2">
         <QrCode className="w-5 h-5 text-indigo-600" />
-        <h2 className="text-lg font-heading font-extrabold text-slate-900">Campaign Links / QR</h2>
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Campaign Links / QR</h2>
       </div>
       <p className="text-xs text-slate-500 -mt-3">
         Share these links or QR codes on Instagram. Every scan is tagged so new signups show up by
@@ -137,13 +137,13 @@ export const AdminCampaignLinksPanel: React.FC = () => {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
           <input value={customPath} onChange={(e) => setCustomPath(e.target.value)} placeholder="/jobs or full URL"
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500" />
+            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-medium outline-none hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
           <input value={cSource} onChange={(e) => setCSource(e.target.value)} placeholder="utm_source"
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500" />
+            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-medium outline-none hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
           <input value={cMedium} onChange={(e) => setCMedium(e.target.value)} placeholder="utm_medium"
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500" />
+            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-medium outline-none hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
           <input value={cCampaign} onChange={(e) => setCCampaign(e.target.value)} placeholder={`utm_campaign (${campaign})`}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium focus:outline-none focus:border-indigo-500" />
+            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-medium outline-none hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
         </div>
         <QrCard title="Custom link" url={customUrl} filename={`jobcharcha-custom-${cCampaign || campaign}.png`} />
       </div>

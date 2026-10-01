@@ -4,6 +4,7 @@ import {
   adminGetAuditEvents, adminGetAuditCategories, adminGetSignupSources,
   AuditEvent, AuditCategoryFacet, SignupSourceStat,
 } from '../../api/adminAudit';
+import { Select } from '../ui/Select';
 
 const CATEGORY_STYLES: Record<string, string> = {
   Auth: 'bg-indigo-50 text-indigo-700',
@@ -97,9 +98,9 @@ export const AdminAuditLogPanel: React.FC = () => {
   const hasFilters = category || eventType || from || to || appliedSearch;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
           <ScrollText className="w-5 h-5 text-indigo-600" /> Activity Audit
         </h2>
         <span className="text-xs font-bold text-slate-500">{totalCount} event{totalCount === 1 ? '' : 's'}</span>
@@ -119,23 +120,23 @@ export const AdminAuditLogPanel: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <select
+        <Select
           value={category}
           onChange={(e) => { setCategory(e.target.value); setEventType(''); }}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:outline-none focus:border-indigo-500"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[13px] font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
         >
           <option value="">All categories</option>
           {facets.map((f) => <option key={f.category} value={f.category}>{f.category}</option>)}
-        </select>
+        </Select>
 
-        <select
+        <Select
           value={eventType}
           onChange={(e) => setEventType(e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:outline-none focus:border-indigo-500"
+          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[13px] font-medium outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
         >
           <option value="">All events</option>
           {eventTypeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        </Select>
 
         <label className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-500">
           From
@@ -172,9 +173,9 @@ export const AdminAuditLogPanel: React.FC = () => {
 
       <div className="space-y-2.5">
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading activity…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading activity…</div>
         ) : items.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No activity matches these filters yet.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No activity matches these filters yet.</div>
         ) : items.map((ev) => {
           const meta = prettyJson(ev.metadataJson);
           const isOpen = expandedId === ev.id;

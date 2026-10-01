@@ -18,26 +18,26 @@ export default function BlogPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       <SeoHead title="Blog & Career Guides | JobCharcha" description="Career guides, exam preparation strategies and job-search advice for government and private-sector aspirants." path="/blog" />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer">
+      <div className="bg-white border-b border-slate-200 py-5 sm:py-7">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-3 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
           </button>
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
             <Rss className="w-3.5 h-3.5" /> Blog & Career Guides
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Exam Strategy & Career Guides</h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Exam Strategy & Career Guides</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">
             {posts.length > 0 ? `${posts.length} articles` : 'Loading articles…'} — preparation guides, strategy tips, and success stories.
           </p>
         </div>
       </div>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-7">
         {loading ? (
           <div className="py-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-emerald-600 animate-spin" /></div>
         ) : posts.length === 0 ? (

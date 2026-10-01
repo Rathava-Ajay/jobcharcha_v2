@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
 import { uploadAvatar } from '../../api/auth';
 import { fieldClass, labelClass } from './SectionCard';
+import { Select } from '../ui/Select';
 
 export interface PersonalDraft {
   firstName: string;
@@ -60,7 +61,7 @@ export const PersonalInfoFields: React.FC<Props> = ({
             {photoUrl ? <img src={photoUrl} alt="" className="w-full h-full object-cover" /> : <Camera className="w-5 h-5 text-slate-400" />}
           </div>
           <div>
-            <label className="inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:border-emerald-400 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl cursor-pointer">
+            <label className="inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:border-blue-400 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl cursor-pointer">
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
               {uploading ? 'Uploading…' : photoUrl ? 'Change photo' : 'Upload photo'}
               <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={uploading} onChange={handlePhoto} />
@@ -93,10 +94,10 @@ export const PersonalInfoFields: React.FC<Props> = ({
         </div>
         <div>
           <label className={labelClass}>Gender *</label>
-          <select className={fieldClass} value={value.gender} onChange={(e) => set('gender', e.target.value)}>
+          <Select className={fieldClass} value={value.gender} onChange={(e) => set('gender', e.target.value)}>
             <option value="">Select…</option>
             {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
+          </Select>
         </div>
         <div>
           <label className={labelClass}>City *</label>
