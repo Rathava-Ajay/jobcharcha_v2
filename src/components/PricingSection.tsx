@@ -121,6 +121,9 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
     setEmployerCheckoutMessage(null);
   };
 
+  // Nothing to sell yet: don't leave an empty block on the home page.
+  if (!aspirantPlansLoading && !employerPlansLoading && aspirantPlans.length === 0 && employerPlans.length === 0) return null;
+
   return (
     <section className="py-12 sm:py-16 relative">
 
