@@ -211,8 +211,8 @@ export default function LandingPage() {
           )}
         </div>
 
-        <div id="schemes-section" className="mt-4"><SchemesNewsSection /></div>
-        <div id="pricing-section"><PricingSection activeRole={planRole} setActiveRole={setPlanRole} /></div>
+        <div id="schemes-section" className="scroll-mt-24"><SchemesNewsSection /></div>
+        <div id="pricing-section" className="pb-10 sm:pb-12 scroll-mt-24"><PricingSection activeRole={planRole} setActiveRole={setPlanRole} /></div>
       </main>
 
       <Footer />
