@@ -109,7 +109,7 @@
    renders CMS Gujarati content). Gujarati glyphs carry matras above and below
    the baseline, so the Latin default line-height clips/overlaps them. Applied
    via the .lang-gu class on any text container showing Gujarati. Unlayered so
-   it wins over Tailwind's leading-*/tracking-* utilities already on the JSX.
+   it wins over Tailwind's leading and tracking utilities already on the JSX.
    --------------------------------------------------------------------------- */
 .lang-gu {
   font-family: 'Noto Sans Gujarati', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
