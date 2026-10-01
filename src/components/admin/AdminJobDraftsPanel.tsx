@@ -200,10 +200,10 @@ export const AdminJobDraftsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+            <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
               <Radar className="w-5 h-5 text-indigo-600" /> Scraper Draft Queue
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -246,9 +246,9 @@ export const AdminJobDraftsPanel: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading drafts…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading drafts…</div>
         ) : items.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">
             Nothing here yet. Once a watcher agent is set up (see "Watched Sources" below), new postings it finds will show up in this queue.
           </div>
         ) : (
@@ -257,7 +257,7 @@ export const AdminJobDraftsPanel: React.FC = () => {
               <div key={draft.id} className="border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="space-y-1">
-                    <div className="font-bold text-slate-900 text-sm">{draft.title}</div>
+                    <div className="font-bold text-slate-900 text-[15px] break-words">{draft.title}</div>
                     <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
                       {draft.organizationName && <span>{draft.organizationName}</span>}
                       {draft.totalPosts != null && <span>{draft.totalPosts} posts</span>}
@@ -343,7 +343,7 @@ export const AdminJobDraftsPanel: React.FC = () => {
           onClick={() => { setShowSources(!showSources); if (!sourcesLoaded) loadSources(); }}
           className="w-full flex items-center justify-between cursor-pointer"
         >
-          <h3 className="text-sm font-heading font-extrabold text-slate-900 flex items-center gap-2">
+          <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
             <Rss className="w-4 h-4 text-indigo-600" /> Watched Sources ({sources.length})
           </h3>
           {showSources ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
@@ -385,7 +385,7 @@ export const AdminJobDraftsPanel: React.FC = () => {
               </div>
             ))}
             {sources.length === 0 && sourcesLoaded && (
-              <div className="text-xs text-slate-400 font-semibold">No sources added yet.</div>
+              <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No sources added yet.</div>
             )}
 
             {showAddSource ? (
@@ -393,10 +393,10 @@ export const AdminJobDraftsPanel: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input placeholder="Name (e.g. GSSSB Notifications)" value={sourceForm.name}
                     onChange={(e) => setSourceForm({ ...sourceForm, name: e.target.value })}
-                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs" />
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   <Select value={sourceForm.sourceType}
                     onChange={(e) => setSourceForm({ ...sourceForm, sourceType: Number(e.target.value) })}
-                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                     <option value={0}>Official Website</option>
                     <option value={1}>Telegram Channel</option>
                   </Select>
@@ -405,10 +405,10 @@ export const AdminJobDraftsPanel: React.FC = () => {
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs sm:col-span-2" />
                   <input placeholder="Organization hint (optional)" value={sourceForm.organizationHint || ''}
                     onChange={(e) => setSourceForm({ ...sourceForm, organizationHint: e.target.value })}
-                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs" />
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   <Select value={sourceForm.defaultCategoryId ?? ''}
                     onChange={(e) => setSourceForm({ ...sourceForm, defaultCategoryId: e.target.value ? Number(e.target.value) : null })}
-                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
+                    className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-[13px] outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                     <option value="">No default category</option>
                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </Select>

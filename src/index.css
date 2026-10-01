@@ -151,3 +151,6 @@
 @media (prefers-reduced-motion: reduce) {
   [class*="animate-[popIn"], [class*="animate-[sheetUp"], [class*="animate-[fadeIn"] { animation: none !important; }
 }
+
+/* Branded checkboxes & radios everywhere */
+input[type="checkbox"], input[type="radio"] { accent-color: #1d4ed8; }

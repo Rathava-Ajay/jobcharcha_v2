@@ -52,10 +52,10 @@ export const AdminEmployerJobsPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-lg font-heading font-extrabold text-slate-900">Employer Job Moderation</h2>
+          <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Employer Job Moderation</h2>
           <p className="text-xs text-slate-500 mt-0.5">
             First-time postings from employers with no previously approved job. Approving one also marks
             the employer trusted — their later postings publish automatically.
@@ -71,16 +71,16 @@ export const AdminEmployerJobsPanel: React.FC = () => {
       )}
 
       {loading ? (
-        <div className="text-xs text-slate-400 font-semibold">Loading pending postings…</div>
+        <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading pending postings…</div>
       ) : items.length === 0 ? (
-        <div className="text-xs text-slate-400 font-semibold">Nothing awaiting review.</div>
+        <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Nothing awaiting review.</div>
       ) : (
         <div className="space-y-4">
           {items.map((job) => (
             <div key={job.id} className="border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="space-y-1">
-                  <div className="font-bold text-slate-900 text-sm">{job.title}</div>
+                  <div className="font-bold text-slate-900 text-[15px] break-words">{job.title}</div>
                   <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
                     <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {job.companyName}</span>
                     <span className="flex items-center gap-1">

@@ -66,7 +66,7 @@ export const EducationFields: React.FC<Props> = ({ value, onChange }) => {
       <button
         type="button"
         onClick={() => onChange([...rows, blank()])}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 hover:text-blue-800 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" /> Add another qualification
       </button>

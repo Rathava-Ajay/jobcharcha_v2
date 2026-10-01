@@ -4,7 +4,9 @@ import { useTranslation } from 'react-i18next';
 import {
   User, Clock, Search, Menu, X, ChevronDown, Home, Briefcase, Award, Ticket, PenLine, Building2,
   Flame, FileText, BookOpen, Target, Landmark, Newspaper, Rss, ShoppingBag, Bell, Bookmark,
+  LogOut, LayoutDashboard,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { UserProfile } from '../types';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -69,6 +71,26 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
   const [moreOpen, setMoreOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [accountOpen, setAccountOpen] = useState(false);
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    setAccountOpen(false);
+    setMenuOpen(false);
+    navigate('/', { replace: true });
+    await logout();
+  };
+
+  // Close the account menu on outside click / Escape.
+  useEffect(() => {
+    if (!accountOpen) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-account-menu]')) setAccountOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', close); };
+  }, [accountOpen]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -77,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
   }, []);
 
   // Close menus on navigation.
-  useEffect(() => { setMoreOpen(false); setMenuOpen(false); }, [pathname]);
+  useEffect(() => { setMoreOpen(false); setMenuOpen(false); setAccountOpen(false); }, [pathname]);
 
   // Lock page scroll behind the mobile menu.
   useEffect(() => {
@@ -181,14 +203,51 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
                 <span className="hidden 2xl:inline">{t('nav.examtracker')}</span>
               </button>
             )}
-            <Link
-              to={accountPath}
-              aria-label={user ? `Open ${firstName}'s dashboard` : 'Login or register'}
-              className="hidden sm:inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold"
-            >
-              <User className="w-4 h-4" />
-              {user ? firstName : t('nav.login')}
-            </Link>
+            {user ? (
+              <div className="relative hidden sm:block" data-account-menu>
+                <button
+                  type="button"
+                  onClick={() => setAccountOpen((v) => !v)}
+                  aria-haspopup="menu"
+                  aria-expanded={accountOpen}
+                  className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white pl-1.5 pr-3 py-1.5 rounded-xl text-sm font-bold cursor-pointer"
+                >
+                  <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-300 to-orange-500 text-slate-900 grid place-items-center text-[11px] font-extrabold">
+                    {user.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase()}
+                  </span>
+                  <span className="max-w-[8rem] truncate">{firstName}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${accountOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {accountOpen && (
+                  <div role="menu" className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border border-slate-200 shadow-[0_24px_48px_-18px_rgba(15,23,42,0.35)] p-1.5 animate-[popIn_.12s_ease-out]">
+                    <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
+                      <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    </div>
+                    <Link role="menuitem" to={accountPath} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                      <LayoutDashboard className="w-4 h-4 text-blue-600" /> My dashboard
+                    </Link>
+                    {user.role === 'aspirant' && (
+                      <Link role="menuitem" to="/saved-jobs" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        <Bookmark className="w-4 h-4 text-emerald-600" /> Saved jobs
+                      </Link>
+                    )}
+                    <button role="menuitem" type="button" onClick={handleLogout} className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 cursor-pointer">
+                      <LogOut className="w-4 h-4" /> Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to={accountPath}
+                aria-label="Login or register"
+                className="hidden sm:inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold"
+              >
+                <User className="w-4 h-4" />
+                {t('nav.login')}
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
@@ -220,6 +279,11 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
                   <span className="block text-xs text-slate-300">{user ? 'Open my dashboard' : 'Save jobs, get alerts, track exams'}</span>
                 </span>
               </Link>
+              {user && (
+                <button type="button" onClick={handleLogout} className="-mt-3 w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-red-200 bg-red-50 text-sm font-bold text-red-700 cursor-pointer">
+                  <LogOut className="w-4 h-4" /> Log out
+                </button>
+              )}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-600">{t('nav.language')}</span>
                 <LanguageSwitcher />

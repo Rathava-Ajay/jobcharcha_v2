@@ -100,7 +100,7 @@ export const AdminPaymentsPanel: React.FC = () => {
               ? <ShieldCheck className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
               : <ShieldAlert className="w-5 h-5 text-rose-600 mt-0.5 shrink-0" />}
             <div>
-              <h2 className="text-sm font-heading font-extrabold text-slate-900">
+              <h2 className="text-[16px] font-extrabold text-slate-900">
                 Razorpay gateway: {healthLoading ? 'checking…' : healthOk ? 'Connected' : 'NOT working'}
               </h2>
               {!healthLoading && health && (
@@ -127,9 +127,9 @@ export const AdminPaymentsPanel: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+          <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-600" /> Reconciliation — Stuck Payments
           </h2>
           <button onClick={loadStuck} className="text-xs font-bold text-slate-500 hover:text-slate-900 flex items-center gap-1.5 cursor-pointer">
@@ -143,9 +143,9 @@ export const AdminPaymentsPanel: React.FC = () => {
         </p>
 
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading…</div>
         ) : stuck.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No discrepancies — everything reconciled.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No discrepancies — everything reconciled.</div>
         ) : (
           <div className="space-y-2">
             {stuck.map((p) => (
@@ -176,7 +176,7 @@ export const AdminPaymentsPanel: React.FC = () => {
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-4">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
           <Undo2 className="w-5 h-5 text-red-600" /> Issue a Refund
         </h2>
         <p className="text-xs text-slate-500 -mt-2">
@@ -188,7 +188,7 @@ export const AdminPaymentsPanel: React.FC = () => {
             <Select
               value={refundKind}
               onChange={(e) => setRefundKind(e.target.value as 'payment' | 'store-order')}
-              className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
+              className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-bold"
             >
               <option value="payment">Aspirant Payment ID</option>
               <option value="store-order">Store Order ID</option>

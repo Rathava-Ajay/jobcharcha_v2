@@ -412,19 +412,19 @@ export const AdminDashboardSection: React.FC = () => {
 
         {/* JOBS CMS */}
         {activeTab === 'jobs' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-heading font-extrabold text-slate-900">Job Postings</h2>
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Job Postings</h2>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate('/admin/mobile-post')}
-                  className="bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer flex items-center gap-1.5"
+                  className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 whitespace-nowrap transition-colors"
                 >
                   <Smartphone className="w-4 h-4" /> Post via Mobile/AI
                 </button>
                 <button
                   onClick={() => { resetJobForm(); setJobFormOpen(true); }}
-                  className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer flex items-center gap-1.5"
+                  className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-[0_8px_18px_-10px_rgba(37,99,235,0.8)] transition-colors"
                 >
                   <PlusCircle className="w-4 h-4" /> New Job
                 </button>
@@ -434,65 +434,65 @@ export const AdminDashboardSection: React.FC = () => {
             <BulkImportExportBar entityLabel="Jobs" exportPath="/api/jobs/admin/export" importPath="/api/jobs/admin/bulk-import" onImported={loadJobs} />
 
             {jobFormOpen && (
-              <form onSubmit={handleJobSubmit} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 text-xs font-bold">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-heading font-extrabold text-slate-900">{editingJobId ? 'Edit Job' : 'New Job'}</h3>
-                  <button type="button" onClick={resetJobForm} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-4 h-4" /></button>
+              <form onSubmit={handleJobSubmit} className="bg-gradient-to-b from-blue-50/70 to-white border border-blue-200 ring-4 ring-blue-500/5 rounded-2xl p-4 sm:p-6 space-y-4 text-[13px] font-bold">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-[16px] font-extrabold text-slate-900">{editingJobId ? 'Edit Job' : 'New Job'}</h3>
+                  <button type="button" onClick={resetJobForm} className="w-8 h-8 rounded-lg grid place-items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
-                {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3 py-2">{formError}</div>}
+                {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-[13px]">{formError}</div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="text-slate-700 block mb-1">Title</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Title</label>
                     <input required value={jobForm.title} onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Organization</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Organization</label>
                     <input required value={jobForm.organizationName} onChange={(e) => setJobForm({ ...jobForm, organizationName: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Category</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Category</label>
                     <Select required value={jobForm.categoryId} onChange={(e) => setJobForm({ ...jobForm, categoryId: Number(e.target.value) })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium">
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                       <option value={0} disabled>Select category…</option>
                       {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                     </Select>
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Location</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Location</label>
                     <input value={jobForm.location} onChange={(e) => setJobForm({ ...jobForm, location: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Vacancies</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Vacancies</label>
                     <input type="number" value={jobForm.totalPosts} onChange={(e) => setJobForm({ ...jobForm, totalPosts: Number(e.target.value) })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Salary</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Salary</label>
                     <input value={jobForm.salary} onChange={(e) => setJobForm({ ...jobForm, salary: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Qualification</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Qualification</label>
                     <input value={jobForm.qualificationRequired} onChange={(e) => setJobForm({ ...jobForm, qualificationRequired: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Posted Date</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Posted Date</label>
                     <input type="date" value={jobForm.postedDate} onChange={(e) => setJobForm({ ...jobForm, postedDate: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Last Date</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Last Date</label>
                     <input type="date" required value={jobForm.lastDate} onChange={(e) => setJobForm({ ...jobForm, lastDate: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Status</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Status</label>
                     <Select value={jobForm.status} onChange={(e) => setJobForm({ ...jobForm, status: Number(e.target.value) })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium">
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                       <option value={0}>Draft</option>
                       <option value={1}>Published</option>
                       <option value={2}>Closed</option>
@@ -510,7 +510,7 @@ export const AdminDashboardSection: React.FC = () => {
                     <label className="flex items-center gap-1.5"><input type="checkbox" checked={jobForm.isUrgent} onChange={(e) => setJobForm({ ...jobForm, isUrgent: e.target.checked })} /> Urgent</label>
                   </div>
                 </div>
-                <button type="submit" className="bg-slate-900 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-md">
+                <button type="submit" className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-6 py-3 rounded-xl cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)] transition-colors">
                   {editingJobId ? 'Save Changes' : 'Publish Job'}
                 </button>
               </form>
@@ -518,23 +518,23 @@ export const AdminDashboardSection: React.FC = () => {
 
             <div className="space-y-3">
               {jobsLoading ? (
-                <div className="text-xs text-slate-400 font-semibold">Loading jobs…</div>
+                <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading jobs…</div>
               ) : jobs.map((j) => (
-                <div key={j.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                <div key={j.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_26px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]">
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">{j.title}</div>
+                    <div className="font-bold text-slate-900 text-[15px] break-words">{j.title}</div>
                     <div className="text-slate-500">{j.companyOrDept} • Vacancies: {j.vacancyCount} • {j.salary} • <span className="font-bold">{j.status}</span> • <span className="font-bold text-indigo-600">{(j.viewsCount ?? 0).toLocaleString()} views</span></div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleEditJob(j as Job & { id: string })} className="bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+                    <button onClick={() => handleEditJob(j as Job & { id: string })} className="bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-700 text-slate-700 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"><Pencil className="w-3.5 h-3.5" /> Edit</button>
                     <button onClick={() => handleToggleJobActive(j.id, j.status !== 'Active')} className="bg-indigo-50 text-indigo-800 font-bold px-3 py-1.5 rounded-xl cursor-pointer">
                       {j.status === 'Active' ? 'Deactivate' : 'Activate'}
                     </button>
-                    <button onClick={() => handleDeleteJob(j.id)} className="bg-red-50 text-red-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1">
+                    <button onClick={() => handleDeleteJob(j.id)} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" /> {confirmDeleteJobId === j.id ? 'Confirm Delete?' : 'Delete'}
                     </button>
                     {confirmDeleteJobId === j.id && (
-                      <button onClick={() => setConfirmDeleteJobId(null)} className="bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-xl cursor-pointer">Cancel</button>
+                      <button onClick={() => setConfirmDeleteJobId(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors">Cancel</button>
                     )}
                   </div>
                 </div>
@@ -545,51 +545,51 @@ export const AdminDashboardSection: React.FC = () => {
 
         {/* CATEGORIES CMS */}
         {activeTab === 'categories' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-heading font-extrabold text-slate-900">Categories</h2>
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Categories</h2>
               <button
                 onClick={() => { resetCategoryForm(); setCategoryFormOpen(true); }}
-                className="bg-emerald-600 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer flex items-center gap-1.5"
+                className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-[0_8px_18px_-10px_rgba(37,99,235,0.8)] transition-colors"
               >
                 <PlusCircle className="w-4 h-4" /> New Category
               </button>
             </div>
 
             {categoryFormOpen && (
-              <form onSubmit={handleCategorySubmit} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 text-xs font-bold">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-heading font-extrabold text-slate-900">{editingCategoryId ? 'Edit Category' : 'New Category'}</h3>
-                  <button type="button" onClick={resetCategoryForm} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-4 h-4" /></button>
+              <form onSubmit={handleCategorySubmit} className="bg-gradient-to-b from-blue-50/70 to-white border border-blue-200 ring-4 ring-blue-500/5 rounded-2xl p-4 sm:p-6 space-y-4 text-[13px] font-bold">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="text-[16px] font-extrabold text-slate-900">{editingCategoryId ? 'Edit Category' : 'New Category'}</h3>
+                  <button type="button" onClick={resetCategoryForm} className="w-8 h-8 rounded-lg grid place-items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
-                {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3 py-2">{formError}</div>}
+                {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-[13px]">{formError}</div>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-slate-700 block mb-1">Name</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Name</label>
                     <input required value={categoryForm.name} onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Icon (lucide name)</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Icon (lucide name)</label>
                     <input value={categoryForm.icon} onChange={(e) => setCategoryForm({ ...categoryForm, icon: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="text-slate-700 block mb-1">Description</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Description</label>
                     <textarea value={categoryForm.description || ''} onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" rows={2} />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" rows={2} />
                   </div>
                   <div>
-                    <label className="text-slate-700 block mb-1">Display Order</label>
+                    <label className="text-slate-700 block mb-1.5 text-[12.5px]">Display Order</label>
                     <input type="number" value={categoryForm.displayOrder} onChange={(e) => setCategoryForm({ ...categoryForm, displayOrder: Number(e.target.value) })}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
                   </div>
                   <div className="flex items-end gap-4 pb-1">
                     <label className="flex items-center gap-1.5"><input type="checkbox" checked={categoryForm.showOnHomepage} onChange={(e) => setCategoryForm({ ...categoryForm, showOnHomepage: e.target.checked })} /> Show on Homepage</label>
                     <label className="flex items-center gap-1.5"><input type="checkbox" checked={categoryForm.isActive} onChange={(e) => setCategoryForm({ ...categoryForm, isActive: e.target.checked })} /> Active</label>
                   </div>
                 </div>
-                <button type="submit" className="bg-slate-900 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-md">
+                <button type="submit" className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-6 py-3 rounded-xl cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)] transition-colors">
                   {editingCategoryId ? 'Save Changes' : 'Create Category'}
                 </button>
               </form>
@@ -601,20 +601,20 @@ export const AdminDashboardSection: React.FC = () => {
 
             <div className="space-y-3">
               {categoriesLoading ? (
-                <div className="text-xs text-slate-400 font-semibold">Loading categories…</div>
+                <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading categories…</div>
               ) : categories.map((c) => (
-                <div key={c.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+                <div key={c.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_26px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]">
                   <div>
-                    <div className="font-bold text-slate-900 text-sm">{c.name} {!c.isActive && <span className="text-red-500">(inactive)</span>}</div>
+                    <div className="font-bold text-slate-900 text-[15px] break-words">{c.name} {!c.isActive && <span className="text-red-500">(inactive)</span>}</div>
                     <div className="text-slate-500">{c.jobCount} jobs • Slug: {c.slug} {c.showOnHomepage && '• Featured on homepage'}</div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleEditCategory(c)} className="bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                    <button onClick={() => handleDeleteCategory(c.id)} className="bg-red-50 text-red-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1">
+                    <button onClick={() => handleEditCategory(c)} className="bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-700 text-slate-700 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+                    <button onClick={() => handleDeleteCategory(c.id)} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" /> {confirmDeleteCategoryId === c.id ? 'Confirm Delete?' : 'Delete'}
                     </button>
                     {confirmDeleteCategoryId === c.id && (
-                      <button onClick={() => setConfirmDeleteCategoryId(null)} className="bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-xl cursor-pointer">Cancel</button>
+                      <button onClick={() => setConfirmDeleteCategoryId(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors">Cancel</button>
                     )}
                   </div>
                 </div>
@@ -735,7 +735,7 @@ export const AdminDashboardSection: React.FC = () => {
         {activeTab === 'social' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
             <ComingSoonBadge />
-            <h2 className="text-lg font-heading font-extrabold text-slate-900">Social Broadcast</h2>
+            <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Social Broadcast</h2>
             <p className="text-xs text-slate-500 max-w-md mx-auto">
               This module's CMS UI is scaffolded but not yet wired to a live database table — it lands in a later phase alongside notifications and marketplace modules.
             </p>

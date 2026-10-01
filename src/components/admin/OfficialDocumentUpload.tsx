@@ -51,7 +51,7 @@ export const OfficialDocumentUpload: React.FC<Props> = ({
 
   return (
     <div>
-      <label className="text-slate-700 block mb-1">{label}</label>
+      <label className="text-slate-700 block mb-1.5 text-[12.5px]">{label}</label>
       {value ? (
         <div className="flex items-start gap-2.5">
           <DocumentPreview url={value} fileName={fileName} variant="thumb" />

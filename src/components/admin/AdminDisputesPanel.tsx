@@ -29,9 +29,9 @@ export const AdminDisputesPanel: React.FC = () => {
   const openCount = disputes.filter((d) => d.status === 'open' || d.status === 'under_review' || d.status === 'action_required').length;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900 flex items-center gap-2">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900 flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-red-600" /> Disputes &amp; Chargebacks
         </h2>
         {openCount > 0 && (
@@ -47,7 +47,7 @@ export const AdminDisputesPanel: React.FC = () => {
         <Select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
+          className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-bold"
         >
           <option value="">All statuses</option>
           <option value="open">Open</option>
@@ -64,9 +64,9 @@ export const AdminDisputesPanel: React.FC = () => {
 
       <div className="space-y-2">
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading…</div>
         ) : disputes.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No disputes on record.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No disputes on record.</div>
         ) : disputes.map((d) => (
           <div key={d.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
             <div>

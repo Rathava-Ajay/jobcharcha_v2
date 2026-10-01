@@ -47,7 +47,7 @@ export const JobPreferencesFields: React.FC<Props> = ({ value, onChange }) => {
       </div>
       <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
         <input type="checkbox" checked={value.willingToRelocate} onChange={(e) => set('willingToRelocate', e.target.checked)}
-          className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
         I'm willing to relocate
       </label>
     </div>

@@ -87,9 +87,9 @@ export const AdminEmployerContactsPanel: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <h2 className="text-lg font-heading font-extrabold text-slate-900">Employer Contact Audit Log</h2>
+          <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Employer Contact Audit Log</h2>
           <span className="text-xs font-bold text-slate-500">{totalCount} attempts</span>
         </div>
 
@@ -97,7 +97,7 @@ export const AdminEmployerContactsPanel: React.FC = () => {
           <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
+            className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[13px] font-bold"
           >
             <option value="">All statuses</option>
             <option value="success">Unlocked</option>
@@ -112,9 +112,9 @@ export const AdminEmployerContactsPanel: React.FC = () => {
 
         <div className="space-y-2">
           {loading ? (
-            <div className="text-xs text-slate-400 font-semibold">Loading…</div>
+            <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading…</div>
           ) : logs.length === 0 ? (
-            <div className="text-xs text-slate-400 font-semibold">No contact attempts found.</div>
+            <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No contact attempts found.</div>
           ) : logs.map((log) => (
             <div key={log.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
               <div>
@@ -134,8 +134,8 @@ export const AdminEmployerContactsPanel: React.FC = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setOverview(null)}>
           <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 space-y-5" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between">
-              <h3 className="text-lg font-heading font-extrabold text-slate-900">{overview.companyName}</h3>
-              <button onClick={() => setOverview(null)} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-5 h-5" /></button>
+              <h3 className="text-[19px] font-extrabold tracking-tight text-slate-900">{overview.companyName}</h3>
+              <button onClick={() => setOverview(null)} className="w-8 h-8 rounded-lg grid place-items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
@@ -164,9 +164,9 @@ export const AdminEmployerContactsPanel: React.FC = () => {
               <textarea
                 required value={adjustReason} onChange={(e) => setAdjustReason(e.target.value)}
                 placeholder="Reason (required — shown in the audit ledger)"
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" rows={2}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" rows={2}
               />
-              {adjustError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3 py-2">{adjustError}</div>}
+              {adjustError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-[13px]">{adjustError}</div>}
               <button type="submit" disabled={adjustBusy} className="bg-slate-900 disabled:opacity-50 text-white font-extrabold px-4 py-2 rounded-xl cursor-pointer">
                 {adjustBusy ? 'Saving…' : 'Apply Adjustment'}
               </button>

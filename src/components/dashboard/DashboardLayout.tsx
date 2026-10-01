@@ -47,9 +47,10 @@ export const DashboardLayout: React.FC<{
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleLogout = async () => {
-    await logout();
+  // Leave the protected page first; logging out while it is mounted would bounce to /login.
+  const handleLogout = () => {
     navigate('/', { replace: true });
+    void logout();
   };
 
   const sidebar = (

@@ -61,7 +61,7 @@ export const PersonalInfoFields: React.FC<Props> = ({
             {photoUrl ? <img src={photoUrl} alt="" className="w-full h-full object-cover" /> : <Camera className="w-5 h-5 text-slate-400" />}
           </div>
           <div>
-            <label className="inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:border-emerald-400 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl cursor-pointer">
+            <label className="inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:border-blue-400 text-xs font-bold text-slate-700 px-3 py-2 rounded-xl cursor-pointer">
               {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
               {uploading ? 'Uploading…' : photoUrl ? 'Change photo' : 'Upload photo'}
               <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" disabled={uploading} onChange={handlePhoto} />
