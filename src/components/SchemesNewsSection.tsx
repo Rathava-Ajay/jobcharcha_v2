@@ -21,6 +21,8 @@ export const SchemesNewsSection: React.FC = () => {
     getNews().then((data) => setNewsPosts(data.slice(0, 6))).catch(() => setNewsPosts([]));
   }, []);
 
+  if (schemes.length === 0 && newsPosts.length === 0) return null;
+
   return (
     <section className="py-10 sm:py-12 relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
