@@ -186,7 +186,7 @@ export const RowSkeleton: React.FC<{ rows?: number }> = ({ rows = 4 }) => (
 
 /** Primary / secondary buttons as class strings so they work on <Link>, <a> and <button>. */
 export const btn = {
-  primary: 'inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 text-sm transition-colors cursor-pointer disabled:opacity-60',
+  primary: 'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold px-4 py-2.5 text-sm transition-colors cursor-pointer disabled:opacity-60',
   secondary: 'inline-flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold px-4 py-2.5 text-sm transition-colors cursor-pointer disabled:opacity-60',
   dark: 'inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2.5 text-sm transition-colors cursor-pointer disabled:opacity-60',
   small: 'px-3 py-1.5 text-[13px] rounded-lg',

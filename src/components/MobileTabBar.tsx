@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Home, Briefcase, Award, Ticket, PenLine } from 'lucide-react';
 import { isNavActive } from './Navbar';
+import { useBodyClass } from '../hooks/useBodyClass';
 
 const TABS = [
   { key: 'home', to: '/', icon: Home },
@@ -23,12 +24,13 @@ const HIDDEN = [
 export const MobileTabBar: React.FC = () => {
   const { pathname } = useLocation();
   const { t } = useTranslation();
-  if (HIDDEN.some((re) => re.test(pathname))) return null;
+  const hidden = HIDDEN.some((re) => re.test(pathname));
+  // Reserves room for the bar (plus the iPhone home-indicator area) at the very bottom of the page.
+  useBodyClass('has-tabbar', !hidden);
+  if (hidden) return null;
 
   return (
     <>
-      {/* Spacer so the last bit of every page can scroll above the fixed bar. */}
-      <div className="h-16 md:hidden" aria-hidden />
       <nav
         aria-label="Quick navigation"
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 grid grid-cols-5 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]"
@@ -40,7 +42,7 @@ export const MobileTabBar: React.FC = () => {
               key={tab.key}
               to={tab.to}
               aria-current={active ? 'page' : undefined}
-              className={`flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold ${active ? 'text-emerald-700' : 'text-slate-500'}`}
+              className={`flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold ${active ? 'text-blue-700' : 'text-slate-500'}`}
             >
               <tab.icon className="w-[22px] h-[22px]" strokeWidth={active ? 2.4 : 1.9} />
               {t(`nav.${tab.key}`)}

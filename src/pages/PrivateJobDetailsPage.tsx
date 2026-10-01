@@ -1,3 +1,4 @@
+import { useBodyClass } from '../hooks/useBodyClass';
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -77,6 +78,7 @@ export default function PrivateJobDetailsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [job, setJob] = useState<ApiPublicEmployerJobDetail | null>(null);
+  useBodyClass('has-mobile-cta', !!job);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 

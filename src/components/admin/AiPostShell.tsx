@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, Sparkles } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Logo } from '../brand/Logo';
 
 /**
  * Shared chrome for the "Post via Mobile/AI" pages: a slim sticky bar (back to admin, logo,
@@ -31,7 +32,7 @@ export const AiPostShell: React.FC<{
             className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 hover:border-blue-400 hover:text-blue-700 px-2.5 sm:px-3 py-2 text-[13px] font-bold text-slate-700 cursor-pointer">
             <ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Admin</span>
           </button>
-          <Link to="/" aria-label="JobCharcha home" className="hidden sm:block"><img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-6 w-auto" /></Link>
+          <Link to="/" aria-label="JobCharcha home" className="hidden sm:block"><Logo className="text-[21px]" /></Link>
           <span className="sm:hidden min-w-0 flex-1 truncate text-[14px] font-extrabold text-slate-900">{title}</span>
           <span className="ml-auto w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white grid place-items-center font-extrabold text-[12px] shrink-0" title={user?.name}>{initials}</span>
         </div>

@@ -1,3 +1,4 @@
+import { useBodyClass } from '../../hooks/useBodyClass';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight } from 'lucide-react';
@@ -60,7 +61,7 @@ export const DetailSection: React.FC<{
   return (
     <Card id={id} className={cx('scroll-mt-24', flush ? 'py-4 sm:py-5' : 'p-4 sm:p-5', tone === 'warning' && 'bg-amber-50/70 border-amber-200')}>
       <h2 className={cx('flex items-center gap-2 text-[16px] sm:text-[17px] font-extrabold mb-3', tone === 'warning' ? 'text-amber-900' : 'text-slate-900', flush && 'px-4 sm:px-5')}>
-        <Icon className={cx('w-5 h-5', tone === 'warning' ? 'text-amber-700' : 'text-emerald-700')} /> {title}
+        <Icon className={cx('w-5 h-5', tone === 'warning' ? 'text-amber-700' : 'text-blue-700')} /> {title}
       </h2>
       <div className="text-[14.5px] leading-relaxed text-slate-700">
         {html ? <SafeHtml html={html} /> : children}
@@ -113,18 +114,19 @@ export const FaqList: React.FC<{ items: { question: string; answer: string }[] }
 );
 
 /** Fixed bottom bar for the page's one primary action on phones. */
-export const MobileCta: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <>
-    <div className="h-20 lg:hidden" aria-hidden />
+export const MobileCta: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Room for the bar is reserved at the end of <body> (after the footer), not mid-page.
+  useBodyClass('has-mobile-cta');
+  return (
     <div className="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 px-3 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex gap-2">
       {children}
     </div>
-  </>
-);
+  );
+};
 
 export const DetailLoading: React.FC = () => (
   <div className="flex-1 flex items-center justify-center py-24">
-    <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-emerald-600 animate-spin" role="status" aria-label="Loading" />
+    <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-blue-600 animate-spin" role="status" aria-label="Loading" />
   </div>
 );
 
@@ -132,6 +134,6 @@ export const DetailNotFound: React.FC<{ title: string; back: { to: string; label
   <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
     <h1 className="text-2xl font-extrabold text-slate-900">{title}</h1>
     <p className="text-sm text-slate-500">It may have been removed or the link is incorrect.</p>
-    <Link to={back.to} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2.5 text-sm">{back.label}</Link>
+    <Link to={back.to} className="inline-flex items-center gap-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold px-4 py-2.5 text-sm">{back.label}</Link>
   </div>
 );

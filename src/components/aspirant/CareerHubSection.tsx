@@ -17,6 +17,7 @@ import { SkillsFields } from './SkillsFields';
 import { WorkExperienceFields } from './WorkExperienceFields';
 import { JobPreferencesFields } from './JobPreferencesFields';
 import { MasterResumePanel } from './MasterResumePanel';
+import { Logo } from '../brand/Logo';
 
 interface Props {
   profile: AspirantProfile;
@@ -137,7 +138,7 @@ export const CareerHubSection: React.FC<Props> = ({ profile, onProfile, onRefetc
       <div className="min-h-screen bg-[#f3f6fb]">
         <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-slate-200">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center gap-3">
-            <Link to="/" aria-label="JobCharcha home"><img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-6 sm:h-7 w-auto" /></Link>
+            <Link to="/" aria-label="JobCharcha home"><Logo className="text-[20px] sm:text-[23px]" /></Link>
             <span className="hidden sm:inline text-[13px] font-semibold text-slate-400">· Profile setup</span>
             <span className="ml-auto hidden sm:block text-[13px] font-semibold text-slate-600 truncate max-w-[12rem]">{profile.fullName || profile.email}</span>
             <button type="button" onClick={() => { navigate('/', { replace: true }); void logout(); }}

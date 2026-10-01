@@ -32,7 +32,7 @@ export const DeadlineReminderBanner: React.FC = () => {
   };
 
   return (
-    <div role="status" className="fixed z-50 left-3 right-3 bottom-20 md:bottom-5 md:left-auto md:right-5 md:max-w-sm bg-slate-900 text-white rounded-2xl shadow-2xl p-4 flex gap-3">
+    <div role="status" className="fixed z-50 left-3 right-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-5 md:left-auto md:right-5 md:max-w-sm bg-slate-900 text-white rounded-2xl shadow-2xl p-4 flex gap-3">
       <BellRing className="w-5 h-5 text-amber-300 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0 text-sm">
         <p className="font-bold">{r.left === 0 ? 'Last day today!' : r.left === 1 ? 'Last date is tomorrow' : `Last date in ${r.left} days`}</p>

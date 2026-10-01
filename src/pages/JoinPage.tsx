@@ -4,6 +4,7 @@ import {
   ShieldCheck, User, Building2, ArrowRight, BriefcaseBusiness, BellRing,
   FileCheck2, LineChart, Users2, Sparkles,
 } from 'lucide-react';
+import { Logo } from '../components/brand/Logo';
 
 type JoinRole = 'aspirant' | 'employer';
 
@@ -55,7 +56,7 @@ export default function JoinPage() {
   return (
     <div className="min-h-screen bg-[#f5f7f8] flex flex-col items-center px-4 py-6 sm:py-12">
       <Link to="/" className="mb-6 sm:mb-10" aria-label="JobCharcha home">
-        <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-8 w-auto" />
+        <Logo className="text-[30px]" />
       </Link>
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">

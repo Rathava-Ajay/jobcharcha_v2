@@ -5,6 +5,7 @@ import { Mail, Phone, Bell, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { subscribeAlerts } from '../api/alerts';
 import { ApiError } from '../api/client';
 import { trackEmailSignup } from '../utils/analytics';
+import { Logo } from './brand/Logo';
 
 /** Real mock-test category IDs behind each exam-guide link (from live /api/categories). */
 const EXAM_GUIDE_LINKS: { labelKey: string; categoryId: number }[] = [
@@ -91,7 +92,7 @@ export const Footer: React.FC<FooterProps> = () => {
                 placeholder={t('footer.emailPlaceholder')}
                 className="flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-emerald-400"
               />
-              <button type="submit" disabled={submitting} className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold rounded-xl px-5 py-3 text-sm cursor-pointer">
+              <button type="submit" disabled={submitting} className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-bold rounded-xl px-5 py-3 text-sm cursor-pointer">
                 <Bell className="w-4 h-4" /> {submitting ? t('footer.subscribing') : 'Get alerts'}
               </button>
               {error && <p className="sm:hidden text-red-300 text-xs">{error}</p>}
@@ -103,7 +104,7 @@ export const Footer: React.FC<FooterProps> = () => {
         {/* Link columns */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 py-10">
           <div className="col-span-2 md:col-span-1">
-            <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} loading="lazy" className="h-8 w-auto" />
+            <Logo className="text-[27px]" />
             <p className="mt-3 leading-relaxed max-w-xs">{t('footer.brandBlurb')}</p>
             <div className="mt-4 space-y-1.5">
               <a href="mailto:support@jobcharcha.com" className="flex items-center gap-2 hover:text-slate-900"><Mail className="w-4 h-4 text-slate-400" /> support@jobcharcha.com</a>
@@ -120,7 +121,7 @@ export const Footer: React.FC<FooterProps> = () => {
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">Jobs by city</p>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5">
             {POPULAR_DISTRICTS.map((d) => (
-              <Link key={d} to={`/jobs?district=${encodeURIComponent(d)}`} className="hover:text-emerald-700">{t('footer.jobsIn', { district: d })}</Link>
+              <Link key={d} to={`/jobs?district=${encodeURIComponent(d)}`} className="hover:text-blue-700">{t('footer.jobsIn', { district: d })}</Link>
             ))}
           </div>
         </div>
@@ -142,7 +143,7 @@ const FooterCol: React.FC<{ title: string; links: { label: string; to: string }[
     <h4 className="text-slate-900 font-bold text-[13px] mb-3">{title}</h4>
     <ul className="space-y-2">
       {links.map((l) => (
-        <li key={l.to + l.label}><Link to={l.to} className="hover:text-emerald-700">{l.label}</Link></li>
+        <li key={l.to + l.label}><Link to={l.to} className="hover:text-blue-700">{l.label}</Link></li>
       ))}
     </ul>
   </div>

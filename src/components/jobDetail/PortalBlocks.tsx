@@ -1,4 +1,5 @@
 import React from 'react';
+import { useBodyClass } from '../../hooks/useBodyClass';
 import { daysUntil } from '../../utils/dates';
 
 /**
@@ -84,11 +85,14 @@ export const SectionNav: React.FC<{ items: { id: string; label: string }[] }> = 
 );
 
 /** Fixed bottom action bar for phones — primary CTA always in thumb reach. Hidden from sm up. */
-export const MobileActionBar: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+export const MobileActionBar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useBodyClass('has-mobile-cta-sm');
+  return (
   <div className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t-2 border-slate-300 px-3 py-2 flex gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
     {children}
   </div>
-);
+  );
+};
 
 export interface KeyValueRow {
   label: string;

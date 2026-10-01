@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, X, ExternalLink } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { Logo } from '../brand/Logo';
 
 export interface DashNavItem { id: string; label: string; icon: React.ElementType; badge?: string | number | null }
 export interface DashNavGroup { title?: string; items: DashNavItem[] }
@@ -56,8 +57,8 @@ export const DashboardLayout: React.FC<{
   const sidebar = (
     <div className="flex flex-col h-full text-white">
       <div className="px-5 pt-5 pb-4 flex items-center justify-between gap-2">
-        <Link to="/" className="bg-white rounded-xl px-2.5 py-1.5 shadow" aria-label="JobCharcha home">
-          <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-6 w-auto" />
+        <Link to="/" aria-label="JobCharcha home" className="rounded-lg focus-visible:outline-2 focus-visible:outline-amber-300">
+          <Logo tone="white" className="text-[23px]" />
         </Link>
         <button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="md:hidden w-9 h-9 rounded-xl bg-white/10 grid place-items-center cursor-pointer"><X className="w-5 h-5" /></button>
       </div>
@@ -111,7 +112,7 @@ export const DashboardLayout: React.FC<{
 
   return (
     <div className="min-h-screen bg-[#f3f6fb] md:grid md:grid-cols-[236px_minmax(0,1fr)] lg:grid-cols-[264px_minmax(0,1fr)]">
-      <aside className="hidden md:block sticky top-0 h-screen bg-[linear-gradient(180deg,#0b1a3f,#12285c_60%,#173273)]">{sidebar}</aside>
+      <aside className="hidden md:block sticky top-0 h-[100vh] supports-[height:100dvh]:h-[100dvh] bg-[linear-gradient(180deg,#0b1a3f,#12285c_60%,#173273)]">{sidebar}</aside>
 
       {drawer && (
         <div className="md:hidden fixed inset-0 z-[60]">

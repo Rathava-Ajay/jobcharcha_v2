@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,6 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { UserProfile } from '../types';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { Logo } from './brand/Logo';
 
 interface NavbarProps {
   user: UserProfile | null;
@@ -81,6 +83,17 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
     await logout();
   };
 
+  // Close the desktop "More" menu on outside click / Escape.
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as HTMLElement).closest('[data-more-menu]')) setMoreOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('pointerdown', close); document.removeEventListener('keydown', close); };
+  }, [moreOpen]);
+
   // Close the account menu on outside click / Escape.
   useEffect(() => {
     if (!accountOpen) return;
@@ -123,14 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 gap-3 lg:gap-5">
           <Link to="/" className="flex items-center shrink-0" aria-label="JobCharcha home">
-            <img
-              src="/icons/jobcharcha_logo_transparent.png"
-              alt="JobCharcha"
-              width={570}
-              height={100}
-              fetchPriority="high"
-              className="h-7 sm:h-8 w-auto object-contain"
-            />
+            <Logo className="text-[22px] sm:text-[25px]" />
           </Link>
 
           <nav aria-label="Main" className="hidden lg:flex items-center gap-0.5">
@@ -141,13 +147,13 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
                   key={item.key}
                   to={item.to}
                   aria-current={active ? 'page' : undefined}
-                  className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${active ? 'bg-emerald-50 text-emerald-800' : 'text-slate-700 hover:bg-slate-100'}`}
+                  className={`px-3 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${active ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-100'}`}
                 >
                   {t(`nav.${item.key}`)}
                 </Link>
               );
             })}
-            <div className="relative">
+            <div data-more-menu className="relative">
               <button
                 type="button"
                 onClick={() => setMoreOpen((o) => !o)}
@@ -158,8 +164,10 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
               </button>
               {moreOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
-                  <div className="absolute left-0 top-full mt-2 w-[420px] bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-50 grid grid-cols-2 gap-3">
+                  <div
+                    className="absolute left-0 top-full mt-2 w-[420px] bg-white border border-slate-200 rounded-2xl shadow-xl p-3 z-50 grid grid-cols-2 gap-3"
+                    onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMoreOpen(false); }}
+                  >
                     {MORE_NAV.map((g) => (
                       <div key={g.group}>
                         <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">{t(`nav.${g.group}`)}</p>
@@ -176,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
             </div>
           </nav>
 
-          <form onSubmit={submitSearch} role="search" className="hidden xl:flex flex-1 max-w-xs ml-auto items-center gap-2 bg-slate-100/70 border border-slate-200 rounded-xl px-3 focus-within:bg-white focus-within:border-emerald-600 transition-colors">
+          <form onSubmit={submitSearch} role="search" className="hidden xl:flex flex-1 max-w-xs ml-auto items-center gap-2 bg-slate-100/70 border border-slate-200 rounded-xl px-3 focus-within:bg-white focus-within:border-blue-600 transition-colors">
             <Search className="w-4 h-4 text-slate-400 shrink-0" />
             <input
               value={query}
@@ -261,12 +269,17 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
         </div>
       </div>
 
-      {menuOpen && (
-        <div className="lg:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
+      {/* Rendered into <body>: the header's backdrop blur would otherwise trap this fixed panel inside the 64px bar. */}
+      {menuOpen && createPortal(
+        <div className="lg:hidden fixed inset-0 z-[90]" role="dialog" aria-modal="true" aria-label={t('nav.menu')}>
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMenuOpen(false)} />
-          <div className="absolute right-0 top-0 bottom-0 w-[86%] max-w-sm bg-white shadow-2xl flex flex-col">
+          <div
+            className="absolute right-0 top-0 bottom-0 w-[86%] max-w-sm bg-white shadow-2xl flex flex-col"
+            // Close on any link tap — including the page you are already on, which doesn't change the route.
+            onClick={(e) => { if ((e.target as HTMLElement).closest('a')) setMenuOpen(false); }}
+          >
             <div className="flex items-center justify-between h-16 px-4 border-b border-slate-100">
-              <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-7 w-auto" />
+              <Logo className="text-[23px]" />
               <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close menu" className="p-2 rounded-xl hover:bg-slate-100 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
@@ -298,7 +311,7 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
                         <Link
                           key={item.key}
                           to={item.to}
-                          className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-semibold ${active ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 text-slate-700'}`}
+                          className={`flex items-center gap-2 p-3 rounded-xl border text-sm font-semibold ${active ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 text-slate-700'}`}
                         >
                           <item.icon className="w-4 h-4 shrink-0" /> <span className="truncate">{t(`nav.${item.key}`)}</span>
                         </Link>
@@ -314,7 +327,8 @@ export const Navbar: React.FC<NavbarProps> = ({ user, onOpenExamTracker }) => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </header>
   );

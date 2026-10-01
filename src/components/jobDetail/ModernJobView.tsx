@@ -1,3 +1,4 @@
+import { useBodyClass } from '../../hooks/useBodyClass';
 import React from 'react';
 import {
   Bookmark, Share2, Users, GraduationCap, UserRound, CalendarDays, Zap, IndianRupee, ListChecks, FileCheck2,
@@ -24,6 +25,7 @@ export const ModernJobView: React.FC<JobViewProps> = ({ job, vm, saved, onToggle
   const left = daysUntil(job.lastDate);
   const closed = left !== null && left < 0;
   const primaryHref = job.applyUrl || job.officialNotificationUrl;
+  useBodyClass('has-mobile-cta', !!primaryHref);
 
   const sections = [
     { id: 'm-overview', label: 'Overview' },

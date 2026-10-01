@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Bell, BookmarkCheck, PenLine, Ticket, ShieldCheck, Clock } from 'lucide-react';
+import { Logo } from './brand/Logo';
 
 const FEATURES: { icon: React.ElementType; tone: string; title: string; body: string }[] = [
   { icon: Bell, tone: 'bg-blue-500/20 text-sky-200', title: 'Job alerts', body: 'New jobs for your qualification, by email' },
@@ -19,9 +20,7 @@ export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       <div aria-hidden className="absolute inset-0 opacity-[0.07] bg-[linear-gradient(rgba(255,255,255,1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,1)_1px,transparent_1px)] bg-[size:44px_44px] [mask-image:linear-gradient(180deg,#000,transparent_85%)]" />
 
       <Link to="/" className="relative inline-flex self-start">
-        <span className="bg-white rounded-xl px-3 py-2 shadow-lg">
-          <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-7 w-auto" />
-        </span>
+        <Logo tone="white" className="text-[30px]" />
       </Link>
 
       <div className="relative max-w-lg">
@@ -65,7 +64,7 @@ export const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }
       <div className="lg:hidden relative overflow-hidden text-white px-4 pt-4 pb-16 bg-[radial-gradient(400px_220px_at_100%_0%,rgba(56,189,248,0.45),transparent_60%),linear-gradient(140deg,#0b1a3f,#1e40af_60%,#2563eb)]">
         <div className="flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-1 text-[13px] font-semibold text-blue-100"><ArrowLeft className="w-4 h-4" /> Home</Link>
-          <span className="bg-white rounded-lg px-2 py-1"><img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-5 w-auto" /></span>
+          <Logo tone="white" className="text-[21px]" />
         </div>
         <p className="mt-4 text-[22px] leading-tight font-extrabold tracking-tight">One free account.<br /><span className="text-amber-300">Every Sarkari update.</span></p>
       </div>
