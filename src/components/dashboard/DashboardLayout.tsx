@@ -59,7 +59,7 @@ export const DashboardLayout: React.FC<{
         <Link to="/" className="bg-white rounded-xl px-2.5 py-1.5 shadow" aria-label="JobCharcha home">
           <img src="/icons/jobcharcha_logo_transparent.png" alt="JobCharcha" width={570} height={100} className="h-6 w-auto" />
         </Link>
-        <button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="lg:hidden w-9 h-9 rounded-xl bg-white/10 grid place-items-center cursor-pointer"><X className="w-5 h-5" /></button>
+        <button type="button" onClick={() => setDrawer(false)} aria-label="Close menu" className="md:hidden w-9 h-9 rounded-xl bg-white/10 grid place-items-center cursor-pointer"><X className="w-5 h-5" /></button>
       </div>
       <div className="px-5">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 border border-amber-300/25 text-amber-200 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-wider">
@@ -110,11 +110,11 @@ export const DashboardLayout: React.FC<{
   );
 
   return (
-    <div className="min-h-screen bg-[#f3f6fb] lg:grid lg:grid-cols-[264px_minmax(0,1fr)]">
-      <aside className="hidden lg:block sticky top-0 h-screen bg-[linear-gradient(180deg,#0b1a3f,#12285c_60%,#173273)]">{sidebar}</aside>
+    <div className="min-h-screen bg-[#f3f6fb] md:grid md:grid-cols-[236px_minmax(0,1fr)] lg:grid-cols-[264px_minmax(0,1fr)]">
+      <aside className="hidden md:block sticky top-0 h-screen bg-[linear-gradient(180deg,#0b1a3f,#12285c_60%,#173273)]">{sidebar}</aside>
 
       {drawer && (
-        <div className="lg:hidden fixed inset-0 z-[60]">
+        <div className="md:hidden fixed inset-0 z-[60]">
           <button type="button" aria-label="Close menu" onClick={() => setDrawer(false)} className="absolute inset-0 bg-slate-950/50 animate-[fadeIn_.15s_ease-out] cursor-default" />
           <aside className="absolute inset-y-0 left-0 w-[min(86vw,300px)] bg-[linear-gradient(180deg,#0b1a3f,#12285c_60%,#173273)] shadow-2xl animate-[drawerIn_.2s_ease-out]">{sidebar}</aside>
         </div>
@@ -123,7 +123,7 @@ export const DashboardLayout: React.FC<{
       <div className="min-w-0 flex flex-col">
         <header className="sticky top-0 z-40 bg-white/85 backdrop-blur border-b border-slate-200">
           <div className="flex items-center gap-3 px-4 sm:px-6 lg:px-8 h-14 sm:h-16">
-            <button type="button" onClick={() => setDrawer(true)} aria-label="Open menu" className="lg:hidden w-10 h-10 -ml-1 rounded-xl border border-slate-200 grid place-items-center text-slate-700 cursor-pointer"><Menu className="w-5 h-5" /></button>
+            <button type="button" onClick={() => setDrawer(true)} aria-label="Open menu" className="md:hidden w-10 h-10 -ml-1 rounded-xl border border-slate-200 grid place-items-center text-slate-700 cursor-pointer"><Menu className="w-5 h-5" /></button>
             <div className="min-w-0 flex-1">
               <h1 className="text-[16px] sm:text-[19px] font-extrabold tracking-tight text-slate-900 truncate">{title ?? current?.label}</h1>
               {subtitle && <p className="hidden sm:block text-[12.5px] text-slate-500 truncate">{subtitle}</p>}
@@ -132,7 +132,7 @@ export const DashboardLayout: React.FC<{
             <span className="hidden sm:grid w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white place-items-center font-extrabold text-[13px] shrink-0" title={user?.name}>{initials(user?.name)}</span>
           </div>
           {items.length <= 8 && (
-            <div className="lg:hidden flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-2.5">
+            <div className="md:hidden flex gap-1.5 overflow-x-auto no-scrollbar px-4 pb-2.5">
               {items.map((it) => (
                 <button key={it.id} type="button" onClick={() => select(it.id)}
                   className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-bold cursor-pointer ${it.id === active ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-600'}`}>

@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  ArrowLeft, Check, Sparkles, AlertTriangle, Loader2, Instagram, ClipboardPaste, Send, ChevronRight, FileUp, FileCheck2, Radar,
+  ArrowLeft, Check, AlertTriangle, Loader2, Instagram, ClipboardPaste, Send, ChevronRight, ChevronDown, ChevronUp, FileUp, FileCheck2, Radar,
+  FileText, Bot, ExternalLink, PartyPopper, RotateCcw, Users, CalendarClock, IndianRupee, GraduationCap,
 } from 'lucide-react';
-import { Navbar } from '../components/Navbar';
+import { AiPostShell, aiUi } from '../components/admin/AiPostShell';
 import { CopyButton } from '../components/CopyButton';
-import { useAuth } from '../context/AuthContext';
 import { getCategories, ApiCategory } from '../api/categories';
 import { aiImportJob, AiImportJobPayload } from '../api/jobs';
 import { approveJobDraft } from '../api/jobDrafts';
@@ -19,10 +19,10 @@ import { Select } from '../components/ui/Select';
 type Step = 'compose' | 'review' | 'upload' | 'success';
 
 const STEP_LABELS: { key: Step; label: string }[] = [
-  { key: 'compose', label: 'Prompt & Paste' },
-  { key: 'review', label: 'Review & Edit' },
-  { key: 'upload', label: 'Upload & Post' },
-  { key: 'success', label: 'Success' },
+  { key: 'compose', label: 'Prompt & paste' },
+  { key: 'review', label: 'Review' },
+  { key: 'upload', label: 'Upload & post' },
+  { key: 'success', label: 'Done' },
 ];
 
 function bestMatchCategory(categoryName: string, categories: ApiCategory[]): number | null {
@@ -37,7 +37,6 @@ function bestMatchCategory(categoryName: string, categories: ApiCategory[]): num
 export default function AdminMobilePostPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
 
   const draftState = location.state as { draftId?: number; notificationText?: string } | null;
   const draftId = draftState?.draftId ?? null;
@@ -58,6 +57,7 @@ export default function AdminMobilePostPage() {
   const [notificationFileUrl, setNotificationFileUrl] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
 
   const handleFileUpload = async (file: File) => {
     setUploadingFile(true);
@@ -169,318 +169,280 @@ export default function AdminMobilePostPage() {
     }, null, 2));
   }, [parsed]);
 
+  const goStep = (next: Step) => { setStep(next); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const sections = parsed ? [
+    { label: 'Overview', ok: parsed.overview.trim().length > 0 },
+    { label: 'Key highlights', ok: !!parsed.keyHighlights?.trim() },
+    { label: 'Eligibility', ok: !!parsed.eligibilityDetails?.trim() },
+    { label: 'How to apply', ok: parsed.howToApply.trim().length > 0 },
+    { label: 'Important notes', ok: !!parsed.importantNotes?.trim() },
+    { label: 'Documents', ok: !!parsed.documentsRequired?.trim() },
+    { label: 'Advt. no', ok: !!parsed.advertisementNumber },
+    { label: 'Age limits', ok: parsed.maxAge !== null && parsed.maxAge !== undefined },
+    { label: 'Pay range', ok: !!(parsed.minSalary || parsed.maxSalary) },
+    { label: 'Fee table', ok: parsed.applicationFee.length > 0 },
+    { label: 'Vacancy table', ok: parsed.vacancyBreakdown.some((r) => r.total > 0) },
+    { label: 'Official website', ok: !!parsed.officialWebsite },
+  ] : [];
+  const filled = sections.filter((x) => x.ok).length;
+
+  const resetAll = () => {
+    goStep('compose');
+    setNotificationText('');
+    setPasteText('');
+    setParsed(null);
+    setPostedSlug(null);
+    setCaptionText('');
+    setErrors([]);
+    setWarnings([]);
+    setNotificationFileUrl(null);
+    setNotificationFileName(null);
+    setUploadError(null);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar user={user} />
-
-      <div className="bg-slate-900 text-white py-8 px-4 sm:px-6">
-        <div className="max-w-5xl mx-auto">
-          <button onClick={() => navigate('/dashboard/admin')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-3 cursor-pointer">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Admin
-          </button>
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold mb-2">
-            <Sparkles className="w-3.5 h-3.5" /> AI-Assisted Mobile Posting
-          </div>
-          {draftId && (
-            <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-xs font-semibold mb-2 ml-2">
-              <Radar className="w-3.5 h-3.5" /> Reviewing scraper draft #{draftId}
-            </div>
-          )}
-          <h1 className="text-xl sm:text-2xl font-heading font-extrabold tracking-tight">Post a Job via AI</h1>
-
-          <div className="flex items-center gap-1 mt-4 text-[10px] font-bold overflow-x-auto">
-            {STEP_LABELS.map((s, idx) => (
-              <React.Fragment key={s.key}>
-                {idx > 0 && <ChevronRight className="w-3 h-3 text-slate-600 shrink-0" />}
-                <span className={`px-2 py-1 rounded-md whitespace-nowrap ${idx === stepIndex ? 'bg-emerald-500 text-slate-950' : idx < stepIndex ? 'text-emerald-400' : 'text-slate-500'}`}>
-                  {idx + 1}. {s.label}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8">
-        {step === 'compose' && (
-          <div className="grid md:grid-cols-2 gap-4 items-start">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase block mb-1">Left window</span>
-                <h2 className="font-heading font-bold text-slate-900 text-sm mb-1">SEO Extraction Prompt</h2>
-                <p className="text-xs text-slate-600">
-                  Paste the raw job notification below, then copy the prompt underneath it into ChatGPT, Claude, or any other AI chat. It already bakes in JobCharcha's SEO requirements and the exact JSON fields needed to post — you don't need to add anything else.
-                </p>
+    <AiPostShell
+      title="Post a job via AI"
+      subtitle="Paste the notification, let ChatGPT or Claude fill every field, check it, attach the PDF and publish — all from your phone."
+      steps={STEP_LABELS}
+      stepIndex={stepIndex}
+      wide={step === 'compose'}
+      badges={draftId ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-cyan-400/15 border border-cyan-300/30 px-3 py-1 text-[12px] font-bold text-cyan-100">
+          <Radar className="w-3.5 h-3.5" /> Scraper draft #{draftId}
+        </span>
+      ) : undefined}
+    >
+      {step === 'compose' && (
+        <div className="grid lg:grid-cols-2 gap-4 items-start">
+          <section className={aiUi.card}>
+            <StepHead n={1} icon={FileText} title="Paste the notification" hint="From the PDF, website or press release" />
+            <textarea
+              value={notificationText}
+              onChange={(e) => setNotificationText(e.target.value)}
+              rows={6}
+              placeholder="Paste the official notification text here…"
+              className={aiUi.textarea}
+            />
+            <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 grid place-items-center shrink-0"><Bot className="w-4 h-4" /></span>
+                <p className="flex-1 min-w-0 text-[13px] text-slate-600"><b className="text-slate-900">2 · Copy the prompt</b> into ChatGPT, Claude or any AI chat. SEO rules and the exact JSON fields are built in.</p>
               </div>
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Raw job notification text</label>
-                <textarea
-                  value={notificationText}
-                  onChange={(e) => setNotificationText(e.target.value)}
-                  rows={5}
-                  placeholder="Paste the official notification text here (from a PDF, website, or press release)…"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Full prompt (copy this into your AI chat)</label>
-                <div className="bg-slate-950 text-slate-300 rounded-xl p-3 text-[10px] leading-relaxed max-h-80 overflow-y-auto whitespace-pre-wrap font-mono">
-                  {prompt}
-                </div>
-              </div>
-              <CopyButton text={prompt} label="Copy Prompt" />
-            </div>
-
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-              <div>
-                <span className="text-[10px] font-bold text-emerald-700 uppercase block mb-1">Right window</span>
-                <h2 className="font-heading font-bold text-slate-900 text-sm mb-1">Paste the AI's JSON Reply</h2>
-                <p className="text-xs text-slate-600">
-                  Once ChatGPT/Claude replies, copy its JSON output and paste it here.
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center gap-1.5">
-                  <ClipboardPaste className="w-3.5 h-3.5" /> AI JSON response
-                </label>
-                <textarea
-                  value={pasteText}
-                  onChange={(e) => setPasteText(e.target.value)}
-                  rows={18}
-                  placeholder='{"title": "...", "slug": "...", ...}'
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-mono text-slate-800 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              {errors.length > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Fix these before continuing:</div>
-                  <ul className="list-disc pl-5 space-y-0.5">
-                    {errors.map((e, i) => <li key={i}>{e}</li>)}
-                  </ul>
-                </div>
-              )}
-              <button
-                onClick={handleParse}
-                disabled={pasteText.trim().length < 10}
-                className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors"
-              >
-                Parse & Continue to Review
+              <CopyButton text={prompt} label="Copy prompt" full />
+              <button type="button" onClick={() => setShowPrompt((v) => !v)} className="inline-flex items-center gap-1 text-[12.5px] font-bold text-slate-500 hover:text-blue-700 cursor-pointer">
+                {showPrompt ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}{showPrompt ? 'Hide prompt' : 'Preview prompt'}
               </button>
+              {showPrompt && <div className={aiUi.promptBox}>{prompt}</div>}
             </div>
-          </div>
-        )}
+          </section>
 
-        {step === 'review' && parsed && (
-          <div className="max-w-lg mx-auto space-y-4">
-            {warnings.length > 0 && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
-                <div className="font-bold flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5" /> Warnings (won't block posting):</div>
-                <ul className="list-disc pl-5 space-y-0.5">
-                  {warnings.map((w, i) => <li key={i}>{w}</li>)}
-                </ul>
+          <section className={aiUi.card}>
+            <StepHead n={3} icon={ClipboardPaste} title="Paste the AI's JSON reply" hint="Copy everything the AI returned — braces included" />
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              rows={12}
+              placeholder='{"title": "...", "slug": "...", ...}'
+              className={`${aiUi.textarea} ${aiUi.mono}`}
+            />
+            {errors.length > 0 && <ErrorList title="Fix these before continuing" items={errors} />}
+            <button onClick={handleParse} disabled={pasteText.trim().length < 10} className={aiUi.primary}>
+              Check &amp; continue <ChevronRight className="w-5 h-5" />
+            </button>
+          </section>
+        </div>
+      )}
+
+      {step === 'review' && parsed && (
+        <div className="space-y-4 pb-24 sm:pb-0">
+          {warnings.length > 0 && <ErrorList tone="amber" title="Warnings — these won't block posting" items={warnings} />}
+
+          <section className={aiUi.card}>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Job title</p>
+              <h2 className="text-[18px] sm:text-[20px] font-extrabold leading-snug text-slate-900 break-words">{parsed.title}</h2>
+              {parsed.department && <p className="text-[13px] text-slate-500 break-words">{parsed.department}</p>}
+            </div>
+
+            <div>
+              <label className={aiUi.label}>Category <span className="font-semibold text-slate-400">— confirm or change</span></label>
+              <Select value={selectedCategoryId ?? ''} onChange={(e) => setSelectedCategoryId(Number(e.target.value))} aria-label="Category" className={aiUi.select}>
+                <option value="" disabled>Select a category…</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
+              {!selectedCategoryId && (
+                <p className="mt-1.5 text-[12.5px] font-semibold text-amber-700">AI suggested “{parsed.categoryName}” — no confident match, please pick one.</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Fact icon={Users} label="Total posts" value={parsed.totalPosts != null ? String(parsed.totalPosts) : undefined} />
+              <Fact icon={CalendarClock} label="Last date" value={parsed.lastDate} />
+              <Fact icon={IndianRupee} label="Salary" value={parsed.salary ?? undefined} />
+              <Fact icon={GraduationCap} label="Qualification" value={parsed.qualification ?? undefined} />
+            </div>
+
+            <div>
+              <p className={aiUi.label}>Focus keyword &amp; SEO</p>
+              <div className="flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-blue-700 text-white text-[12px] font-bold px-3 py-1">{parsed.focusKeyword}</span>
+                {parsed.secondaryKeywords.slice(0, 5).map((k, i) => (
+                  <span key={i} className="rounded-full bg-slate-100 text-slate-700 text-[12px] font-semibold px-3 py-1">{k}</span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <p className="text-[13px] font-bold text-slate-700">Content completeness</p>
+                <span className={`text-[12.5px] font-extrabold ${filled >= 10 ? 'text-emerald-600' : filled >= 7 ? 'text-amber-600' : 'text-rose-600'}`}>{filled}/{sections.length} filled</span>
+              </div>
+              <div className="h-2 rounded-full bg-slate-100 overflow-hidden mb-2.5">
+                <div className={`h-full rounded-full ${filled >= 10 ? 'bg-emerald-500' : filled >= 7 ? 'bg-amber-400' : 'bg-rose-500'}`} style={{ width: `${(filled / Math.max(1, sections.length)) * 100}%` }} />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                {sections.map((x) => (
+                  <span key={x.label} className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold ${x.ok ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-50 text-slate-400'}`}>
+                    {x.ok ? <Check className="w-3.5 h-3.5 shrink-0" /> : <AlertTriangle className="w-3.5 h-3.5 shrink-0" />}
+                    <span className="truncate">{x.label}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {parsed.faqSchema.length > 0 && (
+              <div>
+                <p className={aiUi.label}>FAQ ({parsed.faqSchema.length})</p>
+                <div className="space-y-1.5">
+                  {parsed.faqSchema.slice(0, 3).map((f, i) => (
+                    <div key={i} className="rounded-xl bg-slate-50 p-3 text-[13px]">
+                      <p className="font-bold text-slate-800">{f.question}</p>
+                      <p className="text-slate-500">{f.answer}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+          </section>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block">Title</span>
-                <h2 className="font-heading font-bold text-slate-900 text-base">{parsed.title}</h2>
-                <p className="text-xs text-slate-500">{parsed.department}</p>
-              </div>
+          <ActionBar>
+            <button onClick={() => goStep('compose')} className={aiUi.secondary}><ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span></button>
+            <button onClick={() => goStep('upload')} disabled={!selectedCategoryId} className={aiUi.primary}>
+              Continue to upload <ChevronRight className="w-5 h-5" />
+            </button>
+          </ActionBar>
+        </div>
+      )}
 
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Category (confirm or change)</label>
-                <Select
-                  value={selectedCategoryId ?? ''}
-                  onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
-                >
-                  <option value="" disabled>Select a category…</option>
-                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
-                {!selectedCategoryId && (
-                  <p className="text-[10px] text-amber-700 mt-1">AI suggested "{parsed.categoryName}" — no confident match found, please pick one.</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Total Posts</span><span className="font-bold text-slate-800">{parsed.totalPosts ?? '—'}</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Last Date</span><span className="font-bold text-slate-800">{parsed.lastDate}</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Salary</span><span className="font-bold text-slate-800">{parsed.salary ?? '—'}</span></div>
-                <div><span className="text-[10px] text-slate-400 uppercase font-bold block">Qualification</span><span className="font-bold text-slate-800">{parsed.qualification ?? '—'}</span></div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Focus Keyword & SEO</span>
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">{parsed.focusKeyword}</span>
-                  {parsed.secondaryKeywords.slice(0, 5).map((k, i) => (
-                    <span key={i} className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded">{k}</span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Content Sections</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { label: 'Overview', ok: parsed.overview.trim().length > 0 },
-                    { label: 'Key Highlights', ok: !!parsed.keyHighlights?.trim() },
-                    { label: 'Eligibility Details', ok: !!parsed.eligibilityDetails?.trim() },
-                    { label: 'How To Apply', ok: parsed.howToApply.trim().length > 0 },
-                    { label: 'Important Notes', ok: !!parsed.importantNotes?.trim() },
-                    { label: 'Documents Required', ok: !!parsed.documentsRequired?.trim() },
-                    { label: 'Advt. No', ok: !!parsed.advertisementNumber },
-                    { label: 'Age (min/max)', ok: parsed.maxAge !== null && parsed.maxAge !== undefined },
-                    { label: 'Pay Range', ok: !!(parsed.minSalary || parsed.maxSalary) },
-                    { label: 'Fee Table', ok: parsed.applicationFee.length > 0 },
-                    { label: 'Vacancy Table', ok: parsed.vacancyBreakdown.some((r) => r.total > 0) },
-                    { label: 'Official Website', ok: !!parsed.officialWebsite },
-                  ].map((s) => (
-                    <span
-                      key={s.label}
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${
-                        s.ok ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {s.ok ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                      {s.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {parsed.faqSchema.length > 0 && (
-                <div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">FAQ ({parsed.faqSchema.length})</span>
-                  <div className="space-y-1.5">
-                    {parsed.faqSchema.slice(0, 3).map((f, i) => (
-                      <div key={i} className="bg-slate-50 rounded-lg p-2 text-[11px]">
-                        <div className="font-bold text-slate-800">{f.question}</div>
-                        <div className="text-slate-500">{f.answer}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={() => setStep('upload')}
-                disabled={!selectedCategoryId}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
-              >
-                Continue to Upload & Post <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'upload' && parsed && (
-          <div className="max-w-lg mx-auto space-y-4">
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-              <div>
-                <h2 className="font-heading font-bold text-slate-900 text-base mb-1">Upload Official Notification</h2>
-                <p className="text-xs text-slate-600">Attach the real notification PDF so the "Download Notification" button on the live listing links to it (optional but recommended).</p>
-              </div>
-
-              <div>
-                {notificationFileUrl ? (
-                  <div className="flex items-start gap-2.5">
-                    <DocumentPreview url={notificationFileUrl} fileName={notificationFileName} variant="thumb" />
-                    <div className="flex items-center gap-1.5 flex-1 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-3 py-2.5 rounded-xl">
-                      <FileCheck2 className="w-4 h-4 shrink-0" />
-                      <a href={notificationFileUrl} target="_blank" rel="noopener noreferrer" className="truncate underline decoration-emerald-300 hover:decoration-emerald-600">
-                        {notificationFileName}
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <label className="flex items-center gap-1.5 bg-slate-50 border border-dashed border-slate-300 text-slate-600 text-xs font-semibold px-3 py-2.5 rounded-xl cursor-pointer hover:border-emerald-400">
-                    {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
-                    {uploadingFile ? 'Uploading…' : 'Upload the real notification PDF'}
-                    <input
-                      type="file"
-                      accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      disabled={uploadingFile}
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
-                    />
+      {step === 'upload' && parsed && (
+        <div className="space-y-4 pb-24 sm:pb-0">
+          <section className={aiUi.card}>
+            <StepHead icon={FileUp} title="Attach the official notification" hint="Optional, but the “Download notification” button on the listing links to it" />
+            {notificationFileUrl ? (
+              <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                <DocumentPreview url={notificationFileUrl} fileName={notificationFileName} variant="thumb" />
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 text-[13px] font-bold text-emerald-800"><FileCheck2 className="w-4 h-4 shrink-0" /> Uploaded</p>
+                  <a href={notificationFileUrl} target="_blank" rel="noopener noreferrer" className="block truncate text-[13px] font-semibold text-emerald-900 underline decoration-emerald-300">{notificationFileName}</a>
+                  <label className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-bold text-slate-600 hover:text-blue-700 cursor-pointer">
+                    <RotateCcw className="w-3.5 h-3.5" /> Replace file
+                    <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" className="hidden" disabled={uploadingFile}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
                   </label>
-                )}
-                {uploadError && <p className="text-[10px] text-red-600 mt-1">{uploadError}</p>}
+                </div>
               </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/40 bg-slate-50/60 px-4 py-9 text-center cursor-pointer transition-colors">
+                <span className="w-12 h-12 rounded-2xl bg-white border border-slate-200 grid place-items-center text-blue-700">
+                  {uploadingFile ? <Loader2 className="w-6 h-6 animate-spin" /> : <FileUp className="w-6 h-6" />}
+                </span>
+                <span className="text-[15px] font-extrabold text-slate-900">{uploadingFile ? 'Uploading…' : 'Tap to upload the notification'}</span>
+                <span className="text-[12.5px] text-slate-500">PDF or image (PNG, JPG, WebP)</span>
+                <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" className="hidden" disabled={uploadingFile}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
+              </label>
+            )}
+            {uploadError && <p className="text-[13px] font-semibold text-red-600">{uploadError}</p>}
 
-              {postError && <div className="text-xs font-semibold text-red-600">{postError}</div>}
-
-              <button
-                onClick={handlePost}
-                disabled={posting || uploadingFile}
-                className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-extrabold text-sm py-3 rounded-xl cursor-pointer transition-colors flex items-center justify-center gap-2"
-              >
-                {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {posting ? 'Posting…' : parsed.autoPublish ? 'Post & Publish Now' : 'Save as Draft'}
-              </button>
+            <div className="rounded-xl bg-slate-50 p-3 text-[13px] text-slate-600">
+              <span className="font-bold text-slate-900">{parsed.autoPublish ? 'Publishes immediately' : 'Saves as a draft'}</span> — {parsed.autoPublish ? 'the job goes live as soon as you post.' : 'you can publish it later from Admin → Jobs.'}
             </div>
-          </div>
-        )}
+            {postError && <ErrorList title="Couldn't post" items={[postError]} />}
+          </section>
 
-        {step === 'success' && parsed && (
-          <div className="max-w-lg mx-auto space-y-4">
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center">
-              <Check className="w-8 h-8 text-emerald-600 mx-auto mb-1" />
-              <div className="font-black text-sm text-emerald-900">Job Posted Successfully!</div>
+          <ActionBar>
+            <button onClick={() => goStep('review')} className={aiUi.secondary}><ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span></button>
+            <button onClick={handlePost} disabled={posting || uploadingFile} className={aiUi.primary}>
+              {posting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+              {posting ? 'Posting…' : parsed.autoPublish ? 'Post & publish now' : 'Save as draft'}
+            </button>
+          </ActionBar>
+        </div>
+      )}
+
+      {step === 'success' && parsed && (
+        <div className="space-y-4">
+          <section className="rounded-2xl border border-emerald-200 bg-gradient-to-b from-emerald-50 to-white p-6 text-center">
+            <span className="mx-auto w-14 h-14 rounded-2xl bg-emerald-500 text-white grid place-items-center shadow-[0_12px_24px_-12px_rgba(16,185,129,0.8)]"><PartyPopper className="w-7 h-7" /></span>
+            <h2 className="mt-3 text-[20px] font-extrabold text-slate-900">Job posted!</h2>
+            <p className="text-[13.5px] text-slate-600 break-words">{parsed.title}</p>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
               {postedSlug && (
-                <button onClick={() => navigate(`/jobs/${postedSlug}`)} className="text-xs font-bold text-emerald-700 underline cursor-pointer mt-1">
-                  View live listing
+                <button onClick={() => navigate(`/jobs/${postedSlug}`)} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[14px] px-5 py-3 cursor-pointer">
+                  <ExternalLink className="w-4 h-4" /> View live listing
                 </button>
               )}
+              <button onClick={resetAll} className={aiUi.secondary}><RotateCcw className="w-4 h-4" /> Post another job</button>
             </div>
+          </section>
 
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 space-y-4">
-              <div className="flex items-center gap-2">
-                <Instagram className="w-5 h-5 text-pink-600" />
-                <h2 className="font-heading font-bold text-slate-900 text-base">Instagram Caption</h2>
-              </div>
-              <p className="text-xs text-slate-600">Copy this prompt into ChatGPT/Claude, paste the caption it gives you back below, then copy the final caption for Instagram.</p>
-              <div className="bg-slate-950 text-slate-300 rounded-xl p-3 text-[10px] leading-relaxed max-h-56 overflow-y-auto whitespace-pre-wrap font-mono">
-                {captionPrompt}
-              </div>
-              <CopyButton text={captionPrompt} label="Copy Caption Prompt" />
-
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1.5">Paste the caption ChatGPT returns</label>
-                <textarea
-                  value={captionText}
-                  onChange={(e) => setCaptionText(e.target.value)}
-                  rows={6}
-                  placeholder="Paste the generated Instagram caption here…"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs text-slate-800 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-              {captionText.trim().length > 0 && <CopyButton text={captionText} label="Copy Caption" />}
-
-              <button
-                onClick={() => {
-                  setStep('compose');
-                  setNotificationText('');
-                  setPasteText('');
-                  setParsed(null);
-                  setPostedSlug(null);
-                  setCaptionText('');
-                  setErrors([]);
-                  setWarnings([]);
-                  setNotificationFileUrl(null);
-                  setNotificationFileName(null);
-                  setUploadError(null);
-                }}
-                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl cursor-pointer transition-colors"
-              >
-                Post Another Job
-              </button>
+          <section className={aiUi.card}>
+            <StepHead icon={Instagram} tone="bg-pink-50 text-pink-600" title="Instagram caption" hint="Copy the prompt into ChatGPT/Claude, paste its caption below, then copy it for Instagram" />
+            <CopyButton text={captionPrompt} label="Copy caption prompt" full />
+            <details className="group">
+              <summary className="list-none inline-flex items-center gap-1 text-[12.5px] font-bold text-slate-500 hover:text-blue-700 cursor-pointer"><ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" /> Preview prompt</summary>
+              <div className={`${aiUi.promptBox} mt-2`}>{captionPrompt}</div>
+            </details>
+            <div>
+              <label className={aiUi.label}>Paste the caption the AI returns</label>
+              <textarea value={captionText} onChange={(e) => setCaptionText(e.target.value)} rows={6} placeholder="Paste the generated Instagram caption here…" className={aiUi.textarea} />
             </div>
-          </div>
-        )}
-      </main>
-    </div>
+            {captionText.trim().length > 0 && <CopyButton text={captionText} label="Copy caption" full />}
+          </section>
+        </div>
+      )}
+    </AiPostShell>
   );
 }
+
+const StepHead: React.FC<{ n?: number; icon: React.ElementType; title: string; hint?: string; tone?: string }> = ({ n, icon: Icon, title, hint, tone }) => (
+  <div className="flex items-center gap-3">
+    <span className={`w-10 h-10 rounded-xl grid place-items-center shrink-0 ${tone ?? 'bg-blue-50 text-blue-700'}`}><Icon className="w-5 h-5" /></span>
+    <div className="min-w-0">
+      <h2 className="font-extrabold text-[16px] text-slate-900">{n ? <span className="text-blue-700">{n} · </span> : null}{title}</h2>
+      {hint && <p className="text-[12.5px] text-slate-500">{hint}</p>}
+    </div>
+  </div>
+);
+
+const Fact: React.FC<{ icon: React.ElementType; label: string; value?: string }> = ({ icon: Icon, label, value }) => (
+  <div className="min-w-0 rounded-xl bg-slate-50 px-3 py-2.5">
+    <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-slate-400"><Icon className="w-3.5 h-3.5" />{label}</p>
+    <p className={`mt-0.5 text-[14px] font-bold break-words ${value ? 'text-slate-900' : 'text-slate-400'}`}>{value || '—'}</p>
+  </div>
+);
+
+const ErrorList: React.FC<{ title: string; items: string[]; tone?: 'red' | 'amber' }> = ({ title, items, tone = 'red' }) => (
+  <div role={tone === 'red' ? 'alert' : 'status'} className={`rounded-xl border p-3.5 text-[13px] space-y-1 ${tone === 'red' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+    <p className="font-bold flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> {title}</p>
+    <ul className="list-disc pl-5 space-y-0.5">{items.map((e, i) => <li key={i}>{e}</li>)}</ul>
+  </div>
+);
+
+/** On phones the step actions stay pinned to the bottom of the screen, within thumb reach. */
+const ActionBar: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="fixed sm:static inset-x-0 bottom-0 z-30 bg-white/95 sm:bg-transparent backdrop-blur sm:backdrop-blur-none border-t border-slate-200 sm:border-0 px-4 sm:px-0 py-3 sm:py-0 pb-[max(12px,env(safe-area-inset-bottom))] sm:pb-0">
+    <div className="flex gap-2">{children}</div>
+  </div>
+);
