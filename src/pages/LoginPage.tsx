@@ -4,6 +4,7 @@ import { ShieldCheck, User, Building2, UserCheck, Mail, KeyRound, ArrowRight, Ar
 import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { AcknowledgmentCheckbox } from '../components/employer/AcknowledgmentCheckbox';
+import { AuthLayout } from '../components/AuthLayout';
 
 type Role = 'aspirant' | 'employer' | 'admin';
 
@@ -139,75 +140,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-slate-950">
-      {/* Aurora backdrop — layered radial washes so the empty space isn't a flat white void */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            'radial-gradient(60% 55% at 14% 16%, rgba(16,185,129,0.42), transparent 60%),' +
-            'radial-gradient(52% 52% at 90% 8%, rgba(56,189,248,0.34), transparent 60%),' +
-            'radial-gradient(55% 60% at 82% 96%, rgba(217,70,239,0.30), transparent 60%),' +
-            'radial-gradient(48% 48% at 22% 100%, rgba(129,140,248,0.34), transparent 60%),' +
-            'radial-gradient(40% 40% at 50% 50%, rgba(16,185,129,0.14), transparent 70%)',
-        }}
-      />
-      {/* Slow-drifting colour orbs */}
-      <div className="auth-blob pointer-events-none absolute -top-32 -left-24 h-[26rem] w-[26rem] rounded-full bg-emerald-500/40 blur-3xl" />
-      <div className="auth-blob-slow pointer-events-none absolute -bottom-44 -right-24 h-[32rem] w-[32rem] rounded-full bg-sky-500/25 blur-3xl" />
-      <div
-        className="auth-blob pointer-events-none absolute -right-16 top-1/4 h-80 w-80 rounded-full bg-fuchsia-500/25 blur-3xl"
-        style={{ animationDelay: '-12s' }}
-      />
-      <div
-        className="auth-blob-slow pointer-events-none absolute bottom-10 left-1/4 h-72 w-72 rounded-full bg-indigo-500/30 blur-3xl"
-        style={{ animationDelay: '-8s' }}
-      />
-      {/* Faint grid, faded out toward the edges */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.12]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.65) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.65) 1px, transparent 1px)',
-          backgroundSize: '46px 46px',
-          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 40%, transparent 100%)',
-        }}
-      />
-      {/* Vignette to seat the card */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(2,6,23,0.6)_100%)]" />
-
-      <div className="relative z-10 bg-white text-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-[0_30px_90px_-25px_rgba(0,0,0,0.65)] ring-1 ring-white/10 border border-slate-200">
-
-        <Link to="/" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-900 mb-6">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
-        </Link>
-
+    <AuthLayout>
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-2 font-bold">
-            <ShieldCheck className="w-6 h-6" />
-          </div>
-          <h1 className="text-xl sm:text-2xl font-heading font-extrabold text-slate-900">
+          <h1 className="text-2xl font-extrabold text-slate-900">
             {step === 'role' ? 'Sign in to JobCharcha' : mode === 'register' ? `Join as ${role}` : mode === 'forgot' || mode === 'reset' ? 'Reset Password' : `${role[0].toUpperCase()}${role.slice(1)} Login`}
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 mt-1">
             {step === 'role' ? 'Choose how you want to access the portal.' : 'Access job alerts, CBT tests, and your dashboard.'}
           </p>
         </div>
 
         {step === 'role' ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-2.5">
             {ROLE_TILES.map((tile) => {
               const Icon = tile.icon;
               return (
                 <button
                   key={tile.id}
+                  type="button"
                   onClick={() => handleSelectRole(tile.id)}
-                  className="flex flex-col items-center text-center gap-2 p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-900 hover:text-white transition-all group cursor-pointer"
+                  className="flex items-center text-left gap-3.5 p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-600 hover:bg-emerald-50/50 transition-colors group cursor-pointer"
                 >
-                  <Icon className="w-6 h-6 text-emerald-600 group-hover:text-emerald-400" />
-                  <span className="text-xs font-extrabold">{tile.label}</span>
-                  <span className="text-[10px] text-slate-500 group-hover:text-slate-300">{tile.blurb}</span>
+                  <span className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 grid place-items-center shrink-0"><Icon className="w-5 h-5" /></span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[15px] font-bold text-slate-900">{tile.label}</span>
+                    <span className="block text-[13px] text-slate-500">{tile.blurb}</span>
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-700" />
                 </button>
               );
             })}
@@ -246,7 +205,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <button type="submit" disabled={submitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md cursor-pointer">
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md cursor-pointer">
                   {submitting ? 'Sending…' : 'Send Password Reset Code'}
                 </button>
                 <div className="text-center pt-2">
@@ -282,7 +241,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <button type="submit" disabled={submitting}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95 cursor-pointer">
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl shadow-sm hover:shadow-md transition-shadow active:scale-95 cursor-pointer">
                   {submitting ? 'Resetting…' : 'Reset Password'}
                 </button>
                 <div className="flex items-center justify-between pt-2">
@@ -356,7 +315,7 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={submitting || (mode === 'register' && role === 'employer' && !acknowledgedTerms)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer mt-2 flex items-center justify-center gap-2">
+                  className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold text-sm py-3 rounded-xl shadow-md transition-all cursor-pointer mt-2 flex items-center justify-center gap-2">
                   <span>{submitting ? 'Please wait…' : mode === 'login' ? `Sign In as ${role.toUpperCase()}` : 'Create Account'}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -384,7 +343,6 @@ export default function LoginPage() {
             )}
           </>
         )}
-      </div>
-    </div>
+    </AuthLayout>
   );
 }
