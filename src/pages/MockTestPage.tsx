@@ -384,7 +384,7 @@ export default function MockTestPage() {
     const instructions = pick(contentLang, test.instructions || '', test.instructionsGu);
     const hasGuInstructions = !!(test.titleGu || test.instructionsGu);
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <div className="flex-1 max-w-3xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-10">
           <div className="flex items-center justify-between mb-6 gap-3">
             <button onClick={() => navigate('/mock-tests')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 cursor-pointer">
@@ -468,7 +468,7 @@ export default function MockTestPage() {
   // ================= RESULT =================
   if (phase === 'result' && result) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <AttemptResultView
           result={result}
           contentLang={contentLang}
@@ -483,7 +483,7 @@ export default function MockTestPage() {
   // ================= REVIEW SUMMARY (before final submit) =================
   if (phase === 'review') {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <div className="flex-1 max-w-xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 text-center">
             <ListChecks className="w-10 h-10 text-emerald-600 mx-auto mb-3" />
@@ -526,7 +526,7 @@ export default function MockTestPage() {
     : 'bg-emerald-50 border-emerald-300 text-emerald-800';
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* ---------- Sticky header: title · timer · progress · submit ---------- */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2.5">

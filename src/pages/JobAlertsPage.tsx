@@ -13,16 +13,16 @@ export default function JobAlertsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
 
       <main className="flex-1">
-        <div className="bg-slate-900 text-white py-14 px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold mb-4">
+        <div className="bg-white border-b border-slate-200 py-8 sm:py-10 px-4 sm:px-6 text-center">
+          <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
             <Bell className="w-3.5 h-3.5" /> Job Alerts
           </div>
-          <h1 className="text-2xl sm:text-4xl font-heading font-extrabold tracking-tight mb-3">Never Miss Official Vacancies</h1>
-          <p className="text-sm text-slate-300 max-w-lg mx-auto">
+          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-2 text-slate-900">Never Miss Official Vacancies</h1>
+          <p className="text-sm text-slate-500 max-w-lg mx-auto">
             Set up category and region-specific alerts, delivered by email the moment a matching job is posted.
           </p>
         </div>
