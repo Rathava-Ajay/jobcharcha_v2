@@ -16,6 +16,7 @@ const TABS = [
 const HIDDEN = [
   /^\/dashboard/, /^\/admin/, /^\/login/, /^\/join/, /^\/unsubscribe/, /^\/attempts\//,
   /^\/jobs\/[^/]+/, /^\/private-jobs\/[^/]+/, /^\/mock-tests\/[^/]+/, /^\/daily-quiz/,
+  /^\/results\/[^/]+/, /^\/admit-cards\/[^/]+/,
 ];
 
 /** Thumb-reach navigation for phones: the five things people come to JobCharcha for. */
