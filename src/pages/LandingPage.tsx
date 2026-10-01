@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  Search, ShieldCheck, Briefcase, Award, Ticket, Flame, PenLine, FileText, ChevronRight, ChevronDown, Download,
+  Search, ShieldCheck, Briefcase, Award, Ticket, Flame, PenLine, FileText, ChevronRight, Download,
   GraduationCap, MapPin, Zap, Bell, Bookmark, BookmarkCheck, Building2, CheckCircle2, Users, ArrowRight,
 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
@@ -21,6 +21,7 @@ import { Chip, DeadlinePill, OrgAvatar, Pill, SectionHeader, cx } from '../compo
 import { QUALIFICATION_OPTIONS } from '../utils/jobFilters';
 import { useSavedGovtJobs } from '../utils/localPrefs';
 import { daysSince, daysUntil, fmtShortDate } from '../utils/dates';
+import { Select } from '../components/ui/Select';
 
 const FALLBACK_POPULAR = ['GPSC', 'GSSSB', 'Police Bharti', 'Talati', 'Teacher Bharti', 'Bank Jobs', 'Railway Jobs', 'SSC'];
 
@@ -267,15 +268,14 @@ function Hero({ popular, onSearch, job, result, admit }: {
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('home.searchPlaceholder')} aria-label={t('home.searchLabel')}
                 className="w-full min-w-0 py-2.5 text-[15px] font-semibold text-slate-900 outline-none bg-transparent placeholder:font-normal placeholder:text-slate-400" />
             </label>
-            <label className="hidden md:flex items-center gap-1.5 px-3 border-l border-slate-200 text-slate-800 relative">
+            <div className="hidden md:flex items-center gap-1.5 pl-3 border-l border-slate-200 text-slate-800">
               <GraduationCap className="w-4 h-4 shrink-0 text-slate-500" />
-              <select value={ql} onChange={(e) => setQl(e.target.value)} aria-label={t('home.qualification')}
-                className="appearance-none bg-transparent outline-none text-sm font-semibold pr-5 cursor-pointer max-w-[11rem] truncate">
+              <Select value={ql} onChange={(e) => setQl(e.target.value)} aria-label={t('home.qualification')} menuMinWidth={220}
+                className="w-44 rounded-lg px-2 py-2 bg-transparent text-sm font-semibold text-slate-800 hover:bg-slate-50">
                 <option value="">{t('home.anyQualification')}</option>
                 {QUALIFICATION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
-            </label>
+              </Select>
+            </div>
             <button type="submit" aria-label={t('home.search')} className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-[15px] px-3.5 sm:px-7 py-3 cursor-pointer">
               <Search className="w-4 h-4" /><span className="hidden sm:inline">{t('home.search')}</span>
             </button>

@@ -7,6 +7,7 @@ import {
 import { ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
 import { BulkImportExportBar } from './BulkImportExportBar';
+import { Select } from '../ui/Select';
 
 const emptyForm: UpsertOldPaperPayload = {
   title: '',
@@ -116,11 +117,11 @@ export const AdminOldPapersPanel: React.FC<Props> = ({ categories }) => {
             </div>
             <div>
               <label className="text-slate-700 block mb-1">Category</label>
-              <select value={form.categoryId ?? ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
+              <Select value={form.categoryId ?? ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium">
                 <option value="">No category</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="text-slate-700 block mb-1">Year</label>

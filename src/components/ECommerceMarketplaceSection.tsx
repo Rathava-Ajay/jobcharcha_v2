@@ -8,6 +8,7 @@ import { startStoreRazorpayCheckout } from '../utils/storeRazorpayCheckout';
 import { getWalletBalance } from '../api/wallet';
 import { startWalletTopUpCheckout } from '../utils/walletTopUpCheckout';
 import { trackPDFPurchase } from '../utils/analytics';
+import { Select } from './ui/Select';
 
 interface CartLine {
   product: ApiProduct;
@@ -261,7 +262,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
                     className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs"
                   />
                 </div>
-                <select
+                <Select
                   value={pricingType}
                   onChange={(e) => setPricingType(e.target.value as 'All' | 'Free' | 'Paid')}
                   className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
@@ -269,7 +270,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
                   <option value="All">All Pricing</option>
                   <option value="Free">Free</option>
                   <option value="Paid">Paid</option>
-                </select>
+                </Select>
               </div>
             </div>
 

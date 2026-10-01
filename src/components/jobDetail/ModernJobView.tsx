@@ -13,6 +13,7 @@ import { looksLikeHtml } from '../../utils/jobDetailParsers';
 import { fmtDate, daysUntil, daysSince } from '../../utils/dates';
 import { useEligibilityProfile, QUALIFICATION_LEVELS, requiredLevel } from '../../utils/localPrefs';
 import { JobViewProps, JobLink, fmtMoney, isLastDateLabel } from './jobViewModel';
+import { Select } from '../ui/Select';
 
 const LINK_ICON: Record<JobLink['kind'], React.ElementType> = {
   apply: ExternalLink, pdf: Download, syllabus: FileText, website: Globe, telegram: Send, whatsapp: MessageCircle,
@@ -431,11 +432,11 @@ const EligibilityCheck: React.FC<{ minAge?: number; maxAge?: number; qualificati
         </label>
         <label className="text-xs font-semibold text-slate-600">
           Qualification
-          <select value={profile.level ?? ''} onChange={(e) => setProfile({ ...profile, level: e.target.value ? Number(e.target.value) : undefined })}
+          <Select value={profile.level ?? ''} onChange={(e) => setProfile({ ...profile, level: e.target.value ? Number(e.target.value) : undefined })}
             className="mt-1 w-full rounded-lg border border-slate-200 px-2 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-emerald-600 bg-white cursor-pointer">
             <option value="">Select</option>
             {QUALIFICATION_LEVELS.map((q) => <option key={q.level} value={q.level}>{q.label}</option>)}
-          </select>
+          </Select>
         </label>
       </div>
       <div className="mt-3 divide-y divide-slate-100 text-[13.5px]">

@@ -11,6 +11,7 @@ import { getCategories, ApiCategory } from '../api/categories';
 import { JobRow } from '../components/ui/JobRow';
 import { PageHeader, Card, Chip, RowSkeleton, EmptyState, btn, cx } from '../components/ui/kit';
 import { QUALIFICATION_OPTIONS, LOCATION_OPTIONS, SORT_OPTIONS, qualificationLabel } from '../utils/jobFilters';
+import { Select } from '../components/ui/Select';
 
 const PAGE_SIZE = 15;
 
@@ -225,9 +226,9 @@ const SortSelect: React.FC<{ value: string; onChange: (v: string) => void; class
   <label className={cx('flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-3 text-sm font-semibold text-slate-700', className)}>
     <ArrowUpDown className="w-4 h-4 text-slate-400 shrink-0" />
     <span className="sr-only">Sort by</span>
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent py-2.5 outline-none cursor-pointer w-full">
+    <Select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent py-2.5 outline-none cursor-pointer w-full">
       {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
+    </Select>
   </label>
 );
 

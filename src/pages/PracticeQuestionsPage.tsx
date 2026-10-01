@@ -8,6 +8,7 @@ import {
   getPracticeExams, getPracticeSubjects, getPracticeTopics, searchPracticeQuestions,
   ApiPracticeExamOption, ApiPracticeQuestion,
 } from '../api/practiceQuestions';
+import { Select } from '../components/ui/Select';
 
 const DIFFICULTIES = ['All', 'Easy', 'Medium', 'Hard'];
 const PAGE_SIZE = 10;
@@ -115,22 +116,22 @@ export default function PracticeQuestionsPage() {
           <>
             <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-5 sm:p-6 mb-6 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <select
+                <Select
                   value={selectedExamId ?? ''}
                   onChange={(e) => setSelectedExamId(Number(e.target.value))}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   {exams.map((e) => <option key={e.examId} value={e.examId}>{e.examName} ({e.questionCount})</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={selectedSubject}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   <option value="">All Subjects</option>
                   {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={selectedTopic}
                   onChange={(e) => setSelectedTopic(e.target.value)}
                   disabled={topics.length === 0}
@@ -138,14 +139,14 @@ export default function PracticeQuestionsPage() {
                 >
                   <option value="">All Topics</option>
                   {topics.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-                <select
+                </Select>
+                <Select
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value)}
                   className="bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
                 >
                   {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
+                </Select>
               </div>
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />

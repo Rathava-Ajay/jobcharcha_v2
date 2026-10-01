@@ -11,6 +11,7 @@ import {
 } from '../../api/jobDrafts';
 import { getCategories, ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
+import { Select } from '../ui/Select';
 
 const STATUS_TABS: { id: number; label: string }[] = [
   { id: JOB_DRAFT_STATUS.Pending, label: 'Pending Review' },
@@ -393,24 +394,24 @@ export const AdminJobDraftsPanel: React.FC = () => {
                   <input placeholder="Name (e.g. GSSSB Notifications)" value={sourceForm.name}
                     onChange={(e) => setSourceForm({ ...sourceForm, name: e.target.value })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs" />
-                  <select value={sourceForm.sourceType}
+                  <Select value={sourceForm.sourceType}
                     onChange={(e) => setSourceForm({ ...sourceForm, sourceType: Number(e.target.value) })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
                     <option value={0}>Official Website</option>
                     <option value={1}>Telegram Channel</option>
-                  </select>
+                  </Select>
                   <input placeholder="URL (site page, or t.me/channelname)" value={sourceForm.url}
                     onChange={(e) => setSourceForm({ ...sourceForm, url: e.target.value })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs sm:col-span-2" />
                   <input placeholder="Organization hint (optional)" value={sourceForm.organizationHint || ''}
                     onChange={(e) => setSourceForm({ ...sourceForm, organizationHint: e.target.value })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs" />
-                  <select value={sourceForm.defaultCategoryId ?? ''}
+                  <Select value={sourceForm.defaultCategoryId ?? ''}
                     onChange={(e) => setSourceForm({ ...sourceForm, defaultCategoryId: e.target.value ? Number(e.target.value) : null })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs">
                     <option value="">No default category</option>
                     {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  </Select>
                   <input placeholder="State hint (optional, e.g. Gujarat)" value={sourceForm.stateHint || ''}
                     onChange={(e) => setSourceForm({ ...sourceForm, stateHint: e.target.value })}
                     className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs sm:col-span-2" />

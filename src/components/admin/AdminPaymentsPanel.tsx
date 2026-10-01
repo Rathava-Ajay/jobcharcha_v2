@@ -6,6 +6,7 @@ import {
 } from '../../api/adminPayments';
 import { adminRefundStoreOrder } from '../../api/adminStoreOrders';
 import { ApiError } from '../../api/client';
+import { Select } from '../ui/Select';
 
 const RESOLVED_LABEL: Record<string, string> = {
   Paid: 'Resolved — Paid',
@@ -184,14 +185,14 @@ export const AdminPaymentsPanel: React.FC = () => {
         </p>
         <form onSubmit={submitRefund} className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            <select
+            <Select
               value={refundKind}
               onChange={(e) => setRefundKind(e.target.value as 'payment' | 'store-order')}
               className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
             >
               <option value="payment">Aspirant Payment ID</option>
               <option value="store-order">Store Order ID</option>
-            </select>
+            </Select>
             <input
               type="number" min={1} value={refundId} onChange={(e) => setRefundId(e.target.value)}
               placeholder="ID" className="w-28 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold"

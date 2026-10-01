@@ -10,6 +10,7 @@ import { getExams, createTest, ApiExam, UpsertTestPayload } from '../api/tests';
 import { ApiError } from '../api/client';
 import { buildMockTestExtractionPrompt, buildStudyContentCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiMockTestImport, ParsedAiMockTest } from '../utils/aiMockTestImportValidation';
+import { Select } from '../components/ui/Select';
 
 type Step = 'notification' | 'prompt' | 'paste' | 'preview' | 'caption';
 
@@ -241,14 +242,14 @@ export default function AdminMobilePostMockTestPage() {
 
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Exam (confirm or change)</label>
-                <select
+                <Select
                   value={selectedExamId ?? ''}
                   onChange={(e) => setSelectedExamId(Number(e.target.value))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                 >
                   <option value="" disabled>Select an exam…</option>
                   {exams.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </select>
+                </Select>
                 {!selectedExamId && (
                   <p className="text-[10px] text-amber-700 mt-1">AI suggested "{parsed.examName}" — no confident match found, please pick one.</p>
                 )}

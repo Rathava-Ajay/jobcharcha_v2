@@ -7,6 +7,7 @@ import { SeoHead } from '../components/SeoHead';
 import { useAuth } from '../context/AuthContext';
 import { getCategories, ApiCategory } from '../api/categories';
 import { searchOldPapers, getOldPaperYears, ApiOldPaperListItem } from '../api/oldPapers';
+import { Select } from '../components/ui/Select';
 
 export default function OldPapersPage() {
   const navigate = useNavigate();
@@ -72,14 +73,14 @@ export default function OldPapersPage() {
               className="w-full bg-white border border-slate-200 rounded-xl text-sm text-slate-900 pl-10 pr-3 py-3 focus:outline-none focus:border-indigo-500 font-medium shadow-2xs"
             />
           </div>
-          <select
+          <Select
             value={selectedYear ?? ''}
             onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : null)}
             className="bg-white border border-slate-200 rounded-xl text-sm text-slate-800 px-3 py-3 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer shadow-2xs"
           >
             <option value="">All Years</option>
             {years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
+          </Select>
         </div>
 
         <div className="flex flex-wrap gap-2 mb-8">

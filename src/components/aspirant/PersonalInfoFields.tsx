@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
 import { uploadAvatar } from '../../api/auth';
 import { fieldClass, labelClass } from './SectionCard';
+import { Select } from '../ui/Select';
 
 export interface PersonalDraft {
   firstName: string;
@@ -93,10 +94,10 @@ export const PersonalInfoFields: React.FC<Props> = ({
         </div>
         <div>
           <label className={labelClass}>Gender *</label>
-          <select className={fieldClass} value={value.gender} onChange={(e) => set('gender', e.target.value)}>
+          <Select className={fieldClass} value={value.gender} onChange={(e) => set('gender', e.target.value)}>
             <option value="">Select…</option>
             {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-          </select>
+          </Select>
         </div>
         <div>
           <label className={labelClass}>City *</label>

@@ -9,6 +9,7 @@ import { getCategories, ApiCategory } from '../api/categories';
 import { searchTests, ApiTestListItem } from '../api/tests';
 import { getTodayQuiz, ApiDailyQuiz } from '../api/dailyQuiz';
 import { PageHeader, Card, Chip, Pill, EmptyState, btn, cx } from '../components/ui/kit';
+import { Select } from '../components/ui/Select';
 
 const TOOLS = [
   { to: '/old-papers', icon: FileText, title: 'Old papers', body: 'Past papers with answers', tone: 'bg-blue-50 text-blue-700' },
@@ -103,7 +104,7 @@ export default function MockTestDashboardPage() {
                 <Search className="w-4 h-4 text-slate-400 shrink-0" />
                 <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tests…" aria-label="Search mock tests" className="w-full py-2.5 text-sm outline-none bg-transparent" />
               </label>
-              <select
+              <Select
                 value={categoryId ?? ''}
                 onChange={(e) => setParam('categoryId', e.target.value)}
                 aria-label="Filter by exam category"
@@ -111,7 +112,7 @@ export default function MockTestDashboardPage() {
               >
                 <option value="">All exams</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
           <div className="flex gap-2 mb-4">

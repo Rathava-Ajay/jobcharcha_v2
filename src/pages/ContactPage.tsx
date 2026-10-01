@@ -5,6 +5,7 @@ import { Footer } from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
 import { submitContact } from '../api/contact';
 import { ApiError } from '../api/client';
+import { Select } from '../components/ui/Select';
 
 const SUBJECTS = [
   'General Inquiry',
@@ -115,10 +116,10 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Topic</label>
-                    <select value={subject} onChange={(e) => setSubject(e.target.value)}
+                    <Select value={subject} onChange={(e) => setSubject(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer">
                       {SUBJECTS.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    </Select>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1">Message</label>

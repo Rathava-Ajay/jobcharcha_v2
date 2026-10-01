@@ -9,6 +9,7 @@ import {
   ApiCutOffExamOption, ApiCutOffPrediction, CUTOFF_CATEGORIES,
 } from '../api/cutoffPredictor';
 import { ApiError } from '../api/client';
+import { Select } from '../components/ui/Select';
 
 const TREND_STYLE: Record<string, { icon: React.ElementType; className: string }> = {
   Rising: { icon: TrendingUp, className: 'text-rose-700 bg-rose-50 border-rose-200' },
@@ -106,34 +107,34 @@ export default function CutoffPredictorPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Exam</label>
-                  <select
+                  <Select
                     value={selectedSlug}
                     onChange={(e) => setSelectedSlug(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer"
                   >
                     {exams.map((e) => <option key={e.slug} value={e.slug}>{e.examName}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Post</label>
-                  <select
+                  <Select
                     value={selectedPostName}
                     onChange={(e) => setSelectedPostName(e.target.value)}
                     disabled={postNames.length === 0}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer disabled:opacity-50"
                   >
                     {postNames.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Category</label>
-                  <select
+                  <Select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer"
                   >
                     {CUTOFF_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
               </div>
 

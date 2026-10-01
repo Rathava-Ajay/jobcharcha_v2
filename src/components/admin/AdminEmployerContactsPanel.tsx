@@ -5,6 +5,7 @@ import {
   ApiAdminContactLogItem, AdminEmployerOverview, ApiFraudFlag,
 } from '../../api/adminEmployer';
 import { ApiError } from '../../api/client';
+import { Select } from '../ui/Select';
 
 const STATUS_LABEL: Record<string, string> = {
   success: 'Unlocked',
@@ -93,7 +94,7 @@ export const AdminEmployerContactsPanel: React.FC = () => {
         </div>
 
         <form onSubmit={handleFilter} className="flex gap-2">
-          <select
+          <Select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
@@ -103,7 +104,7 @@ export const AdminEmployerContactsPanel: React.FC = () => {
             <option value="blocked_expired">Blocked — expired</option>
             <option value="blocked_no_credits">Blocked — no credits</option>
             <option value="blocked_both">Blocked — both</option>
-          </select>
+          </Select>
           <button type="submit" className="bg-slate-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5">
             <Search className="w-3.5 h-3.5" /> Filter
           </button>

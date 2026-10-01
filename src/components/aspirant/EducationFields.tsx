@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { EducationEntry } from '../../api/aspirantProfile';
 import { fieldClass, labelClass } from './SectionCard';
+import { Select } from '../ui/Select';
 
 interface Props {
   value: EducationEntry[];
@@ -34,10 +35,10 @@ export const EducationFields: React.FC<Props> = ({ value, onChange }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={labelClass}>Level</label>
-              <select className={fieldClass} value={row.qualification || ''} onChange={(e) => update(i, { qualification: e.target.value })}>
+              <Select className={fieldClass} value={row.qualification || ''} onChange={(e) => update(i, { qualification: e.target.value })}>
                 <option value="">Select…</option>
                 {QUALIFICATIONS.map((q) => <option key={q} value={q}>{q}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className={labelClass}>Course / Degree</label>

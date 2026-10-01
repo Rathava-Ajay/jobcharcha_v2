@@ -2,6 +2,7 @@ import React from 'react';
 import { JobPreferences } from '../../api/aspirantProfile';
 import { TagInput } from './TagInput';
 import { fieldClass, labelClass } from './SectionCard';
+import { Select } from '../ui/Select';
 
 interface Props {
   value: JobPreferences;
@@ -19,17 +20,17 @@ export const JobPreferencesFields: React.FC<Props> = ({ value, onChange }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className={labelClass}>Preferred job type *</label>
-          <select className={fieldClass} value={value.preferredJobType || ''} onChange={(e) => set('preferredJobType', e.target.value)}>
+          <Select className={fieldClass} value={value.preferredJobType || ''} onChange={(e) => set('preferredJobType', e.target.value)}>
             <option value="">Select…</option>
             {JOB_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          </Select>
         </div>
         <div>
           <label className={labelClass}>Work mode *</label>
-          <select className={fieldClass} value={value.workMode || ''} onChange={(e) => set('workMode', e.target.value)}>
+          <Select className={fieldClass} value={value.workMode || ''} onChange={(e) => set('workMode', e.target.value)}>
             <option value="">Select…</option>
             {WORK_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-          </select>
+          </Select>
         </div>
         <div>
           <label className={labelClass}>Expected salary (monthly)</label>

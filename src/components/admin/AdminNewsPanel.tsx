@@ -7,6 +7,7 @@ import {
 import { ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
 import { OfficialDocumentUpload } from './OfficialDocumentUpload';
+import { Select } from '../ui/Select';
 
 const emptyForm: UpsertNewsPayload = {
   title: '',
@@ -106,11 +107,11 @@ export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
             </div>
             <div>
               <label className="text-slate-700 block mb-1">Category</label>
-              <select value={form.categoryId || ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
+              <Select value={form.categoryId || ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium">
                 <option value="">None</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="text-slate-700 block mb-1">Featured Image URL</label>

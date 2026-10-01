@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Building2, PlusCircle, Users, CheckCircle2, Sparkles, Search, CreditCard, ArrowLeft, Eye, MapPin, X } from 'lucide-react';
+import { Building2, PlusCircle, Users, CheckCircle2, Sparkles, Search, CreditCard, Eye, MapPin, X, Briefcase, Hourglass } from 'lucide-react';
+import { DashboardLayout, DashNavGroup, StatTile } from './dashboard/DashboardLayout';
 import { UserProfile } from '../types';
 import { CandidateSearchPanel } from './employer/CandidateSearchPanel';
 import { EmployerBillingPanel } from './employer/EmployerBillingPanel';
@@ -12,6 +13,7 @@ import { getEmployerJobApplications, updateApplicationStatus, ApiJobApplication 
 import { ApiError } from '../api/client';
 import { OfficialDocumentUpload } from './admin/OfficialDocumentUpload';
 import { uploadEmployerDocument } from '../api/uploads';
+import { Select } from './ui/Select';
 
 interface EmployerDashboardSectionProps {
   user: UserProfile;
@@ -111,80 +113,66 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
   const activeJobsCount = jobs.filter((j) => j.isActive).length;
   const totalApplications = jobs.reduce((sum, j) => sum + j.applicationCount, 0);
   const selectedJob = jobs.find((j) => j.id === selectedJobId);
+  const totalViews = jobs.reduce((sum, j) => sum + j.viewCount, 0);
+  const pendingReview = jobs.filter((j) => j.status === 'PendingReview').length;
+
+  const navGroups: DashNavGroup[] = [
+    { title: 'Jobs', items: [
+      { id: 'listings', label: 'My job postings', icon: Building2, badge: jobs.length || null },
+      { id: 'post', label: 'Post vacancy', icon: PlusCircle },
+    ] },
+    { title: 'Candidates', items: [
+      { id: 'applicants', label: 'Applications', icon: Users, badge: totalApplications || null },
+      { id: 'search', label: 'Find candidates', icon: Search },
+    ] },
+    { title: 'Account', items: [{ id: 'billing', label: 'Plan & credits', icon: CreditCard }] },
+  ];
 
   return (
-    <section className="py-10 bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-
-        {/* Header Banner */}
-        <div className="bg-slate-900 shadow-lg text-white p-6 sm:p-8 rounded-3xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="space-y-2 relative z-10">
-            <div className="inline-flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-bold">
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Verified Employer Portal</span>
-              {user.isCompanyVerified && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight">
-              {user.companyName || 'Employer Studio'} Management Suite
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300">
-              Post real job openings, screen applicants, and unlock candidate resumes.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 relative z-10">
-            <div className="bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-white/10 text-xs">
-              <span className="text-slate-400 block text-[10px] uppercase font-extrabold">Active Jobs</span>
-              <span className="font-black text-emerald-400 text-base">{activeJobsCount} Posted</span>
-            </div>
-
-            <button
-              onClick={() => { setForm(emptyForm); setPostError(null); setActiveTab('post'); }}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-5 py-3 rounded-2xl cursor-pointer flex items-center gap-2"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Post New Vacancy</span>
-            </button>
-          </div>
-        </div>
+    <DashboardLayout
+      groups={navGroups}
+      active={activeTab}
+      onSelect={(id) => {
+        if (id === 'applicants' && !selectedJobId && jobs.length > 0) openApplicants(jobs[0].id);
+        else if (id === 'post') { setForm(emptyForm); setPostError(null); setActiveTab('post'); }
+        else setActiveTab(id as typeof activeTab);
+      }}
+      title={activeTab === 'listings' ? (user.companyName || 'Employer dashboard') : undefined}
+      subtitle={
+        <span className="inline-flex items-center gap-1">
+          {user.isCompanyVerified && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+          {user.isCompanyVerified ? 'Verified employer · ' : ''}Post jobs, screen applicants and unlock candidate contacts
+        </span>
+      }
+      actions={activeTab !== 'post' ? (
+        <button
+          onClick={() => { setForm(emptyForm); setPostError(null); setActiveTab('post'); }}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[13px] px-3 sm:px-4 py-2.5 cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)]"
+        >
+          <PlusCircle className="w-4 h-4" /><span className="hidden sm:inline">Post vacancy</span>
+        </button>
+      ) : undefined}
+    >
+      <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-7 space-y-5 max-w-[1280px]">
 
         <EmployerVerificationBanner user={user} />
 
-        {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 overflow-x-auto gap-4 text-xs font-bold">
-          {[
-            { id: 'listings', label: `My Job Postings (${jobs.length})`, icon: Building2 },
-            { id: 'post', label: 'Post Vacancy', icon: PlusCircle },
-            { id: 'applicants', label: `Candidate Applications (${totalApplications})`, icon: Users },
-            { id: 'search', label: 'Find Candidates', icon: Search },
-            { id: 'billing', label: 'Plan & Credits', icon: CreditCard },
-          ].map((tab) => {
-            const IconComp = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  if (tab.id === 'applicants' && !selectedJobId && jobs.length > 0) openApplicants(jobs[0].id);
-                  else setActiveTab(tab.id as any);
-                }}
-                className={`pb-3 px-2 flex items-center gap-2 cursor-pointer transition-colors whitespace-nowrap ${
-                  isActive
-                    ? 'text-emerald-700 border-b-2 border-emerald-600 font-extrabold'
-                    : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                <IconComp className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        {activeTab === 'listings' && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <StatTile icon={Briefcase} tone="bg-blue-50 text-blue-700" value={activeJobsCount} label="Active jobs" hint={`${jobs.length} posted in total`} />
+            <StatTile icon={Users} tone="bg-blue-50 text-blue-700" value={totalApplications} label="Applications" hint="Across all postings" onClick={() => jobs.length > 0 && openApplicants(jobs[0].id)} />
+            <StatTile icon={Eye} tone="bg-violet-50 text-violet-700" value={totalViews.toLocaleString('en-IN')} label="Job views" hint="All postings" />
+            <StatTile icon={Hourglass} tone={pendingReview ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-500'} value={pendingReview} label="Awaiting review" hint={pendingReview ? 'Our team checks within a day' : 'All reviewed'} />
+          </div>
+        )}
 
         {/* TAB 1: LISTINGS */}
         {activeTab === 'listings' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-            <h2 className="text-lg font-heading font-extrabold text-slate-900">My Job Postings</h2>
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[17px] font-extrabold text-slate-900">My job postings</h2>
+              {jobs.length > 0 && <span className="text-[12.5px] font-semibold text-slate-500">{activeJobsCount} active · {jobs.length - activeJobsCount} closed or pending</span>}
+            </div>
 
             {postNotice && (
               <div className="bg-sky-50 border border-sky-200 text-sky-800 text-xs font-semibold rounded-xl px-3 py-2.5 flex items-start justify-between gap-3">
@@ -202,17 +190,18 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                 <Building2 className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                 <h3 className="text-sm font-bold text-slate-800">No job postings yet</h3>
                 <p className="text-xs text-slate-500 mt-1 mb-4">Post your first vacancy to start receiving applications.</p>
-                <button onClick={() => setActiveTab('post')} className="bg-emerald-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer">
+                <button onClick={() => setActiveTab('post')} className="bg-blue-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer">
                   Post a Vacancy
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {jobs.map((job) => (
-                  <div key={job.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div key={job.id} className={`relative overflow-hidden p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_28px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-4 pl-5 sm:pl-6`}>
+                    <span aria-hidden className={`absolute left-0 inset-y-0 w-1.5 ${job.status === 'PendingReview' ? 'bg-amber-400' : job.status === 'Rejected' ? 'bg-rose-500' : job.isActive ? 'bg-blue-500' : 'bg-slate-300'}`} />
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="bg-slate-900 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded">
+                        <span className="bg-slate-100 text-slate-700 text-[10.5px] font-extrabold px-2.5 py-0.5 rounded-full">
                           {job.jobType}
                         </span>
                         {job.isFeatured && (
@@ -230,7 +219,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                           <span className="bg-slate-200 text-slate-500 text-[10px] font-extrabold px-2.5 py-0.5 rounded">Closed</span>
                         )}
                       </div>
-                      <h3 className="font-heading font-extrabold text-base text-slate-900">{job.title}</h3>
+                      <h3 className="font-extrabold text-[15.5px] text-slate-900 break-words">{job.title}</h3>
                       <p className="text-xs text-slate-500 flex items-center gap-1 flex-wrap">
                         <MapPin className="w-3 h-3" /> {job.city}, {job.state}
                         <span className="mx-1">•</span>
@@ -243,9 +232,9 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => openApplicants(job.id)}
-                        className="bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer"
+                        className="inline-flex items-center gap-1 bg-blue-700 text-white hover:bg-blue-800 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer"
                       >
-                        View Applications
+                        <Users className="w-3.5 h-3.5" /> Applications ({job.applicationCount})
                       </button>
                       {job.isActive && (
                         <button
@@ -266,7 +255,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
         {/* TAB 2: POST JOB FORM */}
         {activeTab === 'post' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-            <h2 className="text-xl font-heading font-extrabold text-slate-900">Create New Job Posting</h2>
+            <h2 className="text-xl font-extrabold text-slate-900">Create New Job Posting</h2>
 
             {postError && (
               <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded-xl px-3 py-2.5">
@@ -285,7 +274,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                   <input
                     type="text" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
                     placeholder="e.g. Senior Software Engineer / Assistant Manager"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-emerald-500 font-medium"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 focus:outline-none focus:border-blue-500 font-medium"
                   />
                 </div>
 
@@ -309,7 +298,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
 
                 <div>
                   <label className="text-slate-700 block mb-1">Job Type</label>
-                  <select value={form.jobType} onChange={(e) => setForm({ ...form, jobType: e.target.value })}
+                  <Select value={form.jobType} onChange={(e) => setForm({ ...form, jobType: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-medium">
                     <option value="Full-time">Full-time</option>
                     <option value="Part-time">Part-time</option>
@@ -317,17 +306,17 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                     <option value="Internship">Internship</option>
                     <option value="Temporary">Temporary</option>
                     <option value="Freelance">Freelance</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
                   <label className="text-slate-700 block mb-1">Work Mode</label>
-                  <select value={form.workMode} onChange={(e) => setForm({ ...form, workMode: e.target.value })}
+                  <Select value={form.workMode} onChange={(e) => setForm({ ...form, workMode: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 font-medium">
                     <option value="On-site">On-site</option>
                     <option value="Remote">Remote</option>
                     <option value="Hybrid">Hybrid</option>
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
@@ -394,17 +383,17 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                 <div className="md:col-span-2 flex flex-wrap gap-x-6 gap-y-2 pt-1">
                   <label className="flex items-center gap-2 text-slate-600 font-semibold cursor-pointer">
                     <input type="checkbox" checked={!!form.isSalaryNegotiable} onChange={(e) => setForm({ ...form, isSalaryNegotiable: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                     Salary is negotiable
                   </label>
                   <label className="flex items-center gap-2 text-slate-600 font-semibold cursor-pointer">
                     <input type="checkbox" checked={!!form.hideSalary} onChange={(e) => setForm({ ...form, hideSalary: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                     Hide salary from the public listing
                   </label>
                   <label className="flex items-center gap-2 text-slate-600 font-semibold cursor-pointer">
                     <input type="checkbox" checked={!!form.isUrgent} onChange={(e) => setForm({ ...form, isUrgent: e.target.checked })}
-                      className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
                     Mark as urgent hiring
                   </label>
                 </div>
@@ -464,7 +453,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl cursor-pointer"
+                  className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-6 py-3 rounded-xl cursor-pointer"
                 >
                   Publish Job Vacancy
                 </button>
@@ -477,17 +466,17 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
         {activeTab === 'applicants' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <h2 className="text-xl font-heading font-extrabold text-slate-900">
+              <h2 className="text-xl font-extrabold text-slate-900">
                 Applications {selectedJob ? <span className="text-slate-500 font-semibold text-sm">— {selectedJob.title}</span> : null}
               </h2>
               {jobs.length > 1 && (
-                <select
+                <Select
                   value={selectedJobId ?? ''}
                   onChange={(e) => openApplicants(Number(e.target.value))}
                   className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700"
                 >
                   {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
-                </select>
+                </Select>
               )}
             </div>
 
@@ -503,14 +492,14 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                   <div key={app.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div>
-                        <h3 className="font-heading font-extrabold text-base text-slate-900">{app.applicantName}</h3>
+                        <h3 className="font-extrabold text-base text-slate-900">{app.applicantName}</h3>
                         <p className="text-xs text-slate-500">
                           {app.applicantEmail} {app.applicantPhone ? `• ${app.applicantPhone}` : ''} • Applied {new Date(app.createdDate).toLocaleDateString()}
                         </p>
                       </div>
 
                       <span className={`px-3 py-1 rounded-full text-xs font-bold text-center ${
-                        app.status === 'Selected' ? 'bg-emerald-100 text-emerald-800' :
+                        app.status === 'Selected' ? 'bg-blue-100 text-blue-800' :
                         app.status === 'Shortlisted' ? 'bg-indigo-100 text-indigo-800' :
                         app.status === 'Interview' ? 'bg-violet-100 text-violet-800' :
                         app.status === 'Rejected' ? 'bg-red-100 text-red-800' :
@@ -527,7 +516,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                     <div className="text-xs text-slate-600 flex flex-wrap gap-4 font-medium">
                       {app.expectedSalary && <span>Expected: {app.expectedSalary}</span>}
                       {app.resumeUrl ? (
-                        <a href={app.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-emerald-700 font-bold hover:underline">View Resume</a>
+                        <a href={app.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-bold hover:underline">View Resume</a>
                       ) : (
                         <span className="text-slate-400">No resume on file</span>
                       )}
@@ -548,7 +537,7 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                       </button>
                       <button
                         onClick={() => handleApplicationStatus(app.id, 'Selected')}
-                        className="bg-emerald-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl cursor-pointer"
+                        className="bg-blue-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl cursor-pointer"
                       >
                         Select
                       </button>
@@ -568,12 +557,12 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
                             className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium" />
                           <input placeholder="Location / link" value={interviewForm.location} onChange={(e) => setInterviewForm((f) => ({ ...f, location: e.target.value }))}
                             className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium" />
-                          <select value={interviewForm.mode} onChange={(e) => setInterviewForm((f) => ({ ...f, mode: e.target.value }))}
+                          <Select value={interviewForm.mode} onChange={(e) => setInterviewForm((f) => ({ ...f, mode: e.target.value }))}
                             className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium">
                             <option>In-person</option>
                             <option>Phone</option>
                             <option>Video</option>
-                          </select>
+                          </Select>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => submitInterview(app.id)} className="bg-violet-600 text-white font-bold text-xs px-3.5 py-2 rounded-xl cursor-pointer">
@@ -603,6 +592,6 @@ export const EmployerDashboardSection: React.FC<EmployerDashboardSectionProps> =
         )}
 
       </div>
-    </section>
+    </DashboardLayout>
   );
 };

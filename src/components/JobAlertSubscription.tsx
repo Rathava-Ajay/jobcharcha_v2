@@ -5,6 +5,7 @@ import { subscribeAlerts } from '../api/alerts';
 import { getSettings } from '../api/settings';
 import { ApiError } from '../api/client';
 import { trackEmailSignup, trackWhatsAppJoin } from '../utils/analytics';
+import { Select } from './ui/Select';
 
 interface JobAlertSubscriptionProps {
   onClose?: () => void;
@@ -193,7 +194,7 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
                               </label>
 
                               <div className="relative">
-                                  <select
+                                  <Select
                                       value={categorySlots[0] || ""}
                                       onChange={(e) => setCategorySlot(0, e.target.value)}
                                       className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
@@ -205,7 +206,7 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
                                               {cat.name}
                                           </option>
                                       ))}
-                                  </select>
+                                  </Select>
                               </div>
                           </div>
 
@@ -213,7 +214,7 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Highest Qualification</label>
-                <select
+                <Select
                   value={selectedQualification}
                   onChange={(e) => setSelectedQualification(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
@@ -223,12 +224,12 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
                       {q}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Target Region / State</label>
-                <select
+                <Select
                   value={selectedRegion}
                   onChange={(e) => setSelectedRegion(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
@@ -238,7 +239,7 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
                       {r}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ShieldAlert, Search } from 'lucide-react';
 import { adminGetDisputes, AdminDispute } from '../../api/adminPayments';
+import { Select } from '../ui/Select';
 
 const STATUS_STYLE: Record<string, string> = {
   open: 'bg-amber-100 text-amber-800',
@@ -43,7 +44,7 @@ export const AdminDisputesPanel: React.FC = () => {
       </p>
 
       <form onSubmit={handleFilter} className="flex gap-2">
-        <select
+        <Select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold"
@@ -55,7 +56,7 @@ export const AdminDisputesPanel: React.FC = () => {
           <option value="won">Won</option>
           <option value="lost">Lost</option>
           <option value="closed">Closed</option>
-        </select>
+        </Select>
         <button type="submit" className="bg-slate-900 text-white font-bold text-xs px-5 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5">
           <Search className="w-3.5 h-3.5" /> Filter
         </button>

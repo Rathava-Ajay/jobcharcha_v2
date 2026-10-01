@@ -4,6 +4,7 @@ import {
   adminGetAuditEvents, adminGetAuditCategories, adminGetSignupSources,
   AuditEvent, AuditCategoryFacet, SignupSourceStat,
 } from '../../api/adminAudit';
+import { Select } from '../ui/Select';
 
 const CATEGORY_STYLES: Record<string, string> = {
   Auth: 'bg-indigo-50 text-indigo-700',
@@ -119,23 +120,23 @@ export const AdminAuditLogPanel: React.FC = () => {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <select
+        <Select
           value={category}
           onChange={(e) => { setCategory(e.target.value); setEventType(''); }}
           className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:outline-none focus:border-indigo-500"
         >
           <option value="">All categories</option>
           {facets.map((f) => <option key={f.category} value={f.category}>{f.category}</option>)}
-        </select>
+        </Select>
 
-        <select
+        <Select
           value={eventType}
           onChange={(e) => setEventType(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-medium focus:outline-none focus:border-indigo-500"
         >
           <option value="">All events</option>
           {eventTypeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
+        </Select>
 
         <label className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-500">
           From

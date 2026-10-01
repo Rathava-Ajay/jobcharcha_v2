@@ -14,6 +14,7 @@ import { ApiError } from '../api/client';
 import { buildJobExtractionPrompt, buildInstagramCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiJobImport, ParsedAiJob } from '../utils/aiJobImportValidation';
 import { DocumentPreview } from '../components/DocumentPreview';
+import { Select } from '../components/ui/Select';
 
 type Step = 'compose' | 'review' | 'upload' | 'success';
 
@@ -289,14 +290,14 @@ export default function AdminMobilePostPage() {
 
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Category (confirm or change)</label>
-                <select
+                <Select
                   value={selectedCategoryId ?? ''}
                   onChange={(e) => setSelectedCategoryId(Number(e.target.value))}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-500"
                 >
                   <option value="" disabled>Select a category…</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+                </Select>
                 {!selectedCategoryId && (
                   <p className="text-[10px] text-amber-700 mt-1">AI suggested "{parsed.categoryName}" — no confident match found, please pick one.</p>
                 )}
