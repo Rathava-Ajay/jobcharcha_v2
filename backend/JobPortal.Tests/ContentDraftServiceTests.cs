@@ -179,3 +179,21 @@ public class ContentSyncParsingTests
         Assert.Contains("could not reach", error);
     }
 }
+
+public class ContentSlugTests
+{
+    [Fact]
+    public void CleanSlug_StripsPunctuationAndCapsLength()
+    {
+        Assert.Equal("gpsc-opens-26-class-1-2-posts-apply-by-8-october-2026",
+            ContentDraftService.CleanSlug("GPSC Opens 26 Class 1-2 Posts; Apply by 8 October 2026"));
+        Assert.True(ContentDraftService.CleanSlug(new string('a', 40) + " " + new string('b', 90)).Length <= 100);
+    }
+
+    [Fact]
+    public void WithCleanSlug_KeepsAnExistingSlug_AndAddsOneWhenMissing()
+    {
+        Assert.Contains("\"slug\":\"my-slug\"", ContentDraftService.WithCleanSlug("{\"title\":\"X\",\"slug\":\"my-slug\"}"));
+        Assert.Contains("\"slug\":\"hello-world\"", ContentDraftService.WithCleanSlug("{\"title\":\"Hello: World!\"}"));
+    }
+}

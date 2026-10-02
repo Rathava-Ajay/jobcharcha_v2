@@ -36,6 +36,18 @@ const RUN_ACTIVE = (r?: ApiContentSyncRun | null) => !!r && (r.status === SYNC_S
 
 const SKIP_KEYS = new Set(['description', 'content', 'faqSchema', 'cutOffBreakdown', 'secondaryKeywords', 'lsiKeywords', 'internalLinkAnchors', 'metaKeywords', 'ogTitle', 'ogDescription', 'autoPublish', 'isActive']);
 
+/** Preview-only: keeps paragraph / heading / bullet breaks instead of flattening the HTML into one blob. */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<\/(p|h[1-6]|li|ul|ol|div|tr)>/gi, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 const when = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 
 function runLine(r?: ApiContentSyncRun | null): string {
@@ -410,7 +422,7 @@ const DraftCard: React.FC<{
                   </dl>
                   {body && (
                     <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 max-h-80 overflow-auto text-[13px] text-slate-700 whitespace-pre-wrap break-words">
-                      {body.includes('<') && /<\/?[a-z][\s\S]*>/i.test(body) ? body.replace(/<[^>]+>/g, ' ').replace(/\s+\n/g, '\n').replace(/ {2,}/g, ' ').trim() : body}
+                      {/<\/?[a-z][\s\S]*>/i.test(body) ? htmlToPlainText(body) : body}
                     </div>
                   )}
                 </>

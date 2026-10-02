@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using JobPortal.Application.Common;
 using JobPortal.Application.DTOs.AdmitCards;
@@ -318,8 +319,32 @@ public class ContentDraftService : IContentDraftService
         return ServiceResult<ContentApprovedResultDto>.Ok(new() { CreatedEntityId = created.Data });
     }
 
+    /// <summary>The per-category services only swap spaces and '/' when slugging a title, so an AI headline like
+    /// "GPSC Opens 26 Posts; Apply by 8 Oct" would become a slug containing ';'. Supply a clean slug up front
+    /// unless the payload already carries one.</summary>
+    public static string WithCleanSlug(string json)
+    {
+        if (JsonNode.Parse(json) is not JsonObject obj) return json;
+        var existing = obj["slug"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(existing)) return json;
+        var slug = CleanSlug(obj["title"]?.GetValue<string>());
+        if (slug.Length == 0) return json;
+        obj["slug"] = slug;
+        return obj.ToJsonString();
+    }
+
+    public static string CleanSlug(string? title)
+    {
+        var s = Regex.Replace((title ?? "").ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-');
+        if (s.Length <= 100) return s;
+        var cut = s[..100];
+        var lastDash = cut.LastIndexOf('-');
+        return (lastDash > 40 ? cut[..lastDash] : cut).Trim('-');
+    }
+
     private async Task<ServiceResult<int>> PublishAsync(string category, string json, string userId)
     {
+        json = WithCleanSlug(json);
         static ServiceResult<int> Map<T>(ServiceResult<T> r, Func<T, int> id) =>
             r.Succeeded ? ServiceResult<int>.Ok(id(r.Data!)) : ServiceResult<int>.Fail(r.ErrorCode ?? "PublishFailed", r.Error ?? "Could not publish.");
 
