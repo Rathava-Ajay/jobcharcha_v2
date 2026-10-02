@@ -197,3 +197,67 @@ public class ContentSlugTests
         Assert.Contains("\"slug\":\"hello-world\"", ContentDraftService.WithCleanSlug("{\"title\":\"Hello: World!\"}"));
     }
 }
+
+public class ContentLinkGuardTests
+{
+    private static ContentDraftService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
+        new(db, new ResultService(db), new AdmitCardService(db), new NewsService(db), new GovtSchemeService(db),
+            new OldPaperService(db), new StudyMaterialService(db));
+
+    private static IngestContentDraftRequest AdmitCard(string? downloadLink) => new()
+    {
+        Category = "admitcard", SourceName = "SSC",
+        Payload = JsonSerializer.SerializeToElement(new
+        {
+            title = "SSC CGL Admit Card 2026", organizationName = "SSC", categoryId = 1, focusKeyword = "SSC CGL Admit Card 2026",
+            admitCardReleaseDate = "2026-09-27", downloadLink, shortDescription = "s", description = "d",
+            metaTitle = "m", metaDescription = "md",
+        }),
+    };
+
+    private static IngestContentDraftRequest OldPaper(string paper, string? solution) => new()
+    {
+        Category = "oldpaper", SourceName = "GPSC",
+        Payload = JsonSerializer.SerializeToElement(new
+        {
+            title = "GPSC DEO Question Paper 2026", examName = "GPSC DEO", year = 2026, paperPdfLink = paper, solutionPdfLink = solution,
+        }),
+    };
+
+    [Theory]
+    [InlineData("https://ssc.gov.in")]
+    [InlineData("https://ssc.gov.in/")]
+    [InlineData("not a url")]
+    public async Task AdmitCard_WithHomePageLink_IsRejected(string link)
+    {
+        var result = await Create(TestDb.Create(TestDb.NewDbName())).IngestAsync(AdmitCard(link));
+        Assert.False(result.Succeeded);
+        Assert.Contains("deep link", result.Error);
+    }
+
+    [Fact]
+    public async Task AdmitCard_WithDeepLink_IsAccepted()
+    {
+        var result = await Create(TestDb.Create(TestDb.NewDbName())).IngestAsync(AdmitCard("https://ssc.gov.in/notice/cgl-admit-card"));
+        Assert.True(result.Succeeded);
+    }
+
+    [Fact]
+    public async Task OldPaper_SamePdfForPaperAndSolution_IsRejected()
+    {
+        var url = "https://gpsc.gujarat.gov.in/docs/PAK-41.pdf";
+        var result = await Create(TestDb.Create(TestDb.NewDbName())).IngestAsync(OldPaper(url, url));
+        Assert.False(result.Succeeded);
+        Assert.Contains("different PDF", result.Error);
+    }
+
+    [Fact]
+    public async Task OldPaper_DistinctPdfsOrNoSolution_AreAccepted()
+    {
+        var service = Create(TestDb.Create(TestDb.NewDbName()));
+        Assert.True((await service.IngestAsync(OldPaper("https://x.gov.in/q.pdf", "https://x.gov.in/a.pdf"))).Succeeded);
+        var other = OldPaper("https://x.gov.in/q2.pdf", null);
+        other.Payload = JsonSerializer.SerializeToElement(new { title = "Another paper 2025", examName = "Other exam", year = 2025, paperPdfLink = "https://x.gov.in/q2.pdf" });
+        Assert.True((await service.IngestAsync(other)).Succeeded);
+    }
+}

@@ -158,6 +158,8 @@ public class ContentDraftService : IContentDraftService
                         ("metaTitle", p.MetaTitle), ("metaDescription", p.MetaDescription));
                     if (err is null && p.CategoryId <= 0) err = "Missing required field(s): categoryId";
                     if (err is not null) return (err, "", "", false, null);
+                    if (!IsDeepLink(p.DownloadLink))
+                        return ("downloadLink must be a deep link to the exam's admit-card page or PDF, not a site home page.", "", "", false, null);
                     var t = Norm(p.Title);
                     return (null, p.Title.Trim(), $"admitcard|{t}|{p.AdmitCardReleaseDate:yyyy-MM-dd}",
                         await _db.AdmitCards.AsNoTracking().AnyAsync(r => r.Title.ToLower() == t), p.ShortDescription);
@@ -186,6 +188,9 @@ public class ContentDraftService : IContentDraftService
                     var p = payload.Deserialize<UpsertOldPaperRequest>(ReadOptions)!;
                     var err = ValidationMessage(p);
                     if (err is not null) return (err, "", "", false, null);
+                    if (!string.IsNullOrWhiteSpace(p.SolutionPdfLink)
+                        && string.Equals(p.SolutionPdfLink.Trim(), p.PaperPdfLink.Trim(), StringComparison.OrdinalIgnoreCase))
+                        return ("solutionPdfLink must be a different PDF from paperPdfLink (use null when there is no separate answer key).", "", "", false, null);
                     var t = Norm(p.Title);
                     return (null, p.Title.Trim(), $"oldpaper|{Norm(p.ExamName)}|{p.Year}|{Norm(p.Subject)}|{Norm(p.PaperType)}",
                         await _db.OldPapers.AsNoTracking().AnyAsync(r => r.Title.ToLower() == t), $"{p.ExamName} · {p.Year}");
@@ -272,6 +277,15 @@ public class ContentDraftService : IContentDraftService
 
         await BumpRunAsync(request.RunId, created: 1);
         return ServiceResult<ContentDraftIngestResultDto>.Ok(new() { Outcome = ContentIngestOutcome.Created, Draft = ToListItem(entity) });
+    }
+
+    /// <summary>True for an absolute http(s) URL with a real path or query — a bare host / "/" is a home page, not a deep link.
+    /// A null/empty link passes: the field is optional, and the admin sees the gap in review.</summary>
+    internal static bool IsDeepLink(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return true;
+        if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps)) return false;
+        return u.AbsolutePath.Trim('/').Length > 0 || u.Query.Length > 1;
     }
 
     private static string? Truncate(string? s, int max) => s is null ? null : (s.Length > max ? s[..max] : s);

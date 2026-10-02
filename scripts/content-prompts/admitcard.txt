@@ -32,4 +32,10 @@ PAYLOAD for "payload" (follow exactly; use null for unknown optional fields, nev
   "internalLinkAnchors": ["3-5 anchor texts"],
   "autoPublish": true
 }
+LINK RULES (strict - drafts are rejected otherwise):
+- "downloadLink" must be a DEEP link: the exact official admit-card / call-letter / notice page or PDF for THIS exam (e.g. https://ssc.gov.in/some/notice-page or the portal's call-letter login page), never a bare home page like https://ssc.gov.in or https://www.ibps.in. Find it by opening the official site's admit-card/notices section and copying the real URL of that notice. WebFetch the link to confirm it exists and is about this exam.
+- If the official download page needs a login and has a stable URL, that URL is fine. If you can only find a home page, SKIP the item.
+- "sourceUrl" in the wrapper must be the same kind of deep link (the notice that announced the release), not a home page.
+- Only use an exam date or release date that appears in an official notice or in at least two reputable sources; otherwise leave examDate as null.
+- Do not set admitCardReleaseDate in the future. If the card is only "to be released", skip the item.
 Skip an item if the admit card is not actually available/announced yet.

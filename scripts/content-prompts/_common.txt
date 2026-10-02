@@ -22,4 +22,4 @@ STEP 2 - Write each item as ORIGINAL content
 
 STEP 3 - Reply with ONLY this JSON (no text before or after, no code fences):
 { "items": [ { "sourceName": "<site or channel name>", "sourceUrl": "<exact official page/PDF link for this item>", "summary": "<one-line plain-English summary, max 300 chars>", "payload": { ...the category payload described below... } } ] }
-Dates in payloads are ISO 8601 (e.g. "2026-10-02"). If you found nothing worth sending, reply { "items": [] }.
+Dates in payloads are ISO 8601 (e.g. "2026-10-02"). If you found nothing worth sending, reply { "items": [], "note": "<one sentence on why, e.g. which sites were blocked or which rule excluded the candidates>" }. You may add a short "note" to a non-empty answer too.
