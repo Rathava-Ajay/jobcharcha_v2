@@ -2,9 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Sparkles, RefreshCw, Loader2, Briefcase, Trophy, Award, FileText, Newspaper, Landmark, GraduationCap,
   CheckCircle2, XCircle, AlertTriangle, Info, X, ExternalLink, ChevronDown, ChevronUp, Trash2, Send, Rss, Clock3,
-  Plus, Globe2, MessageCircle, Settings2, Code2, Radar, History, Ban,
+  Plus, Globe2, MessageCircle, Settings2, Code2, Radar, History, Ban, Pencil, Eye,
 } from 'lucide-react';
 import { AdminJobDraftsPanel } from './AdminJobDraftsPanel';
+import { DRAFT_FIELDS, parseFieldValue, displayFieldValue, trimStrings } from './aiMagicFields';
+import { searchJobDrafts, JOB_DRAFT_STATUS } from '../../api/jobDrafts';
 import {
   ContentCategory, CONTENT_DRAFT_STATUS, SYNC_STATUS,
   ApiContentCategorySummary, ApiContentDraftListItem, ApiContentDraft, ApiContentSyncRun, ApiContentSource,
@@ -83,9 +85,11 @@ export const AdminAiMagicPanel: React.FC = () => {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [jobsPending, setJobsPending] = useState(0);
 
   const loadSummary = useCallback(() => {
     getContentSummary().then(setSummary).catch(() => { /* keep the last good summary */ });
+    searchJobDrafts(JOB_DRAFT_STATUS.Pending, 1, 1).then((r) => setJobsPending(r.totalCount)).catch(() => { /* keep the last count */ });
   }, []);
 
   useEffect(() => { loadSummary(); getCategories().then(setCategories).catch(() => setCategories([])); }, [loadSummary]);
@@ -182,12 +186,13 @@ export const AdminAiMagicPanel: React.FC = () => {
         {TABS.map((t) => {
           const on = tab === t.id;
           const s = t.id === 'jobs' ? null : bySummary.get(t.id);
+          const pc = t.id === 'jobs' ? jobsPending : (s?.pendingCount ?? 0);
           const Icon = t.icon;
           return (
             <button key={t.id} role="tab" aria-selected={on} onClick={() => setTab(t.id)}
               className={`shrink-0 inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold cursor-pointer whitespace-nowrap transition ${on ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
               <Icon className="w-4 h-4" /> {t.label}
-              {s && s.pendingCount > 0 && <span className={`rounded-full px-1.5 text-[11px] font-extrabold ${on ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'}`}>{s.pendingCount}</span>}
+              {pc > 0 && <span className={`rounded-full px-1.5 text-[11px] font-extrabold ${on ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'}`}>{pc}</span>}
               {s && !s.isEnabled && <span className={`rounded-full px-1.5 text-[10.5px] font-extrabold ${on ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>Off</span>}
               {s && RUN_ACTIVE(s.lastRun) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             </button>
@@ -217,6 +222,8 @@ export const AdminAiMagicPanel: React.FC = () => {
 
 // ---------------------------------------------------------------------------------------------
 
+const PAGE_SIZE = 30;
+
 interface CategoryPaneProps {
   category: ContentCategory;
   label: string;
@@ -236,14 +243,34 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
   const [loading, setLoading] = useState(true);
   const [showSources, setShowSources] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [bulkStep, setBulkStep] = useState<'idle' | 'approve' | 'reject'>('idle');
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkResult, setBulkResult] = useState<string[] | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
-    searchContentDrafts(category, status)
-      .then((r) => { setItems(r.items); setTotal(r.totalCount); })
+    searchContentDrafts(category, status, 1, PAGE_SIZE)
+      .then((r) => {
+        setItems(r.items); setTotal(r.totalCount); setPage(1);
+        setSelected((prev) => new Set(Array.from(prev).filter((id) => r.items.some((i) => i.id === id))));
+      })
       .catch(() => { setItems([]); setTotal(0); })
       .finally(() => setLoading(false));
   }, [category, status]);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const r = await searchContentDrafts(category, status, page + 1, PAGE_SIZE);
+      setItems((prev) => { const seen = new Set(prev.map((i) => i.id)); return [...prev, ...r.items.filter((i) => !seen.has(i.id))]; });
+      setTotal(r.totalCount);
+      setPage((p) => p + 1);
+    } catch { onError('Could not load more drafts.'); }
+    finally { setLoadingMore(false); }
+  };
 
   useEffect(() => { load(); }, [load]);
 
@@ -259,6 +286,39 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
   const changed = () => { load(); onChanged(); };
   const running = RUN_ACTIVE(lastRun);
   const enabled = summary?.isEnabled !== false;
+
+  // Bulk review. Drafts with link warnings are never bulk-published: they need a human look first.
+  const pendingList = status === CONTENT_DRAFT_STATUS.Pending;
+  const selectedItems = items.filter((i) => selected.has(i.id));
+  const eligible = selectedItems.filter((i) => !(i.warnings?.length));
+  const skippedForWarnings = selectedItems.length - eligible.length;
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
+  const toggleOne = (id: number, on: boolean) => setSelected((prev) => { const n = new Set(prev); if (on) n.add(id); else n.delete(id); return n; });
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(items.map((i) => i.id)));
+
+  const runBulk = async (kind: 'approve' | 'reject') => {
+    setBulkBusy(true); onError(null); setBulkResult(null);
+    const targets = kind === 'approve' ? eligible : selectedItems;
+    const skipped = kind === 'approve' ? skippedForWarnings : 0;
+    const failures: string[] = [];
+    let done = 0;
+    for (const it of targets) {
+      try {
+        if (kind === 'approve') await approveContentDraft(it.id); else await rejectContentDraft(it.id);
+        done += 1;
+      } catch (e) {
+        failures.push(`${it.title}: ${e instanceof ApiError ? e.message : 'failed'}`);
+      }
+    }
+    setBulkStep('idle'); setSelected(new Set());
+    setBulkResult([
+      `${kind === 'approve' ? 'Published' : 'Rejected'} ${done} of ${targets.length}.`,
+      ...(skipped ? [`${skipped} skipped because they have link warnings — open them to check.`] : []),
+      ...failures,
+    ]);
+    setBulkBusy(false);
+    changed();
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
@@ -321,9 +381,65 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
         </div>
       ) : (
         <div className="space-y-3">
+          {pendingList && (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-slate-50 border border-slate-200 px-3.5 py-2.5">
+              <label className="inline-flex items-center gap-2 text-[13px] font-bold text-slate-700 cursor-pointer">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} className="w-4 h-4 accent-indigo-600" /> Select all
+              </label>
+              {selected.size > 0 && bulkStep === 'idle' && (
+                <>
+                  <span className="text-[12.5px] text-slate-500">
+                    {selected.size} selected{skippedForWarnings > 0 ? ` · ${skippedForWarnings} with link warnings won’t be bulk-published` : ''}
+                  </span>
+                  <button onClick={() => setBulkStep('approve')} disabled={eligible.length === 0}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px] font-extrabold px-3.5 py-1.5 cursor-pointer disabled:opacity-50">
+                    <Send className="w-3.5 h-3.5" /> Approve selected ({eligible.length})
+                  </button>
+                  <button onClick={() => setBulkStep('reject')}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 text-[12.5px] font-bold px-3.5 py-1.5 cursor-pointer">
+                    <XCircle className="w-3.5 h-3.5" /> Reject selected ({selected.size})
+                  </button>
+                </>
+              )}
+              {bulkStep === 'approve' && (
+                <>
+                  <span className="text-[13px] font-bold text-emerald-800">Publish {eligible.length} draft{eligible.length === 1 ? '' : 's'} to the live site?</span>
+                  <button onClick={() => runBulk('approve')} disabled={bulkBusy}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px] font-extrabold px-3.5 py-1.5 cursor-pointer disabled:opacity-60">
+                    {bulkBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Yes, publish
+                  </button>
+                  <button onClick={() => setBulkStep('idle')} disabled={bulkBusy} className="rounded-lg border border-slate-200 text-slate-600 text-[12.5px] font-bold px-3 py-1.5 cursor-pointer">Back</button>
+                </>
+              )}
+              {bulkStep === 'reject' && (
+                <>
+                  <span className="text-[13px] font-bold text-rose-700">Reject {selected.size} draft{selected.size === 1 ? '' : 's'}?</span>
+                  <button onClick={() => runBulk('reject')} disabled={bulkBusy}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[12.5px] font-extrabold px-3.5 py-1.5 cursor-pointer disabled:opacity-60">
+                    {bulkBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Yes, reject
+                  </button>
+                  <button onClick={() => setBulkStep('idle')} disabled={bulkBusy} className="rounded-lg border border-slate-200 text-slate-600 text-[12.5px] font-bold px-3 py-1.5 cursor-pointer">Back</button>
+                </>
+              )}
+            </div>
+          )}
+          {bulkResult && (
+            <div role="status" className="flex items-start gap-2.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3.5 py-3 text-[13px] text-indigo-900">
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-indigo-600" />
+              <ul className="flex-1 space-y-0.5 font-semibold">{bulkResult.map((l, i) => <li key={i} className="break-words">{l}</li>)}</ul>
+              <button onClick={() => setBulkResult(null)} aria-label="Dismiss" className="shrink-0 w-6 h-6 rounded-md grid place-items-center hover:bg-indigo-100 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
           {items.map((d) => (
-            <DraftCard key={d.id} draft={d} categories={categories} onChanged={changed} onError={onError} />
+            <DraftCard key={d.id} draft={d} categories={categories} onChanged={changed} onError={onError}
+              selectable={pendingList} selected={selected.has(d.id)} onSelect={(on) => toggleOne(d.id, on)} />
           ))}
+          {items.length < total && (
+            <button onClick={loadMore} disabled={loadingMore}
+              className="w-full rounded-xl border border-slate-200 hover:border-indigo-300 text-slate-700 text-[13px] font-bold px-4 py-2.5 cursor-pointer disabled:opacity-60">
+              {loadingMore ? 'Loading…' : `Load more (${total - items.length} more)`}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -337,10 +453,13 @@ const DraftCard: React.FC<{
   categories: ApiCategory[];
   onChanged: () => void;
   onError: (msg: string | null) => void;
-}> = ({ draft, categories, onChanged, onError }) => {
+  selectable?: boolean;
+  selected?: boolean;
+  onSelect?: (on: boolean) => void;
+}> = ({ draft, categories, onChanged, onError, selectable, selected, onSelect }) => {
   const [open, setOpen] = useState(false);
   const [full, setFull] = useState<ApiContentDraft | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [mode, setMode] = useState<'view' | 'fields' | 'json'>('view');
   const [json, setJson] = useState('');
   const [busy, setBusy] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -367,6 +486,16 @@ const DraftCard: React.FC<{
     setJson(JSON.stringify(next, null, 2));
   };
 
+  /** Leaving the JSON editor applies what was typed, so the form and preview always show the edited values. */
+  const switchMode = (next: 'view' | 'fields' | 'json') => {
+    if (mode === 'json' && next !== 'json' && full) {
+      try { setFull({ ...full, payload: JSON.parse(json) }); }
+      catch { onError('The edited JSON isn\u2019t valid \u2014 fix it first.'); return; }
+    }
+    onError(null);
+    setMode(next);
+  };
+
   const run = async (fn: () => Promise<unknown>, fallback: string) => {
     setBusy(true); onError(null);
     try { await fn(); onChanged(); }
@@ -376,10 +505,10 @@ const DraftCard: React.FC<{
 
   const approve = () => {
     let payload: Record<string, unknown> | undefined;
-    if (editing) {
+    if (mode === 'json') {
       try { payload = JSON.parse(json); } catch { onError('The edited JSON isn’t valid — fix it or switch back to the preview.'); return; }
     } else if (full) {
-      payload = full.payload;
+      payload = trimStrings(full.payload);
     }
     return run(() => approveContentDraft(draft.id, payload), 'Could not publish this draft.');
   };
@@ -394,7 +523,13 @@ const DraftCard: React.FC<{
       <span aria-hidden className={`absolute left-0 inset-y-0 w-1.5 ${tone}`} />
       <div className="flex flex-col lg:flex-row lg:items-start gap-3">
         <div className="flex-1 min-w-0 space-y-1.5">
-          <h4 className="font-extrabold text-[15px] leading-snug text-slate-900 break-words">{draft.title}</h4>
+          <div className="flex items-start gap-2.5">
+            {selectable && (
+              <input type="checkbox" checked={!!selected} onChange={(e) => onSelect?.(e.target.checked)} aria-label={`Select ${draft.title}`}
+                className="mt-1 w-4 h-4 accent-indigo-600 shrink-0 cursor-pointer" />
+            )}
+            <h4 className="font-extrabold text-[15px] leading-snug text-slate-900 break-words min-w-0">{draft.title}</h4>
+          </div>
           {draft.summary && <p className="text-[13px] text-slate-600 leading-relaxed">{draft.summary}</p>}
           {pending && draft.warnings?.length > 0 && (
             <ul className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-0.5" aria-label="Check before publishing">
@@ -469,16 +604,22 @@ const DraftCard: React.FC<{
                       </select>
                     </label>
                   )}
-                  <button onClick={() => setEditing((v) => !v)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 hover:border-indigo-300 text-slate-600 text-[12.5px] font-bold px-3 py-1.5 cursor-pointer">
-                    <Code2 className="w-3.5 h-3.5" /> {editing ? 'Back to preview' : 'Edit JSON'}
-                  </button>
+                  <div role="group" aria-label="Draft view" className="inline-flex rounded-lg bg-slate-100 p-0.5">
+                    {([['view', 'Preview', Eye], ['fields', 'Edit fields', Pencil], ['json', 'Edit JSON', Code2]] as const).map(([m, text, Icon]) => (
+                      <button key={m} onClick={() => switchMode(m)} aria-pressed={mode === m}
+                        className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-bold cursor-pointer ${mode === m ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                        <Icon className="w-3.5 h-3.5" /> {text}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {editing ? (
+              {mode === 'json' ? (
                 <textarea value={json} onChange={(e) => setJson(e.target.value)} spellCheck={false} rows={18}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-[12px] leading-relaxed focus:outline-none focus:border-indigo-400" />
+              ) : mode === 'fields' ? (
+                <FieldsEditor category={draft.category} payload={payload} onChange={setPayloadField} />
               ) : (
                 <>
                   <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-[13px]">
@@ -714,6 +855,42 @@ const RunHistory: React.FC<{ anyRunning: boolean }> = ({ anyRunning }) => {
           })}
         </ul>
       )}
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------
+
+const FieldsEditor: React.FC<{
+  category: ContentCategory;
+  payload: Record<string, unknown>;
+  onChange: (key: string, value: unknown) => void;
+}> = ({ category, payload, onChange }) => {
+  const field = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 focus:outline-none focus:border-indigo-400';
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3">
+      {DRAFT_FIELDS[category].map((f) => {
+        const value = displayFieldValue(f.kind, payload[f.key]);
+        const missing = f.required && value.trim() === '';
+        const wide = f.kind === 'textarea' || f.kind === 'url';
+        const common = {
+          id: `fld-${f.key}`,
+          value,
+          onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(f.key, parseFieldValue(f.kind, e.target.value)),
+          className: `${field} ${missing ? 'border-rose-300 bg-rose-50/40' : ''}`,
+        };
+        return (
+          <label key={f.key} htmlFor={common.id} className={`block min-w-0 ${wide ? 'sm:col-span-2' : ''}`}>
+            <span className="text-[12.5px] font-bold text-slate-600">{f.label}{f.required && <span className="text-rose-500"> *</span>}</span>
+            {f.kind === 'textarea'
+              ? <textarea {...common} rows={f.key === 'content' || f.key === 'description' ? 8 : 3} />
+              : <input {...common} type={f.kind === 'date' ? 'date' : f.kind === 'number' ? 'number' : f.kind === 'url' ? 'url' : 'text'} />}
+            {missing ? <span className="text-[11.5px] font-semibold text-rose-600">Required</span>
+              : f.hint ? <span className="text-[11.5px] text-slate-400">{f.hint}</span> : null}
+          </label>
+        );
+      })}
+      <p className="sm:col-span-2 text-[11.5px] text-slate-400">SEO keyword lists, FAQs and other advanced fields are kept as they are. Use “Edit JSON” to change them.</p>
     </div>
   );
 };

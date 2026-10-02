@@ -40,6 +40,8 @@ import { AdminDisputesPanel } from './admin/AdminDisputesPanel';
 import { AdminAuditLogPanel } from './admin/AdminAuditLogPanel';
 import { AdminCampaignLinksPanel } from './admin/AdminCampaignLinksPanel';
 import { AdminAiMagicPanel } from './admin/AdminAiMagicPanel';
+import { getContentSummary, ApiContentCategorySummary } from '../api/contentDrafts';
+import { searchJobDrafts, JOB_DRAFT_STATUS } from '../api/jobDrafts';
 import { BulkImportExportBar } from './admin/BulkImportExportBar';
 import { OfficialDocumentUpload } from './admin/OfficialDocumentUpload';
 import { Select } from './ui/Select';
@@ -101,6 +103,23 @@ export const AdminDashboardSection: React.FC = () => {
 
   const [formError, setFormError] = useState<string | null>(null);
 
+  // AI Magic drafts waiting for review (all content categories + the jobs scraper queue), for the overview banner.
+  const [aiPending, setAiPending] = useState<{ total: number; parts: string[] } | null>(null);
+  const loadAiPending = useCallback(() => {
+    const labels: Record<string, string> = { result: 'results', admitcard: 'admit cards', oldpaper: 'old papers', news: 'news', scheme: 'schemes', study: 'study notes' };
+    Promise.all([
+      getContentSummary().catch((): ApiContentCategorySummary[] => []),
+      searchJobDrafts(JOB_DRAFT_STATUS.Pending, 1, 1).then((r) => r.totalCount).catch(() => 0),
+    ]).then(([summary, jobs]) => {
+      const parts = [
+        ...(jobs > 0 ? [`${jobs} job${jobs === 1 ? '' : 's'}`] : []),
+        ...summary.filter((c) => c.pendingCount > 0).map((c) => `${c.pendingCount} ${labels[c.category] ?? c.category}`),
+      ];
+      const total = jobs + summary.reduce((n, c) => n + c.pendingCount, 0);
+      setAiPending({ total, parts });
+    });
+  }, []);
+
   const loadStats = useCallback(() => {
     setStatsLoading(true);
     getDashboardStats().then(setStats).catch(() => {}).finally(() => setStatsLoading(false));
@@ -116,7 +135,7 @@ export const AdminDashboardSection: React.FC = () => {
     adminGetAllCategories().then(setCategories).catch(() => {}).finally(() => setCategoriesLoading(false));
   }, []);
 
-  useEffect(() => { loadStats(); }, [loadStats]);
+  useEffect(() => { loadStats(); loadAiPending(); }, [loadStats, loadAiPending]);
   useEffect(() => { if (activeTab === 'jobs') loadJobs(); }, [activeTab, loadJobs]);
   useEffect(() => {
     if (['categories', 'jobs', 'admitcards', 'results', 'news', 'study', 'oldpapers', 'blog'].includes(activeTab)) loadCategories();
@@ -313,6 +332,18 @@ export const AdminDashboardSection: React.FC = () => {
                   <StatTile icon={CircleX} tone="bg-rose-50 text-rose-600" value={stats.expiredJobs.toLocaleString('en-IN')} label="Expired jobs" hint="Past last date" />
                   <StatTile icon={UserPlus} tone="bg-emerald-50 text-emerald-700" value={stats.totalUsers.toLocaleString('en-IN')} label="Total users" hint={`+${stats.newUsersThisMonth} this month`} onClick={() => setActiveTab('users')} />
                 </div>
+
+                {aiPending && aiPending.total > 0 && (
+                  <button onClick={() => setActiveTab('aimagic')}
+                    className="w-full text-left flex items-center gap-3 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 hover:from-indigo-100 hover:to-violet-100 px-4 py-3.5 cursor-pointer transition">
+                    <span className="w-10 h-10 rounded-xl bg-indigo-600 text-white grid place-items-center shrink-0"><Sparkles className="w-5 h-5" /></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-extrabold text-[14.5px] text-slate-900">{aiPending.total} AI draft{aiPending.total === 1 ? '' : 's'} waiting for your review</span>
+                      <span className="block text-[12.5px] text-slate-600 truncate">{aiPending.parts.join(' · ')}</span>
+                    </span>
+                    <ChevronRight className="w-5 h-5 text-indigo-500 shrink-0" />
+                  </button>
+                )}
 
                 <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-start">
                   <div className="space-y-5 min-w-0">
