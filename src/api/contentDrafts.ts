@@ -4,7 +4,7 @@ import { PagedResult } from './jobs';
 export type ContentCategory = 'result' | 'admitcard' | 'oldpaper' | 'news' | 'scheme' | 'study';
 
 export const CONTENT_DRAFT_STATUS = { Pending: 0, Approved: 1, Rejected: 2 } as const;
-export const SYNC_STATUS = { Queued: 0, Running: 1, Completed: 2, Failed: 3 } as const;
+export const SYNC_STATUS = { Queued: 0, Running: 1, Completed: 2, Failed: 3, Cancelled: 4 } as const;
 
 export interface ApiContentSyncRun {
   id: number;
@@ -16,6 +16,8 @@ export interface ApiContentSyncRun {
   skippedCount: number;
   invalidCount: number;
   errorMessage?: string | null;
+  /** The agent's own one-line explanation of the run, e.g. why it found nothing. */
+  note?: string | null;
 }
 
 export interface ApiContentCategorySummary {
@@ -88,6 +90,10 @@ export const deleteContentDraft = (id: number) =>
 /** Starts the AI agent for one category, or every category (one after another) when omitted. */
 export const startContentSync = (category?: ContentCategory) =>
   apiFetch<ApiContentSyncRun[]>(`${base}/sync`, { method: 'POST', auth: true, body: { category: category ?? null } });
+
+/** Cancels one run, or every queued/running run when no id is given. A running agent is stopped. */
+export const cancelContentSync = (runId?: number) =>
+  apiFetch<{ cancelled: number }>(`${base}/sync/cancel${toQueryString({ runId })}`, { method: 'POST', auth: true });
 
 export const getContentSyncRuns = (category?: ContentCategory) =>
   apiFetch<ApiContentSyncRun[]>(`${base}/sync/runs${toQueryString({ category })}`, { auth: true });

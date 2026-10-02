@@ -43,4 +43,6 @@ public interface IContentSyncService
     /// runs are queued — the agent itself runs in the background for minutes.</summary>
     Task<ServiceResult<List<ContentSyncRunDto>>> StartAsync(string? category, string userId);
     Task<List<ContentSyncRunDto>> GetRecentRunsAsync(string? category, int take = 20);
+    /// <summary>Cancels one run, or every queued/running run when no id is given. Returns how many were cancelled.</summary>
+    Task<ServiceResult<int>> CancelAsync(int? runId);
 }

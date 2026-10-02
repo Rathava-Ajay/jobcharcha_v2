@@ -85,6 +85,14 @@ public class ContentDraftsController : ControllerBase
         return result.Succeeded ? Ok(result.Data) : BadRequest(new { result.ErrorCode, result.Error });
     }
 
+    /// <summary>Cancels one run (?runId=) or, with no id, every queued/running run. A running agent is stopped.</summary>
+    [HttpPost("sync/cancel")]
+    public async Task<IActionResult> CancelSync([FromQuery] int? runId)
+    {
+        var result = await _sync.CancelAsync(runId);
+        return result.Succeeded ? Ok(new { cancelled = result.Data }) : BadRequest(new { result.ErrorCode, result.Error });
+    }
+
     [HttpGet("sync/runs")]
     public async Task<IActionResult> Runs([FromQuery] string? category) => Ok(await _sync.GetRecentRunsAsync(category));
 

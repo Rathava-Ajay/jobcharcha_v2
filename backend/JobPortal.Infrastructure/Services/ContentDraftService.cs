@@ -112,6 +112,7 @@ public class ContentDraftService : IContentDraftService
             .Select(g => new { g.Key.Category, g.Key.Status, Count = g.Count() })
             .ToListAsync();
 
+        await ContentSyncService.CloseOrphansAsync(_db);
         var runs = await _db.ContentSyncRuns.AsNoTracking()
             .OrderByDescending(r => r.StartedAt).Take(200).ToListAsync();
         var disabled = (await _db.ContentCategorySettings.AsNoTracking().Where(s => !s.IsEnabled).Select(s => s.Category).ToListAsync()).ToHashSet();

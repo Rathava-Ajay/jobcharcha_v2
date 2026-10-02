@@ -157,7 +157,7 @@ public class ContentSyncParsingTests
     public void ParseAgentItems_ReadsItemsEvenWhenWrappedInProse()
     {
         var answer = "Here you go:\n```json\n{ \"items\": [ { \"sourceName\": \"PIB\", \"sourceUrl\": \"https://pib.gov.in/x\", \"payload\": { \"title\": \"T\" } } ] }\n```";
-        var (items, error) = ContentSyncService.ParseAgentItems(Cli(answer));
+        var (items, error, _) = ContentSyncService.ParseAgentItems(Cli(answer));
 
         Assert.Null(error);
         Assert.Single(items);
@@ -167,7 +167,7 @@ public class ContentSyncParsingTests
     [Fact]
     public void ParseAgentItems_EmptyList_IsNotAnError()
     {
-        var (items, error) = ContentSyncService.ParseAgentItems(Cli("{ \"items\": [] }"));
+        var (items, error, _) = ContentSyncService.ParseAgentItems(Cli("{ \"items\": [] }"));
         Assert.Null(error);
         Assert.Empty(items);
     }
@@ -175,7 +175,7 @@ public class ContentSyncParsingTests
     [Fact]
     public void ParseAgentItems_ProseOnly_ReportsWhatTheAgentSaid()
     {
-        var (items, error) = ContentSyncService.ParseAgentItems(Cli("I could not reach any site."));
+        var (items, error, _) = ContentSyncService.ParseAgentItems(Cli("I could not reach any site."));
         Assert.Empty(items);
         Assert.Contains("could not reach", error);
     }
@@ -472,4 +472,114 @@ public class ContentPhase3Tests
     [InlineData("172.32.0.1", true)]
     public void LinkChecker_OnlyAllowsPublicAddresses(string ip, bool expected) =>
         Assert.Equal(expected, ContentLinkChecker.IsPublic(System.Net.IPAddress.Parse(ip)));
+}
+
+public class ContentRunControlTests
+{
+    private static ContentSyncService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
+        new(db, new ConfigurationBuilder().Build(), new NoScopes(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<ContentSyncService>.Instance);
+
+    /// <summary>Cancel/orphan logic never opens a scope, so a factory that refuses to is enough.</summary>
+    private sealed class NoScopes : Microsoft.Extensions.DependencyInjection.IServiceScopeFactory
+    {
+        public Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope() => throw new NotSupportedException();
+    }
+
+    private static JobPortal.Infrastructure.Data.Entities.ContentSyncRun Run(string category, int status) => new()
+    {
+        Category = category, Status = status, StartedAt = DateTime.UtcNow,
+    };
+
+    [Fact]
+    public async Task Cancel_MarksQueuedAndRunningRunsCancelled()
+    {
+        var db = TestDb.Create(TestDb.NewDbName());
+        db.ContentSyncRuns.AddRange(Run("news", ContentSyncStatus.Running), Run("result", ContentSyncStatus.Queued), Run("study", ContentSyncStatus.Completed));
+        await db.SaveChangesAsync();
+
+        var result = await Create(db).CancelAsync(null);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(2, result.Data);
+        var runs = db.ContentSyncRuns.ToList();
+        Assert.Equal(2, runs.Count(r => r.Status == ContentSyncStatus.Cancelled));
+        Assert.Single(runs, r => r.Category == "study" && r.Status == ContentSyncStatus.Completed);
+        Assert.All(runs.Where(r => r.Status == ContentSyncStatus.Cancelled), r => Assert.NotNull(r.FinishedAt));
+    }
+
+    [Fact]
+    public async Task Cancel_ASingleRun_LeavesTheOthersAlone()
+    {
+        var db = TestDb.Create(TestDb.NewDbName());
+        var a = Run("news", ContentSyncStatus.Queued);
+        var b = Run("result", ContentSyncStatus.Queued);
+        db.ContentSyncRuns.AddRange(a, b);
+        await db.SaveChangesAsync();
+
+        Assert.True((await Create(db).CancelAsync(a.Id)).Succeeded);
+
+        Assert.Equal(ContentSyncStatus.Cancelled, db.ContentSyncRuns.Single(r => r.Id == a.Id).Status);
+        Assert.Equal(ContentSyncStatus.Queued, db.ContentSyncRuns.Single(r => r.Id == b.Id).Status);
+    }
+
+    [Fact]
+    public async Task Cancel_WithNothingActive_IsAnError()
+    {
+        var db = TestDb.Create(TestDb.NewDbName());
+        db.ContentSyncRuns.Add(Run("news", ContentSyncStatus.Completed));
+        await db.SaveChangesAsync();
+
+        var result = await Create(db).CancelAsync(null);
+        Assert.False(result.Succeeded);
+        Assert.Equal("NothingToCancel", result.ErrorCode);
+        Assert.False((await Create(db).CancelAsync(db.ContentSyncRuns.Single().Id)).Succeeded);
+    }
+
+    [Fact]
+    public void FindOrphans_ReturnsActiveRunsNoLiveTaskOwns()
+    {
+        var runs = new[]
+        {
+            new JobPortal.Infrastructure.Data.Entities.ContentSyncRun { Id = 1, Status = ContentSyncStatus.Running },
+            new JobPortal.Infrastructure.Data.Entities.ContentSyncRun { Id = 2, Status = ContentSyncStatus.Queued },
+            new JobPortal.Infrastructure.Data.Entities.ContentSyncRun { Id = 3, Status = ContentSyncStatus.Completed },
+            new JobPortal.Infrastructure.Data.Entities.ContentSyncRun { Id = 4, Status = ContentSyncStatus.Running },
+        };
+        var orphans = ContentSyncService.FindOrphans(runs, id => id == 2);
+        Assert.Equal(new[] { 1, 4 }, orphans.Select(r => r.Id).ToArray());
+    }
+
+    [Fact]
+    public void ParseAgentItems_KeepsTheAgentsNote()
+    {
+        var cli = System.Text.Json.JsonSerializer.Serialize(new { result = "{ \"items\": [], \"note\": \"GPSC returned 403.\" }" });
+        var (items, error, note) = ContentSyncService.ParseAgentItems(cli);
+        Assert.Null(error);
+        Assert.Empty(items);
+        Assert.Equal("GPSC returned 403.", note);
+    }
+}
+
+public class ContentOrphanRecoveryTests
+{
+    [Fact]
+    public async Task Summary_ClosesRunsLeftRunningByADeadProcess()
+    {
+        var db = TestDb.Create(TestDb.NewDbName());
+        db.ContentSyncRuns.Add(new JobPortal.Infrastructure.Data.Entities.ContentSyncRun
+        {
+            Category = "news", Status = ContentSyncStatus.Running, StartedAt = DateTime.UtcNow.AddMinutes(-3),
+        });
+        await db.SaveChangesAsync();
+        var drafts = new ContentDraftService(db, new ResultService(db), new AdmitCardService(db), new NewsService(db),
+            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
+
+        var summary = await drafts.GetSummaryAsync();
+
+        var last = summary.Single(s => s.Category == "news").LastRun!;
+        Assert.Equal(ContentSyncStatus.Failed, last.Status);
+        Assert.Contains("restarted", last.ErrorMessage);
+        Assert.NotNull(last.FinishedAt);
+    }
 }

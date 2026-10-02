@@ -2,14 +2,14 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Sparkles, RefreshCw, Loader2, Briefcase, Trophy, Award, FileText, Newspaper, Landmark, GraduationCap,
   CheckCircle2, XCircle, AlertTriangle, Info, X, ExternalLink, ChevronDown, ChevronUp, Trash2, Send, Rss, Clock3,
-  Plus, Globe2, MessageCircle, Settings2, Code2, Radar,
+  Plus, Globe2, MessageCircle, Settings2, Code2, Radar, History, Ban,
 } from 'lucide-react';
 import { AdminJobDraftsPanel } from './AdminJobDraftsPanel';
 import {
   ContentCategory, CONTENT_DRAFT_STATUS, SYNC_STATUS,
   ApiContentCategorySummary, ApiContentDraftListItem, ApiContentDraft, ApiContentSyncRun, ApiContentSource,
   getContentSummary, searchContentDrafts, getContentDraft, approveContentDraft, rejectContentDraft, deleteContentDraft,
-  startContentSync, getContentSources, createContentSource, updateContentSource, deleteContentSource,
+  startContentSync, cancelContentSync, getContentSyncRuns, getContentSources, createContentSource, updateContentSource, deleteContentSource,
   getContentSettings, updateContentSetting, ApiContentCategorySetting,
 } from '../../api/contentDrafts';
 import { getCategories, ApiCategory } from '../../api/categories';
@@ -56,8 +56,23 @@ function runLine(r?: ApiContentSyncRun | null): string {
   if (r.status === SYNC_STATUS.Queued) return 'Queued…';
   if (r.status === SYNC_STATUS.Running) return `Running… ${r.newCount} new so far`;
   if (r.status === SYNC_STATUS.Failed) return `Failed ${r.finishedAt ? when(r.finishedAt) : ''}`;
+  if (r.status === SYNC_STATUS.Cancelled) return `Cancelled ${r.finishedAt ? when(r.finishedAt) : ''}`;
   return `${r.newCount} new · ${r.skippedCount} skipped${r.invalidCount ? ` · ${r.invalidCount} invalid` : ''} · ${r.finishedAt ? when(r.finishedAt) : ''}`;
 }
+
+function duration(r: ApiContentSyncRun): string {
+  if (!r.finishedAt) return '';
+  const secs = Math.max(0, Math.round((new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime()) / 1000));
+  return secs >= 60 ? `${Math.floor(secs / 60)}m ${secs % 60}s` : `${secs}s`;
+}
+
+const STATUS_LABEL: Record<number, { text: string; cls: string }> = {
+  [SYNC_STATUS.Queued]: { text: 'Queued', cls: 'bg-slate-100 text-slate-600' },
+  [SYNC_STATUS.Running]: { text: 'Running', cls: 'bg-indigo-100 text-indigo-700' },
+  [SYNC_STATUS.Completed]: { text: 'Done', cls: 'bg-emerald-100 text-emerald-800' },
+  [SYNC_STATUS.Failed]: { text: 'Failed', cls: 'bg-rose-100 text-rose-700' },
+  [SYNC_STATUS.Cancelled]: { text: 'Cancelled', cls: 'bg-amber-100 text-amber-800' },
+};
 
 export const AdminAiMagicPanel: React.FC = () => {
   const [tab, setTab] = useState<TabId>('jobs');
@@ -66,6 +81,8 @@ export const AdminAiMagicPanel: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const loadSummary = useCallback(() => {
     getContentSummary().then(setSummary).catch(() => { /* keep the last good summary */ });
@@ -99,6 +116,20 @@ export const AdminAiMagicPanel: React.FC = () => {
     }
   };
 
+  const cancel = async () => {
+    setCancelling(true); setError(null); setNotice(null);
+    try {
+      const r = await cancelContentSync();
+      setNotice(r.cancelled > 1 ? `Cancelled ${r.cancelled} runs. Drafts already collected stay in the queues.` : 'Sync cancelled. Drafts already collected stay in the queues.');
+      loadSummary();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'Could not cancel the sync.');
+      loadSummary();
+    } finally {
+      setCancelling(false);
+    }
+  };
+
   const active = TABS.find((t) => t.id === tab)!;
   const activeSummary = tab === 'jobs' ? null : bySummary.get(tab);
 
@@ -113,10 +144,22 @@ export const AdminAiMagicPanel: React.FC = () => {
               <p className="text-[13px] text-indigo-100/85 max-w-2xl">One click collects the latest jobs, results, admit cards, old papers, news, schemes and study notes, already written in post format. You review each draft and publish with one click — nothing goes live on its own.</p>
             </div>
           </div>
-          <button onClick={() => sync()} disabled={starting || anyRunning}
-            className="shrink-0 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-[13px] px-4 py-2.5 cursor-pointer disabled:opacity-60 whitespace-nowrap">
-            {starting || anyRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} {anyRunning ? 'Sync running…' : 'Sync all categories'}
-          </button>
+          <div className="shrink-0 flex flex-wrap gap-2">
+            <button onClick={() => setShowHistory((v) => !v)}
+              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border text-white font-bold text-[13px] px-3.5 py-2.5 cursor-pointer whitespace-nowrap ${showHistory ? 'border-white/60 bg-white/20' : 'border-white/25 bg-white/10 hover:bg-white/20'}`}>
+              <History className="w-4 h-4" /> Run history
+            </button>
+            {anyRunning && (
+              <button onClick={cancel} disabled={cancelling}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300/60 bg-rose-500/90 hover:bg-rose-500 text-white font-extrabold text-[13px] px-3.5 py-2.5 cursor-pointer disabled:opacity-60 whitespace-nowrap">
+                {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />} Cancel sync
+              </button>
+            )}
+            <button onClick={() => sync()} disabled={starting || anyRunning}
+              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-900 font-extrabold text-[13px] px-4 py-2.5 cursor-pointer disabled:opacity-60 whitespace-nowrap">
+              {starting || anyRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} {anyRunning ? 'Sync running…' : 'Sync all categories'}
+            </button>
+          </div>
         </div>
       </section>
 
@@ -132,6 +175,8 @@ export const AdminAiMagicPanel: React.FC = () => {
           <button onClick={() => setError(null)} aria-label="Dismiss" className="shrink-0 w-6 h-6 rounded-md grid place-items-center hover:bg-rose-100 cursor-pointer"><X className="w-3.5 h-3.5" /></button>
         </div>
       )}
+
+      {showHistory && <RunHistory anyRunning={anyRunning} />}
 
       <div role="tablist" aria-label="AI Magic categories" className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {TABS.map((t) => {
@@ -226,6 +271,12 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
           </p>
           {lastRun?.status === SYNC_STATUS.Failed && lastRun.errorMessage && (
             <p className="mt-1 text-[12px] text-rose-600 break-words">{lastRun.errorMessage}</p>
+          )}
+          {lastRun?.status === SYNC_STATUS.Completed && lastRun.note && (
+            <p className="mt-1 text-[12px] text-slate-500 break-words"><span className="font-bold">AI note:</span> {lastRun.note}</p>
+          )}
+          {lastRun?.status === SYNC_STATUS.Completed && lastRun.errorMessage && (
+            <p className="mt-1 text-[12px] text-amber-700 break-words">{lastRun.errorMessage}</p>
           )}
         </div>
         <div className="flex gap-2 shrink-0">
@@ -612,6 +663,57 @@ const SettingsManager: React.FC<{
         {invalid && <span className="text-[12px] font-semibold text-rose-600">Check the number ranges.</span>}
         {justSaved && !dirty && <span className="text-[12px] font-semibold text-emerald-700">Saved. Used from the next sync.</span>}
       </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------
+
+const RunHistory: React.FC<{ anyRunning: boolean }> = ({ anyRunning }) => {
+  const [runs, setRuns] = useState<ApiContentSyncRun[] | null>(null);
+
+  const load = useCallback(() => {
+    getContentSyncRuns().then(setRuns).catch(() => setRuns((prev) => prev ?? []));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!anyRunning) { load(); return; }
+    const t = setInterval(load, 8000);
+    return () => clearInterval(t);
+  }, [anyRunning, load]);
+
+  const labelOf = (c: string) => TABS.find((t) => t.id === c)?.label ?? c;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
+      <h3 className="font-extrabold text-[16px] text-slate-900 flex items-center gap-2"><History className="w-4 h-4 text-indigo-600" /> Recent sync runs</h3>
+      {runs === null ? (
+        <div className="mt-3 h-20 rounded-xl bg-slate-100 animate-pulse" />
+      ) : runs.length === 0 ? (
+        <p className="mt-2 text-[13px] text-slate-500">No syncs have run yet.</p>
+      ) : (
+        <ul className="mt-3 divide-y divide-slate-100 max-h-96 overflow-y-auto">
+          {runs.map((r) => {
+            const st = STATUS_LABEL[r.status] ?? STATUS_LABEL[SYNC_STATUS.Failed];
+            return (
+              <li key={r.id} className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-x-4 gap-y-1">
+                <div className="sm:w-44 shrink-0 flex items-center gap-2">
+                  <span className="font-bold text-[13px] text-slate-800">{labelOf(r.category)}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${st.cls}`}>{st.text}</span>
+                </div>
+                <div className="flex-1 min-w-0 text-[12.5px] text-slate-600">
+                  <p>
+                    <span className="font-semibold">{r.newCount} new</span> · {r.skippedCount} skipped{r.invalidCount ? ` · ${r.invalidCount} invalid` : ''}
+                    <span className="text-slate-400"> · {when(r.startedAt)}{duration(r) ? ` · took ${duration(r)}` : ''}</span>
+                  </p>
+                  {r.note && <p className="mt-0.5 text-slate-500 break-words"><span className="font-bold">AI note:</span> {r.note}</p>}
+                  {r.errorMessage && <p className={`mt-0.5 break-words ${r.status === SYNC_STATUS.Failed ? 'text-rose-600' : 'text-amber-700'}`}>{r.errorMessage}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 };

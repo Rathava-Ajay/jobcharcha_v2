@@ -39,6 +39,7 @@ public static class ContentSyncStatus
     public const int Running = 1;
     public const int Completed = 2;
     public const int Failed = 3;
+    public const int Cancelled = 4;
 }
 
 public class IngestContentDraftRequest
@@ -118,6 +119,8 @@ public class ContentSyncRunDto
     public int SkippedCount { get; set; }
     public int InvalidCount { get; set; }
     public string? ErrorMessage { get; set; }
+    /// <summary>The agent's one-line explanation of the run, e.g. why it found nothing.</summary>
+    public string? Note { get; set; }
 }
 
 public class StartContentSyncRequest
