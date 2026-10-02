@@ -36,6 +36,10 @@ public partial class ContentDraft
 
     public string PayloadJson { get; set; } = null!;
 
+    /// <summary>Newline-separated heads-ups found at ingest (e.g. "downloadLink returned HTTP 500"); null when clean.</summary>
+    [StringLength(1000)]
+    public string? Warnings { get; set; }
+
     public int Status { get; set; }
 
     public int? CreatedEntityId { get; set; }

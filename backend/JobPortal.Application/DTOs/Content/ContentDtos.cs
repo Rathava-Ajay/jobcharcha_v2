@@ -69,6 +69,8 @@ public class ContentDraftListItemDto
     public string? Summary { get; set; }
     public int Status { get; set; }
     public DateTime CreatedDate { get; set; }
+    /// <summary>Heads-ups for the reviewer, e.g. a link that didn't respond. Empty when the draft looks clean.</summary>
+    public List<string> Warnings { get; set; } = new();
 }
 
 public class ContentDraftDto : ContentDraftListItemDto

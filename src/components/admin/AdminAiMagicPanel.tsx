@@ -345,6 +345,15 @@ const DraftCard: React.FC<{
         <div className="flex-1 min-w-0 space-y-1.5">
           <h4 className="font-extrabold text-[15px] leading-snug text-slate-900 break-words">{draft.title}</h4>
           {draft.summary && <p className="text-[13px] text-slate-600 leading-relaxed">{draft.summary}</p>}
+          {pending && draft.warnings?.length > 0 && (
+            <ul className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-0.5" aria-label="Check before publishing">
+              {draft.warnings.map((w) => (
+                <li key={w} className="flex items-start gap-1.5 text-[12.5px] font-semibold text-amber-900">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-600" /> <span>Check this link: <span className="font-mono">{w}</span></span>
+                </li>
+              ))}
+            </ul>
+          )}
           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-slate-400">
             <span className="inline-flex items-center gap-1 font-semibold text-slate-500"><Rss className="w-3.5 h-3.5" />{draft.sourceName}</span>
             {draft.sourceUrl && (

@@ -35,10 +35,12 @@ public class ContentDraftService : IContentDraftService
     private readonly IGovtSchemeService _schemes;
     private readonly IOldPaperService _oldPapers;
     private readonly IStudyMaterialService _study;
+    private readonly IContentLinkChecker _links;
 
     public ContentDraftService(AppDbContext db, IResultService results, IAdmitCardService admitCards, INewsService news,
-        IGovtSchemeService schemes, IOldPaperService oldPapers, IStudyMaterialService study)
+        IGovtSchemeService schemes, IOldPaperService oldPapers, IStudyMaterialService study, IContentLinkChecker links)
     {
+        _links = links;
         _db = db;
         _results = results;
         _admitCards = admitCards;
@@ -57,12 +59,27 @@ public class ContentDraftService : IContentDraftService
     {
         Id = d.Id, Category = d.Category, SourceName = d.SourceName, SourceUrl = d.SourceUrl,
         Title = d.Title, Summary = d.Summary, Status = d.Status, CreatedDate = d.CreatedDate,
+        Warnings = SplitWarnings(d.Warnings),
     };
+
+    private static List<string> SplitWarnings(string? w) =>
+        string.IsNullOrWhiteSpace(w) ? new List<string>() : w.Split('\n', StringSplitOptions.RemoveEmptyEntries).ToList();
+
+    /// <summary>Case-insensitive, fragment-less, trailing-slash-less form of a URL, so the same document
+    /// linked slightly differently is recognised as one.</summary>
+    internal static string NormUrl(string? url)
+    {
+        var u = (url ?? "").Trim().ToLowerInvariant();
+        var hash = u.IndexOf('#');
+        if (hash >= 0) u = u[..hash];
+        return u.TrimEnd('/');
+    }
 
     private static ContentDraftDto ToDto(ContentDraft d) => new()
     {
         Id = d.Id, Category = d.Category, SourceName = d.SourceName, SourceUrl = d.SourceUrl,
         Title = d.Title, Summary = d.Summary, Status = d.Status, CreatedDate = d.CreatedDate,
+        Warnings = SplitWarnings(d.Warnings),
         Payload = JsonDocument.Parse(d.PayloadJson).RootElement.Clone(),
         CreatedEntityId = d.CreatedEntityId, ReviewedAt = d.ReviewedAt, ReviewNotes = d.ReviewNotes,
     };
@@ -148,8 +165,14 @@ public class ContentDraftService : IContentDraftService
                         ("metaTitle", p.MetaTitle), ("metaDescription", p.MetaDescription));
                     if (err is null && p.CategoryId <= 0) err = "Missing required field(s): categoryId";
                     if (err is not null) return (err, "", "", false, null);
+                    if (string.IsNullOrWhiteSpace(p.ResultLink) && string.IsNullOrWhiteSpace(p.ResultPdf))
+                        return ("A result needs resultLink or resultPdf: a deep link to the official result page or PDF.", "", "", false, null);
+                    if (!IsDeepLink(p.ResultLink) || !IsDeepLink(p.ResultPdf))
+                        return ("resultLink / resultPdf must be deep links to the actual result page or PDF, not a site home page.", "", "", false, null);
                     var t = Norm(p.Title);
-                    return (null, p.Title.Trim(), $"result|{t}|{p.ResultDate:yyyy-MM-dd}",
+                    // The official PDF is the strongest identity: the same list re-titled by the AI is still one result.
+                    var resultBasis = string.IsNullOrWhiteSpace(p.ResultPdf) ? $"result|{t}|{p.ResultDate:yyyy-MM-dd}" : $"result|pdf|{NormUrl(p.ResultPdf)}";
+                    return (null, p.Title.Trim(), resultBasis,
                         await _db.Results.AsNoTracking().AnyAsync(r => r.Title.ToLower() == t), p.ShortDescription);
                 }
                 case ContentCategories.AdmitCard:
@@ -194,7 +217,7 @@ public class ContentDraftService : IContentDraftService
                         && string.Equals(p.SolutionPdfLink.Trim(), p.PaperPdfLink.Trim(), StringComparison.OrdinalIgnoreCase))
                         return ("solutionPdfLink must be a different PDF from paperPdfLink (use null when there is no separate answer key).", "", "", false, null);
                     var t = Norm(p.Title);
-                    return (null, p.Title.Trim(), $"oldpaper|{Norm(p.ExamName)}|{p.Year}|{Norm(p.Subject)}|{Norm(p.PaperType)}",
+                    return (null, p.Title.Trim(), $"oldpaper|pdf|{NormUrl(p.PaperPdfLink)}",
                         await _db.OldPapers.AsNoTracking().AnyAsync(r => r.Title.ToLower() == t), $"{p.ExamName} · {p.Year}");
                 }
                 case ContentCategories.Study:
@@ -248,9 +271,12 @@ public class ContentDraftService : IContentDraftService
             return ServiceResult<ContentDraftIngestResultDto>.Ok(new() { Outcome = ContentIngestOutcome.SkippedPublished });
         }
 
+        var warnings = await BuildWarningsAsync(category, request.Payload, request.SourceUrl);
+
         var entity = new ContentDraft
         {
             Category = category,
+            Warnings = warnings,
             SourceName = request.SourceName.Trim(),
             SourceUrl = request.SourceUrl,
             DedupeKey = dedupeKey,
@@ -288,6 +314,43 @@ public class ContentDraftService : IContentDraftService
         if (string.IsNullOrWhiteSpace(url)) return true;
         if (!Uri.TryCreate(url.Trim(), UriKind.Absolute, out var u) || (u.Scheme != Uri.UriSchemeHttp && u.Scheme != Uri.UriSchemeHttps)) return false;
         return u.AbsolutePath.Trim('/').Length > 0 || u.Query.Length > 1;
+    }
+
+    /// <summary>The URL-bearing payload fields per category — these are what a reviewer would click.</summary>
+    private static readonly Dictionary<string, string[]> LinkFields = new()
+    {
+        [ContentCategories.Result] = new[] { "resultLink", "resultPdf" },
+        [ContentCategories.AdmitCard] = new[] { "downloadLink" },
+        [ContentCategories.OldPaper] = new[] { "paperPdfLink", "solutionPdfLink" },
+        [ContentCategories.News] = new[] { "sourceLink" },
+        [ContentCategories.Scheme] = new[] { "applyLink", "officialNotificationUrl" },
+        [ContentCategories.Study] = new[] { "filePath" },
+    };
+
+    /// <summary>Checks every link on the draft (in parallel) and returns newline-separated warnings for the ones that
+    /// look dead, or null when all is well. Never blocks an ingest: a flaky government site must not lose a good draft.</summary>
+    private async Task<string?> BuildWarningsAsync(string category, JsonElement payload, string? sourceUrl)
+    {
+        var links = new List<(string Field, string Url)>();
+        if (payload.ValueKind == JsonValueKind.Object)
+            foreach (var prop in payload.EnumerateObject())
+                if (LinkFields[category].Contains(prop.Name, StringComparer.OrdinalIgnoreCase)
+                    && prop.Value.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(prop.Value.GetString()))
+                    links.Add((prop.Name, prop.Value.GetString()!.Trim()));
+        if (!string.IsNullOrWhiteSpace(sourceUrl)) links.Add(("sourceUrl", sourceUrl.Trim()));
+
+        var distinct = links.GroupBy(l => NormUrl(l.Url)).Select(g => g.First()).Take(5).ToList();
+        if (distinct.Count == 0) return null;
+
+        var checks = await Task.WhenAll(distinct.Select(async l => (l.Field, Reason: await SafeCheckAsync(l.Url))));
+        var warnings = checks.Where(c => c.Reason is not null).Select(c => $"{c.Field} {c.Reason}").ToList();
+        return warnings.Count == 0 ? null : Truncate(string.Join('\n', warnings), 1000);
+    }
+
+    private async Task<string?> SafeCheckAsync(string url)
+    {
+        try { return await _links.CheckAsync(url); }
+        catch { return null; } // a broken checker must never cost a draft
     }
 
     private static string? Truncate(string? s, int max) => s is null ? null : (s.Length > max ? s[..max] : s);

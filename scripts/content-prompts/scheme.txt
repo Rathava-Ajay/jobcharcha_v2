@@ -17,4 +17,7 @@ PAYLOAD for "payload" (follow exactly):
   "displayOrder": 0,
   "isActive": true
 }
+APPLY LINK (strict): "applyLink" must be the scheme's official application or information page, and you must WebFetch it to confirm it opens. If the portal you found does not open, look for the scheme's official page on myscheme.gov.in, india.gov.in or the ministry/department site and use that instead; if nothing official opens, SKIP the item.
+FIGURES: amounts, income limits, age limits and dates must come from an official page. If a figure appears only on a third-party site, still include it but write it as "reported as ...; confirm on the official portal" so nothing unverified reads as fact.
+ONE ITEM PER SCHEME: do not send the same scheme twice under different names (e.g. "X Yojana" and "X Yojana 2.0 launch"); send the scheme once with the newest verified details.
 Only include schemes that are currently running or newly announced; skip discontinued ones.

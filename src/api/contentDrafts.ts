@@ -36,6 +36,8 @@ export interface ApiContentDraftListItem {
   summary?: string | null;
   status: number;
   createdDate: string;
+  /** Heads-ups found when the draft was collected, e.g. "downloadLink returned HTTP 404". Empty when clean. */
+  warnings: string[];
 }
 
 export interface ApiContentDraft extends ApiContentDraftListItem {

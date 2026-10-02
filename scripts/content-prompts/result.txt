@@ -31,4 +31,9 @@ PAYLOAD for "payload" (follow exactly; use null for unknown optional fields, nev
   "internalLinkAnchors": ["3-5 anchor texts"],
   "autoPublish": true
 }
+LINK RULES (strict - drafts are rejected otherwise):
+- Provide at least one deep link: "resultPdf" (the official result / merit list / select list PDF) and/or "resultLink" (the exact official result page for THIS exam). A bare home page such as https://www.ibps.in or https://www.rbi.org.in is NOT acceptable in either field - open the site's results/notices section and copy the real URL of the result notice, then WebFetch it to confirm it exists and is about this exam. If you can only find a home page, SKIP the item.
+- "sourceUrl" in the wrapper must be that same kind of deep link.
+ONE ITEM PER DOCUMENT: one official result document = exactly one item. Never send two variants of the same result (different titles for the same PDF/list); pick the clearest title.
+DATES: resultDate is the date the result was declared (from the notice itself), never in the future. Leave examDate null unless the notice states it.
 Skip an item if you cannot confirm the result was actually declared (no "expected soon" or rumor posts).

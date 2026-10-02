@@ -29,6 +29,14 @@ public static class DependencyInjection
         services.AddScoped<IWatcherAgentSyncService, WatcherAgentSyncService>();
         services.AddScoped<IContentDraftService, ContentDraftService>();
         services.AddScoped<IContentSourceService, ContentSourceService>();
+        services.AddHttpClient(ContentLinkChecker.ClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; JobCharchaLinkCheck/1.0)"))
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.HttpClientHandler
+            {
+                AllowAutoRedirect = false, // redirects are followed by hand so every hop can be vetted
+                // Existence check only — nothing from the response is used, and many .gov.in sites ship bad certificates.
+                ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            });
+        services.AddScoped<IContentLinkChecker, ContentLinkChecker>();
         services.AddScoped<IContentSettingsService, ContentSettingsService>();
         services.AddScoped<IContentSyncService, ContentSyncService>();
         services.AddScoped<ICategoryService, CategoryService>();

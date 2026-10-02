@@ -11,7 +11,7 @@ public class ContentDraftServiceTests
 {
     private static ContentDraftService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
         new(db, new ResultService(db), new AdmitCardService(db), new NewsService(db), new GovtSchemeService(db),
-            new OldPaperService(db), new StudyMaterialService(db));
+            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
 
     private static IngestContentDraftRequest News(string title = "GSSSB announces exam calendar", string? link = "https://gsssb.gujarat.gov.in/n/1") => new()
     {
@@ -203,7 +203,7 @@ public class ContentLinkGuardTests
 {
     private static ContentDraftService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
         new(db, new ResultService(db), new AdmitCardService(db), new NewsService(db), new GovtSchemeService(db),
-            new OldPaperService(db), new StudyMaterialService(db));
+            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
 
     private static IngestContentDraftRequest AdmitCard(string? downloadLink) => new()
     {
@@ -346,4 +346,130 @@ public class ContentSettingsTests
         var (_, error) = ContentSyncService.ResolveCategories("jobs", Settings());
         Assert.Equal("InvalidCategory", error!.Value.Code);
     }
+}
+
+/// <summary>Link checker that never touches the network: URLs containing "dead" report a problem.</summary>
+public class FakeLinkChecker : JobPortal.Application.Interfaces.IContentLinkChecker
+{
+    public List<string> Checked { get; } = new();
+
+    public Task<string?> CheckAsync(string url)
+    {
+        Checked.Add(url);
+        return Task.FromResult<string?>(url.Contains("dead") ? "returned HTTP 404" : null);
+    }
+}
+
+public class ContentPhase3Tests
+{
+    private static (ContentDraftService Service, FakeLinkChecker Links) Create()
+    {
+        var db = TestDb.Create(TestDb.NewDbName());
+        var links = new FakeLinkChecker();
+        var service = new ContentDraftService(db, new ResultService(db), new AdmitCardService(db), new NewsService(db),
+            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), links);
+        return (service, links);
+    }
+
+    private static IngestContentDraftRequest Result(string title, string? link, string? pdf) => new()
+    {
+        Category = "result", SourceName = "GPSSB",
+        Payload = JsonSerializer.SerializeToElement(new
+        {
+            title, organizationName = "GPSSB", categoryId = 1, focusKeyword = "k", resultDate = "2026-09-29",
+            resultLink = link, resultPdf = pdf, shortDescription = "s", description = "d", metaTitle = "m", metaDescription = "md",
+        }),
+    };
+
+    [Fact]
+    public async Task Result_WithOnlyAHomePage_IsRejected()
+    {
+        var (service, _) = Create();
+        var r = await service.IngestAsync(Result("RBI Result 2026", "https://www.rbi.org.in", null));
+        Assert.False(r.Succeeded);
+        Assert.Contains("deep link", r.Error);
+    }
+
+    [Fact]
+    public async Task Result_WithNoLinkAtAll_IsRejected()
+    {
+        var (service, _) = Create();
+        var r = await service.IngestAsync(Result("RBI Result 2026", null, null));
+        Assert.False(r.Succeeded);
+        Assert.Contains("resultLink or resultPdf", r.Error);
+    }
+
+    [Fact]
+    public async Task Result_SameOfficialPdfUnderADifferentTitle_IsADuplicate()
+    {
+        var (service, _) = Create();
+        var pdf = "https://gpssb.gujarat.gov.in/files/allotment.pdf";
+        Assert.Equal(ContentIngestOutcome.Created, (await service.IngestAsync(Result("GPSSB Gram Sevak Result 2026", null, pdf))).Data!.Outcome);
+
+        var again = await service.IngestAsync(Result("GPSSB Gram Sevak PwBD Special Drive Result", null, pdf.ToUpperInvariant() + "/"));
+        Assert.Equal(ContentIngestOutcome.SkippedPending, again.Data!.Outcome);
+    }
+
+    [Fact]
+    public async Task OldPaper_SamePdfUnderADifferentTitle_IsADuplicate()
+    {
+        var (service, _) = Create();
+        IngestContentDraftRequest Paper(string title) => new()
+        {
+            Category = "oldpaper", SourceName = "GPSC",
+            Payload = JsonSerializer.SerializeToElement(new { title, examName = "GPSC DEO", year = 2026, paperPdfLink = "https://gpsc.gujarat.gov.in/q1.pdf" }),
+        };
+        Assert.Equal(ContentIngestOutcome.Created, (await service.IngestAsync(Paper("GPSC DEO Question Paper 2026"))).Data!.Outcome);
+        Assert.Equal(ContentIngestOutcome.SkippedPending, (await service.IngestAsync(Paper("District Education Officer Paper 2026 (Prelims)"))).Data!.Outcome);
+    }
+
+    [Fact]
+    public async Task DeadLinks_BecomeWarningsOnTheDraft_ButDoNotBlockIt()
+    {
+        var (service, _) = Create();
+        var result = await service.IngestAsync(Result("GPSSB Result 2026", "https://gpssb.gujarat.gov.in/dead/page", "https://gpssb.gujarat.gov.in/ok.pdf"));
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(ContentIngestOutcome.Created, result.Data!.Outcome);
+        var draft = await service.GetByIdAsync(result.Data.Draft!.Id);
+        Assert.Single(draft!.Warnings);
+        Assert.Equal("resultLink returned HTTP 404", draft.Warnings[0]);
+    }
+
+    [Fact]
+    public async Task CleanDraft_HasNoWarnings_AndEachDistinctLinkIsCheckedOnce()
+    {
+        var (service, links) = Create();
+        var url = "https://gpssb.gujarat.gov.in/ok.pdf";
+        var req = Result("GPSSB Result 2026", url, url);
+        req.SourceUrl = url;
+        var result = await service.IngestAsync(req);
+
+        Assert.Empty((await service.GetByIdAsync(result.Data!.Draft!.Id))!.Warnings);
+        Assert.Single(links.Checked);
+    }
+
+    [Fact]
+    public async Task SkippedDuplicates_DoNotTriggerLinkChecks()
+    {
+        var (service, links) = Create();
+        await service.IngestAsync(Result("GPSSB Result 2026", null, "https://x.gov.in/a.pdf"));
+        var before = links.Checked.Count;
+        await service.IngestAsync(Result("Renamed Result", null, "https://x.gov.in/a.pdf"));
+        Assert.Equal(before, links.Checked.Count);
+    }
+
+    [Theory]
+    [InlineData("10.0.0.5", false)]
+    [InlineData("127.0.0.1", false)]
+    [InlineData("192.168.1.10", false)]
+    [InlineData("172.16.0.1", false)]
+    [InlineData("169.254.169.254", false)]
+    [InlineData("100.64.0.1", false)]
+    [InlineData("::1", false)]
+    [InlineData("fd00::1", false)]
+    [InlineData("8.8.8.8", true)]
+    [InlineData("172.32.0.1", true)]
+    public void LinkChecker_OnlyAllowsPublicAddresses(string ip, bool expected) =>
+        Assert.Equal(expected, ContentLinkChecker.IsPublic(System.Net.IPAddress.Parse(ip)));
 }

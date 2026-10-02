@@ -9,8 +9,8 @@ PAYLOAD for "payload" (follow exactly):
   "title": "specific and searchable, e.g. 'Gujarat Rivers and Dams - Important Points for GPSC & GSSSB'",
   "categoryId": <real id from /api/categories (required) - the exam family the notes serve>,
   "materialType": "Notes",
-  "description": "(required, 400-1500 words, plain text) the notes themselves, structured: a one-line intro, then short headed sections ('HEADING:' on its own line) each followed by '- ' bullet points, then 'QUICK REVISION:' with 5-8 one-line facts, then 'PRACTICE QUESTIONS:' with 3-5 questions and answers ('Q:' / 'A:'). Simple language, grade-8 reading level.",
-  "filePath": "(required) the main official/authoritative source page URL the facts were checked against",
+  "description": "(required, 400-1500 words, plain text) the notes themselves, in this exact layout: a one-line intro sentence; then 3-6 short sections, each with an ALL-CAPS heading on its own line ending in a colon (for example 'KEY FACTS:' or 'WHY IT MATTERS FOR EXAMS:') followed by '- ' bullet lines; then 'QUICK REVISION:' with 5-8 one-line facts; then 'PRACTICE QUESTIONS:' with 3-5 questions, each as a 'Q:' line followed by an 'A:' line. No markdown symbols (#, **). Simple language, grade-8 reading level.",
+  "filePath": "(required) the primary source page URL the facts were checked against - an official government/ministry/PIB/commission page or the original news agency report, not a coaching/aggregator site",
   "fileSize": 0,
   "isActive": true
 }

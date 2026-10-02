@@ -23,6 +23,13 @@ public interface IContentSourceService
     Task<ServiceResult> DeleteAsync(int id);
 }
 
+public interface IContentLinkChecker
+{
+    /// <summary>Null when the link looks fine (or can't be judged, e.g. bot-blocked); otherwise a short reason
+    /// such as "returned HTTP 404" that reads after the field name in a warning.</summary>
+    Task<string?> CheckAsync(string url);
+}
+
 public interface IContentSettingsService
 {
     /// <summary>Always one entry per category; categories without a saved row show the server defaults.</summary>
