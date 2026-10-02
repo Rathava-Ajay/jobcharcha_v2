@@ -92,10 +92,10 @@ export const AdminAiMagicPanel: React.FC = () => {
 
   const anyRunning = summary.some((s) => RUN_ACTIVE(s.lastRun));
 
-  // Poll while an agent run is in flight so counts and statuses update live.
+  // Poll quickly while an agent run is in flight so counts and statuses update live, and slowly otherwise so a
+  // sync started from another tab or by another admin still shows up (with its Cancel button) without a reload.
   useEffect(() => {
-    if (!anyRunning) return;
-    const t = setInterval(loadSummary, 8000);
+    const t = setInterval(loadSummary, anyRunning ? 8000 : 20000);
     return () => clearInterval(t);
   }, [anyRunning, loadSummary]);
 
