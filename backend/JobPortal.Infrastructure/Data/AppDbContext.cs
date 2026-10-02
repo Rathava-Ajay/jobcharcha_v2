@@ -110,6 +110,12 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<JobDocument> JobDocuments { get; set; }
 
+    public virtual DbSet<ContentDraft> ContentDrafts { get; set; }
+
+    public virtual DbSet<ContentSource> ContentSources { get; set; }
+
+    public virtual DbSet<ContentSyncRun> ContentSyncRuns { get; set; }
+
     public virtual DbSet<JobDraftQueue> JobDraftQueues { get; set; }
 
     public virtual DbSet<JobFeedSource> JobFeedSources { get; set; }

@@ -4,7 +4,7 @@ import {
   ShieldCheck, Users, Briefcase, FileCheck, Send, CheckCircle2, BarChart3,
   Layers, PlusCircle, Trash2, Pencil, X, Clock3, Award, Trophy, Smartphone,
   Landmark, Newspaper, GraduationCap, Rss, BellRing, ShieldAlert, CreditCard,
-  ShoppingBag, Wallet, Receipt, AlertTriangle, ScrollText, QrCode, Radar,
+  ShoppingBag, Wallet, Receipt, AlertTriangle, ScrollText, QrCode, Sparkles,
   CircleCheck, CircleDashed, CircleX, UserPlus, ChevronRight, ArrowRight,
 } from 'lucide-react';
 import { DashboardLayout, DashNavGroup, StatTile } from './dashboard/DashboardLayout';
@@ -39,12 +39,12 @@ import { AdminPaymentsPanel } from './admin/AdminPaymentsPanel';
 import { AdminDisputesPanel } from './admin/AdminDisputesPanel';
 import { AdminAuditLogPanel } from './admin/AdminAuditLogPanel';
 import { AdminCampaignLinksPanel } from './admin/AdminCampaignLinksPanel';
-import { AdminJobDraftsPanel } from './admin/AdminJobDraftsPanel';
+import { AdminAiMagicPanel } from './admin/AdminAiMagicPanel';
 import { BulkImportExportBar } from './admin/BulkImportExportBar';
 import { OfficialDocumentUpload } from './admin/OfficialDocumentUpload';
 import { Select } from './ui/Select';
 
-type AdminTab = 'overview' | 'jobs' | 'jobdrafts' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
+type AdminTab = 'overview' | 'jobs' | 'aimagic' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
 
 const ComingSoonBadge = () => (
   <span className="inline-flex items-center gap-1 bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
@@ -239,7 +239,7 @@ export const AdminDashboardSection: React.FC = () => {
     { items: [{ id: 'overview', label: 'Overview', icon: BarChart3 }] },
     { title: 'Content', items: [
       { id: 'jobs', label: 'Jobs', icon: Briefcase, badge: stats?.totalJobs?.toLocaleString('en-IN') ?? null },
-      { id: 'jobdrafts', label: 'Scraper queue', icon: Radar },
+      { id: 'aimagic', label: 'AI Magic', icon: Sparkles },
       { id: 'categories', label: 'Categories', icon: Layers, badge: stats?.totalCategories ?? null },
       { id: 'admitcards', label: 'Admit cards', icon: Award },
       { id: 'results', label: 'Results', icon: Trophy },
@@ -389,7 +389,7 @@ export const AdminDashboardSection: React.FC = () => {
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {([
                           ['jobs', 'Add a job', Briefcase, 'from-blue-600 to-indigo-600'],
-                          ['jobdrafts', 'Scraper queue', Radar, 'from-cyan-600 to-sky-600'],
+                          ['aimagic', 'AI Magic', Sparkles, 'from-indigo-600 to-violet-600'],
                           ['results', 'Publish result', Trophy, 'from-emerald-600 to-teal-600'],
                           ['admitcards', 'Admit card', Award, 'from-violet-600 to-purple-600'],
                           ['mocks', 'Mock test', FileCheck, 'from-pink-600 to-rose-600'],
@@ -701,9 +701,9 @@ export const AdminDashboardSection: React.FC = () => {
           <AdminJobAlertsPanel />
         )}
 
-        {/* SCRAPER DRAFT QUEUE */}
-        {activeTab === 'jobdrafts' && (
-          <AdminJobDraftsPanel />
+        {/* AI MAGIC: scraper queue (jobs) + AI-collected results/admit cards/papers/news/schemes/notes */}
+        {activeTab === 'aimagic' && (
+          <AdminAiMagicPanel />
         )}
 
         {/* MOCK TESTS CMS */}

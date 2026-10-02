@@ -1,0 +1,23 @@
+{{COMMON}}
+
+CATEGORY: OLD PAPERS - previous-year question papers (and answer keys / solutions) that the conducting body or an official education board has published as PDFs: GPSC, GSSSB, OJAS exams, Gujarat Police, TET/TAT, SSC, IBPS, RRB, UPSC and similar.
+Where to look: the official "Previous Question Papers / Answer Key / Question Paper" sections of the conducting bodies. "Latest" here means recently published or newly available papers (the freshness window applies to when the paper/answer key was published on the official site, not the exam year).
+COPYRIGHT RULE: only link PDFs hosted on the official/government site. Never link pirated mirrors, paywalled, or third-party-hosted copies. Never reproduce question text yourself - you only describe the paper.
+VERIFY each link before sending: run  curl -s -o /dev/null -I -w "%{http_code}" "<pdf url>"  and only send items whose PDF link answers 200.
+
+PAYLOAD for "payload" (follow exactly; omit unknown optional fields):
+{
+  "title": "e.g. 'GSSSB Junior Clerk Question Paper 2024 (Paper 1) with Answer Key'",
+  "examName": "exam name (required)",
+  "categoryId": <real id from /api/categories, or null>,
+  "year": <exam year as a number (required)>,
+  "subject": "subject / paper name or null",
+  "paperType": "one of: Prelims, Mains, Written Exam, CBT, Answer Key, Other",
+  "description": "2-4 sentences in your own words: which exam, date held, shift/paper, how to use the paper",
+  "paperPdfLink": "(required) official PDF URL, verified 200",
+  "solutionPdfLink": "official answer-key / solution PDF URL or null",
+  "totalQuestions": <number or null>, "totalMarks": <number or null>, "duration": <minutes or null>,
+  "isFeatured": false,
+  "isActive": true
+}
+Skip the item if you cannot confirm the year or cannot reach the PDF.

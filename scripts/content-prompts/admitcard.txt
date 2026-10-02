@@ -1,0 +1,35 @@
+{{COMMON}}
+
+CATEGORY: ADMIT CARDS - hall tickets / call letters that have been RELEASED (or have an official release notice) for upcoming exams: GPSC, GSSSB, OJAS boards, Gujarat Police, SSC, IBPS/SBI, RRB, UPSC, TET/TAT and similar.
+Where to look: official recruitment/exam portals' "Admit Card / Call Letter / Hall Ticket" sections and their latest-notice lists.
+
+PAYLOAD for "payload" (follow exactly; use null for unknown optional fields, never invent facts):
+{
+  "title": "keyword-rich, e.g. 'GSSSB Talati Admit Card 2026 - Download Call Letter'",
+  "examName": "exam name",
+  "organizationName": "full organization name (required)",
+  "categoryId": <real id from /api/categories (required)>,
+  "focusKeyword": "[Exam Name] Admit Card [Year] (required)",
+  "secondaryKeywords": ["5-8 realistic search phrases"],
+  "lsiKeywords": ["5-8 related terms"],
+  "admitCardReleaseDate": "YYYY-MM-DD (date it was released)",
+  "examDate": "YYYY-MM-DD or null",
+  "downloadLink": "official download URL or null",
+  "postName": "post name or null",
+  "year": <number, e.g. 2026>,
+  "state": "Gujarat / other state / All India",
+  "location": "Gujarat or specific state",
+  "shortDescription": "2-3 sentences, max 400 chars, first sentence stands alone as a Google snippet; include org, exam, release date (required)",
+  "description": "(required) plain text using EXACTLY these headings, each on its own line followed by '- ' bullets, in this order: OVERVIEW: / ADMIT CARD DETAILS: / EXAM DATE & CENTER: / FREQUENTLY ASKED QUESTIONS: (2 lines like '- Q: ... A: ...')",
+  "howToDownload": "brief step-by-step text or null",
+  "instructionsForExam": ["exam-day instructions actually stated in the notice"],
+  "documentsToCarryForExam": ["documents candidates must carry"],
+  "faqSchema": [ {"question": "...", "answer": "plain text, 1-2 sentences"} ],
+  "metaTitle": "max 60 chars, '[Focus Keyword] | JobCharcha' (required)",
+  "metaDescription": "max 155 chars, include focus keyword + call to action like 'Download Now' (required)",
+  "metaKeywords": "10-12 comma-separated keywords",
+  "ogTitle": "max 60 chars", "ogDescription": "max 160 chars",
+  "internalLinkAnchors": ["3-5 anchor texts"],
+  "autoPublish": true
+}
+Skip an item if the admit card is not actually available/announced yet.

@@ -1,0 +1,16 @@
+{{COMMON}}
+
+CATEGORY: STUDY NOTES - short, accurate, exam-ready revision notes for Gujarat and all-India government exams (GPSC, GSSSB, Police, Talati, Clerk, SSC, Banking, Railway, TET/TAT): current-affairs digests, Gujarat GK, Indian polity/history/geography/economy topics, reasoning/maths shortcuts, English grammar rules, syllabus/exam-pattern summaries, and "important topics" lists.
+Prioritise (1) topics tied to something that is currently in the news or newly notified (new syllabus, new exam pattern, a recent scheme/event), then (2) evergreen high-yield topics that are not yet covered.
+ORIGINAL-WRITING RULE (this matters for copyright): write the notes yourself from facts gathered across sources - never paste or closely paraphrase another site's notes, and never copy PDFs. Verify every fact (dates, articles, numbers) against an official or authoritative source before writing it. If unsure about a fact, leave it out.
+
+PAYLOAD for "payload" (follow exactly):
+{
+  "title": "specific and searchable, e.g. 'Gujarat Rivers and Dams - Important Points for GPSC & GSSSB'",
+  "categoryId": <real id from /api/categories (required) - the exam family the notes serve>,
+  "materialType": "Notes",
+  "description": "(required, 400-1500 words, plain text) the notes themselves, structured: a one-line intro, then short headed sections ('HEADING:' on its own line) each followed by '- ' bullet points, then 'QUICK REVISION:' with 5-8 one-line facts, then 'PRACTICE QUESTIONS:' with 3-5 questions and answers ('Q:' / 'A:'). Simple language, grade-8 reading level.",
+  "filePath": "(required) the main official/authoritative source page URL the facts were checked against",
+  "fileSize": 0,
+  "isActive": true
+}
