@@ -97,6 +97,7 @@ public class ContentDraftService : IContentDraftService
 
         var runs = await _db.ContentSyncRuns.AsNoTracking()
             .OrderByDescending(r => r.StartedAt).Take(200).ToListAsync();
+        var disabled = (await _db.ContentCategorySettings.AsNoTracking().Where(s => !s.IsEnabled).Select(s => s.Category).ToListAsync()).ToHashSet();
 
         return ContentCategories.All.Select(c =>
         {
@@ -104,6 +105,7 @@ public class ContentDraftService : IContentDraftService
             return new ContentCategorySummaryDto
             {
                 Category = c,
+                IsEnabled = !disabled.Contains(c),
                 PendingCount = counts.Where(x => x.Category == c && x.Status == ContentDraftStatus.Pending).Sum(x => x.Count),
                 ApprovedCount = counts.Where(x => x.Category == c && x.Status == ContentDraftStatus.Approved).Sum(x => x.Count),
                 RejectedCount = counts.Where(x => x.Category == c && x.Status == ContentDraftStatus.Rejected).Sum(x => x.Count),

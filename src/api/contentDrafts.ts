@@ -20,6 +20,7 @@ export interface ApiContentSyncRun {
 
 export interface ApiContentCategorySummary {
   category: ContentCategory;
+  isEnabled: boolean;
   pendingCount: number;
   approvedCount: number;
   rejectedCount: number;
@@ -100,3 +101,26 @@ export const updateContentSource = (id: number, payload: UpsertContentSourcePayl
 
 export const deleteContentSource = (id: number) =>
   apiFetch<void>(`${base}/sources/${id}`, { method: 'DELETE', auth: true });
+
+export interface ApiContentCategorySetting {
+  category: ContentCategory;
+  isEnabled: boolean;
+  maxItemsPerRun: number;
+  freshnessDays: number;
+  extraInstructions?: string | null;
+  /** False while the category still uses the server defaults (nothing saved yet). */
+  isCustomized: boolean;
+}
+
+export interface UpdateContentCategorySettingPayload {
+  isEnabled: boolean;
+  maxItemsPerRun: number;
+  freshnessDays: number;
+  extraInstructions?: string | null;
+}
+
+export const getContentSettings = () =>
+  apiFetch<ApiContentCategorySetting[]>(`${base}/settings`, { auth: true });
+
+export const updateContentSetting = (category: ContentCategory, payload: UpdateContentCategorySettingPayload) =>
+  apiFetch<ApiContentCategorySetting>(`${base}/settings/${category}`, { method: 'PUT', auth: true, body: payload });

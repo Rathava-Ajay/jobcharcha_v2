@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using JobPortal.Application.DTOs.Content;
 using JobPortal.Infrastructure.Services;
@@ -259,5 +260,90 @@ public class ContentLinkGuardTests
         var other = OldPaper("https://x.gov.in/q2.pdf", null);
         other.Payload = JsonSerializer.SerializeToElement(new { title = "Another paper 2025", examName = "Other exam", year = 2025, paperPdfLink = "https://x.gov.in/q2.pdf" });
         Assert.True((await service.IngestAsync(other)).Succeeded);
+    }
+}
+
+public class ContentSettingsTests
+{
+    private static Microsoft.Extensions.Configuration.IConfiguration Config(int max = 10, int days = 7) =>
+        new Microsoft.Extensions.Configuration.ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ContentSync:MaxItemsPerRun"] = max.ToString(), ["ContentSync:FreshnessDays"] = days.ToString(),
+        }).Build();
+
+    [Fact]
+    public async Task GetAll_ReturnsEveryCategory_WithConfigDefaultsUntilSaved()
+    {
+        var service = new ContentSettingsService(TestDb.Create(TestDb.NewDbName()), Config(max: 12, days: 5));
+        var all = await service.GetAllAsync();
+
+        Assert.Equal(ContentCategories.All.Length, all.Count);
+        Assert.All(all, s => { Assert.True(s.IsEnabled); Assert.False(s.IsCustomized); Assert.Equal(12, s.MaxItemsPerRun); Assert.Equal(5, s.FreshnessDays); });
+    }
+
+    [Fact]
+    public async Task Update_SavesOverrides_AndLeavesOtherCategoriesOnDefaults()
+    {
+        var service = new ContentSettingsService(TestDb.Create(TestDb.NewDbName()), Config());
+        var saved = await service.UpdateAsync("News", new UpdateContentCategorySettingRequest
+        {
+            IsEnabled = false, MaxItemsPerRun = 3, FreshnessDays = 2, ExtraInstructions = "  Gujarat only  ",
+        });
+
+        Assert.True(saved.Succeeded);
+        var all = await service.GetAllAsync();
+        var news = all.Single(s => s.Category == "news");
+        Assert.False(news.IsEnabled);
+        Assert.Equal(3, news.MaxItemsPerRun);
+        Assert.Equal("Gujarat only", news.ExtraInstructions);
+        Assert.True(news.IsCustomized);
+        Assert.False(all.Single(s => s.Category == "result").IsCustomized);
+    }
+
+    [Theory]
+    [InlineData("jobs", 10, 7)]
+    [InlineData("news", 0, 7)]
+    [InlineData("news", 31, 7)]
+    [InlineData("news", 10, 0)]
+    [InlineData("news", 10, 400)]
+    public async Task Update_RejectsUnknownCategoryAndOutOfRangeValues(string category, int max, int days)
+    {
+        var service = new ContentSettingsService(TestDb.Create(TestDb.NewDbName()), Config());
+        var result = await service.UpdateAsync(category, new UpdateContentCategorySettingRequest { MaxItemsPerRun = max, FreshnessDays = days });
+        Assert.False(result.Succeeded);
+    }
+
+    private static List<ContentCategorySettingDto> Settings(params string[] disabled) =>
+        ContentCategories.All.Select(c => new ContentCategorySettingDto { Category = c, IsEnabled = !disabled.Contains(c) }).ToList();
+
+    [Fact]
+    public void ResolveCategories_All_SkipsDisabled()
+    {
+        var (run, error) = ContentSyncService.ResolveCategories(null, Settings("news", "study"));
+        Assert.Null(error);
+        Assert.DoesNotContain("news", run);
+        Assert.DoesNotContain("study", run);
+        Assert.Equal(ContentCategories.All.Length - 2, run.Count);
+    }
+
+    [Fact]
+    public void ResolveCategories_NamedButDisabled_IsAnError()
+    {
+        var (_, error) = ContentSyncService.ResolveCategories("news", Settings("news"));
+        Assert.Equal("CategoryDisabled", error!.Value.Code);
+    }
+
+    [Fact]
+    public void ResolveCategories_AllDisabled_IsAnError()
+    {
+        var (_, error) = ContentSyncService.ResolveCategories("", Settings(ContentCategories.All));
+        Assert.Equal("AllDisabled", error!.Value.Code);
+    }
+
+    [Fact]
+    public void ResolveCategories_UnknownName_IsAnError()
+    {
+        var (_, error) = ContentSyncService.ResolveCategories("jobs", Settings());
+        Assert.Equal("InvalidCategory", error!.Value.Code);
     }
 }

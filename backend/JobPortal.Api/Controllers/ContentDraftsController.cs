@@ -18,12 +18,14 @@ public class ContentDraftsController : ControllerBase
     private readonly IContentDraftService _drafts;
     private readonly IContentSourceService _sources;
     private readonly IContentSyncService _sync;
+    private readonly IContentSettingsService _settings;
 
-    public ContentDraftsController(IContentDraftService drafts, IContentSourceService sources, IContentSyncService sync)
+    public ContentDraftsController(IContentDraftService drafts, IContentSourceService sources, IContentSyncService sync, IContentSettingsService settings)
     {
         _drafts = drafts;
         _sources = sources;
         _sync = sync;
+        _settings = settings;
     }
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -85,6 +87,18 @@ public class ContentDraftsController : ControllerBase
 
     [HttpGet("sync/runs")]
     public async Task<IActionResult> Runs([FromQuery] string? category) => Ok(await _sync.GetRecentRunsAsync(category));
+
+    // ---- Per-category settings ----------------------------------------------------------------
+
+    [HttpGet("settings")]
+    public async Task<IActionResult> GetSettings() => Ok(await _settings.GetAllAsync());
+
+    [HttpPut("settings/{category}")]
+    public async Task<IActionResult> UpdateSettings(string category, UpdateContentCategorySettingRequest request)
+    {
+        var result = await _settings.UpdateAsync(category, request);
+        return result.Succeeded ? Ok(result.Data) : BadRequest(new { result.ErrorCode, result.Error });
+    }
 
     // ---- Per-category sources -----------------------------------------------------------------
 

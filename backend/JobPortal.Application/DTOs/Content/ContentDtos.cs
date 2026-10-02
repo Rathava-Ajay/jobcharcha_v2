@@ -93,6 +93,7 @@ public class RejectContentDraftRequest
 public class ContentCategorySummaryDto
 {
     public string Category { get; set; } = null!;
+    public bool IsEnabled { get; set; } = true;
     public int PendingCount { get; set; }
     public int ApprovedCount { get; set; }
     public int RejectedCount { get; set; }
@@ -121,6 +122,25 @@ public class StartContentSyncRequest
 {
     /// <summary>One category, or null/omitted to sync every category one after another.</summary>
     public string? Category { get; set; }
+}
+
+public class ContentCategorySettingDto
+{
+    public string Category { get; set; } = null!;
+    public bool IsEnabled { get; set; }
+    public int MaxItemsPerRun { get; set; }
+    public int FreshnessDays { get; set; }
+    public string? ExtraInstructions { get; set; }
+    /// <summary>False while the category still uses the server defaults (no row saved yet).</summary>
+    public bool IsCustomized { get; set; }
+}
+
+public class UpdateContentCategorySettingRequest
+{
+    public bool IsEnabled { get; set; } = true;
+    [Range(1, 30)] public int MaxItemsPerRun { get; set; } = 10;
+    [Range(1, 365)] public int FreshnessDays { get; set; } = 7;
+    [StringLength(1000)] public string? ExtraInstructions { get; set; }
 }
 
 public class ContentSourceDto

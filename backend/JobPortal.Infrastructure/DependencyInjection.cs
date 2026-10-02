@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<IWatcherAgentSyncService, WatcherAgentSyncService>();
         services.AddScoped<IContentDraftService, ContentDraftService>();
         services.AddScoped<IContentSourceService, ContentSourceService>();
+        services.AddScoped<IContentSettingsService, ContentSettingsService>();
         services.AddScoped<IContentSyncService, ContentSyncService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IDashboardService, DashboardService>();

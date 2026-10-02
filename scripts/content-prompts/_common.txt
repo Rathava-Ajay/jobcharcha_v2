@@ -5,6 +5,7 @@ YOU DO NOT CALL ANY API. You only research with WebSearch / WebFetch (and, if to
 SITE CATEGORIES (use these real ids whenever a payload needs a categoryId; never invent an id; if nothing fits, use the closest general/other one):
 {{CATEGORIES_JSON}}
 
+{{EXTRA_INSTRUCTIONS}}
 STEP 1 - Find the latest items
 - Admin-added sources for this category (check these first; may be empty): {{SOURCES_JSON}}
   Website sources: fetch the url. Telegram sources: fetch the public preview https://t.me/s/<channelname>.

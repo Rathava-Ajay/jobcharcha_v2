@@ -55,10 +55,10 @@ public class ContentSyncService : IContentSyncService
             return ServiceResult<List<ContentSyncRunDto>>.Fail("NotAvailable",
                 "AI sync isn't available here — the Claude agent isn't set up to run on this machine.");
 
-        var requested = string.IsNullOrWhiteSpace(category) ? ContentCategories.All.ToList() : new List<string> { category.Trim().ToLowerInvariant() };
-        if (requested.Any(c => !ContentCategories.IsValid(c)))
-            return ServiceResult<List<ContentSyncRunDto>>.Fail("InvalidCategory",
-                $"Category must be one of: {string.Join(", ", ContentCategories.All)}.");
+        var settings = ContentSettingsService.Merge(await _db.ContentCategorySettings.AsNoTracking().ToListAsync(), _config);
+        var (requested, resolveError) = ResolveCategories(category, settings);
+        if (resolveError is not null)
+            return ServiceResult<List<ContentSyncRunDto>>.Fail(resolveError.Value.Code, resolveError.Value.Message);
 
         var promptsDir = _config["ContentSync:PromptsDir"];
         if (string.IsNullOrWhiteSpace(promptsDir) || !Directory.Exists(promptsDir))
@@ -98,6 +98,27 @@ public class ContentSyncService : IContentSyncService
     }
 
 
+    /// <summary>Which categories a sync request should run: "all" means every ENABLED category; naming one that
+    /// has been switched off is an error rather than a silent no-op.</summary>
+    public static (List<string> Categories, (string Code, string Message)? Error) ResolveCategories(
+        string? category, List<ContentCategorySettingDto> settings)
+    {
+        if (string.IsNullOrWhiteSpace(category))
+        {
+            var enabled = settings.Where(s => s.IsEnabled).Select(s => s.Category).ToList();
+            return enabled.Count == 0
+                ? (enabled, ("AllDisabled", "Every category is switched off in its settings — enable at least one to sync."))
+                : (enabled, null);
+        }
+
+        var c = category.Trim().ToLowerInvariant();
+        if (!ContentCategories.IsValid(c))
+            return (new List<string>(), ("InvalidCategory", $"Category must be one of: {string.Join(", ", ContentCategories.All)}."));
+        if (settings.Any(s => s.Category == c && !s.IsEnabled))
+            return (new List<string>(), ("CategoryDisabled", $"{c} is switched off in its settings — enable it to sync."));
+        return (new List<string> { c }, null);
+    }
+
     /// <summary>Runs the queued categories strictly one after another so six agents never hammer the sites (or
     /// the CLI's rate limit) at once.</summary>
     private async Task RunChainAsync(List<int> runIds)
@@ -132,6 +153,12 @@ public class ContentSyncService : IContentSyncService
                 .Where(s => s.Category == category && s.IsActive)
                 .Select(s => new { s.Id, s.Name, type = s.SourceType == 1 ? "telegram" : "website", s.Url })
                 .ToListAsync();
+            var setting = (await db.ContentCategorySettings.AsNoTracking().FirstOrDefaultAsync(s => s.Category == category)) is { } row
+                ? ContentSettingsService.ToDto(row)
+                : ContentSettingsService.Defaults(category, _config);
+            var extra = string.IsNullOrWhiteSpace(setting.ExtraInstructions)
+                ? ""
+                : "\nEXTRA INSTRUCTIONS FROM THE SITE ADMIN (follow these, but never at the cost of accuracy or the rules above):\n" + setting.ExtraInstructions + "\n";
             var siteCategories = await db.Categories.AsNoTracking().OrderBy(c => c.Id)
                 .Select(c => new { c.Id, c.Name }).ToListAsync();
 
@@ -146,8 +173,9 @@ public class ContentSyncService : IContentSyncService
             prompt = (await File.ReadAllTextAsync(Path.Combine(promptsDir, category + ".txt")))
                 .Replace("{{COMMON}}", common)
                 .Replace("{{CATEGORY}}", category)
-                .Replace("{{MAX_ITEMS}}", _config.GetValue("ContentSync:MaxItemsPerRun", 10).ToString())
-                .Replace("{{FRESH_DAYS}}", _config.GetValue("ContentSync:FreshnessDays", 7).ToString())
+                .Replace("{{EXTRA_INSTRUCTIONS}}", extra)
+                .Replace("{{MAX_ITEMS}}", setting.MaxItemsPerRun.ToString())
+                .Replace("{{FRESH_DAYS}}", setting.FreshnessDays.ToString())
                 .Replace("{{TODAY}}", DateTime.UtcNow.AddHours(5.5).ToString("yyyy-MM-dd"))
                 .Replace("{{CATEGORIES_JSON}}", JsonSerializer.Serialize(siteCategories))
                 .Replace("{{SOURCES_JSON}}", JsonSerializer.Serialize(sources));

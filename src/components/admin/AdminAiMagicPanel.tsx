@@ -10,6 +10,7 @@ import {
   ApiContentCategorySummary, ApiContentDraftListItem, ApiContentDraft, ApiContentSyncRun, ApiContentSource,
   getContentSummary, searchContentDrafts, getContentDraft, approveContentDraft, rejectContentDraft, deleteContentDraft,
   startContentSync, getContentSources, createContentSource, updateContentSource, deleteContentSource,
+  getContentSettings, updateContentSetting, ApiContentCategorySetting,
 } from '../../api/contentDrafts';
 import { getCategories, ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
@@ -142,6 +143,7 @@ export const AdminAiMagicPanel: React.FC = () => {
               className={`shrink-0 inline-flex items-center gap-2 rounded-xl border px-3.5 py-2.5 text-[13px] font-bold cursor-pointer whitespace-nowrap transition ${on ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
               <Icon className="w-4 h-4" /> {t.label}
               {s && s.pendingCount > 0 && <span className={`rounded-full px-1.5 text-[11px] font-extrabold ${on ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'}`}>{s.pendingCount}</span>}
+              {s && !s.isEnabled && <span className={`rounded-full px-1.5 text-[10.5px] font-extrabold ${on ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-500'}`}>Off</span>}
               {s && RUN_ACTIVE(s.lastRun) && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             </button>
           );
@@ -188,6 +190,7 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showSources, setShowSources] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -210,12 +213,13 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
 
   const changed = () => { load(); onChanged(); };
   const running = RUN_ACTIVE(lastRun);
+  const enabled = summary?.isEnabled !== false;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex-1 min-w-0">
-          <h3 className="font-extrabold text-[17px] text-slate-900">{label}</h3>
+          <h3 className="font-extrabold text-[17px] text-slate-900">{label}{!enabled && <span className="ml-2 align-middle rounded-full bg-slate-200 text-slate-600 px-2 py-0.5 text-[11px] font-extrabold">Sync off</span>}</h3>
           <p className="text-[13px] text-slate-500">{blurb}</p>
           <p className={`mt-1 inline-flex items-center gap-1.5 text-[12px] font-semibold ${lastRun?.status === SYNC_STATUS.Failed ? 'text-rose-600' : 'text-slate-500'}`}>
             <Clock3 className="w-3.5 h-3.5" /> {runLine(lastRun)}
@@ -225,11 +229,15 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
           )}
         </div>
         <div className="flex gap-2 shrink-0">
-          <button onClick={() => setShowSources((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 hover:border-indigo-300 text-slate-700 text-[13px] font-bold px-3.5 py-2.5 cursor-pointer">
-            <Settings2 className="w-4 h-4" /> Sources
+          <button onClick={() => { setShowSources((v) => !v); setShowSettings(false); }}
+            className={`inline-flex items-center gap-1.5 rounded-xl border text-slate-700 text-[13px] font-bold px-3.5 py-2.5 cursor-pointer ${showSources ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300'}`}>
+            <Globe2 className="w-4 h-4" /> Sources
           </button>
-          <button onClick={onSync} disabled={syncDisabled}
+          <button onClick={() => { setShowSettings((v) => !v); setShowSources(false); }}
+            className={`inline-flex items-center gap-1.5 rounded-xl border text-slate-700 text-[13px] font-bold px-3.5 py-2.5 cursor-pointer ${showSettings ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-indigo-300'}`}>
+            <Settings2 className="w-4 h-4" /> Settings
+          </button>
+          <button onClick={onSync} disabled={syncDisabled || !enabled} title={!enabled ? 'Sync is switched off in Settings' : undefined}
             className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-extrabold px-4 py-2.5 cursor-pointer disabled:opacity-50 whitespace-nowrap">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />} {running ? 'Syncing…' : `Sync ${label.toLowerCase()}`}
           </button>
@@ -237,6 +245,7 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
       </div>
 
       {showSources && <SourcesManager category={category} onError={onError} />}
+      {showSettings && <SettingsManager category={category} label={label} onSaved={onChanged} onError={onError} />}
 
       <div role="tablist" aria-label="Draft status" className="flex gap-1 rounded-xl bg-slate-100 p-1 w-full sm:w-auto sm:inline-flex overflow-x-auto no-scrollbar">
         {STATUS_TABS.map((t) => {
@@ -502,6 +511,97 @@ const SourcesManager: React.FC<{ category: ContentCategory; onError: (msg: strin
           className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-extrabold px-4 py-2 cursor-pointer disabled:opacity-50">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} Add
         </button>
+      </div>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------------------------
+
+const SettingsManager: React.FC<{
+  category: ContentCategory;
+  label: string;
+  onSaved: () => void;
+  onError: (msg: string | null) => void;
+}> = ({ category, label, onSaved, onError }) => {
+  const [loaded, setLoaded] = useState(false);
+  const [saved, setSaved] = useState<ApiContentCategorySetting | null>(null);
+  const [isEnabled, setIsEnabled] = useState(true);
+  const [maxItems, setMaxItems] = useState(10);
+  const [freshDays, setFreshDays] = useState(7);
+  const [extra, setExtra] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  const apply = (s: ApiContentCategorySetting) => {
+    setSaved(s); setIsEnabled(s.isEnabled); setMaxItems(s.maxItemsPerRun); setFreshDays(s.freshnessDays); setExtra(s.extraInstructions ?? '');
+  };
+
+  useEffect(() => {
+    getContentSettings()
+      .then((all) => { const s = all.find((x) => x.category === category); if (s) apply(s); })
+      .catch(() => onError('Could not load the settings.'))
+      .finally(() => setLoaded(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
+
+  const invalid = !(maxItems >= 1 && maxItems <= 30) || !(freshDays >= 1 && freshDays <= 365);
+  const dirty = !!saved && (saved.isEnabled !== isEnabled || saved.maxItemsPerRun !== maxItems || saved.freshnessDays !== freshDays || (saved.extraInstructions ?? '') !== extra.trim());
+
+  const save = async () => {
+    setSaving(true); onError(null); setJustSaved(false);
+    try {
+      apply(await updateContentSetting(category, { isEnabled, maxItemsPerRun: maxItems, freshnessDays: freshDays, extraInstructions: extra.trim() || null }));
+      setJustSaved(true);
+      onSaved();
+    } catch (e) {
+      onError(e instanceof ApiError ? e.message : 'Could not save the settings.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!loaded) return <div className="h-28 rounded-xl bg-slate-100 animate-pulse" />;
+
+  const field = 'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[13px] focus:outline-none focus:border-indigo-400';
+  return (
+    <div className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-3.5 space-y-3.5">
+      <p className="text-[12.5px] text-slate-600">
+        These apply to every <strong>{label.toLowerCase()}</strong> sync. {saved && !saved.isCustomized && 'Nothing changed yet, so the server defaults are shown.'}
+      </p>
+
+      <label className="flex flex-wrap items-center gap-x-2.5 gap-y-1 cursor-pointer w-fit">
+        <input type="checkbox" checked={isEnabled} onChange={(e) => setIsEnabled(e.target.checked)} className="w-4 h-4 accent-indigo-600" />
+        <span className="text-[13px] font-bold text-slate-800">Include in syncs</span>
+        <span className="text-[12px] text-slate-500">Off means “Sync all” skips it and its own Sync button is disabled.</span>
+      </label>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-[12.5px] font-bold text-slate-600">Max items per sync (1–30)</span>
+          <input type="number" min={1} max={30} value={maxItems} onChange={(e) => setMaxItems(Number(e.target.value))} className={field} />
+        </label>
+        <label className="block">
+          <span className="text-[12.5px] font-bold text-slate-600">Only items from the last … days (1–365)</span>
+          <input type="number" min={1} max={365} value={freshDays} onChange={(e) => setFreshDays(Number(e.target.value))} className={field} />
+        </label>
+      </div>
+
+      <label className="block">
+        <span className="text-[12.5px] font-bold text-slate-600">Extra instructions for the AI <span className="font-medium text-slate-400">(optional)</span></span>
+        <textarea value={extra} onChange={(e) => setExtra(e.target.value)} maxLength={1000} rows={3}
+          placeholder="e.g. Gujarat government only. Skip private-sector and coaching-institute news."
+          className={field} />
+        <span className="text-[11.5px] text-slate-400">{extra.length}/1000 · The AI still has to follow the accuracy and copyright rules.</span>
+      </label>
+
+      <div className="flex items-center gap-3">
+        <button onClick={save} disabled={saving || invalid || !dirty}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[13px] font-extrabold px-4 py-2 cursor-pointer disabled:opacity-50">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Save settings
+        </button>
+        {invalid && <span className="text-[12px] font-semibold text-rose-600">Check the number ranges.</span>}
+        {justSaved && !dirty && <span className="text-[12px] font-semibold text-emerald-700">Saved. Used from the next sync.</span>}
       </div>
     </div>
   );

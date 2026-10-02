@@ -23,6 +23,13 @@ public interface IContentSourceService
     Task<ServiceResult> DeleteAsync(int id);
 }
 
+public interface IContentSettingsService
+{
+    /// <summary>Always one entry per category; categories without a saved row show the server defaults.</summary>
+    Task<List<ContentCategorySettingDto>> GetAllAsync();
+    Task<ServiceResult<ContentCategorySettingDto>> UpdateAsync(string category, UpdateContentCategorySettingRequest request);
+}
+
 public interface IContentSyncService
 {
     /// <summary>Queues an AI-agent run for one category (or all of them, one after another). Returns once the
