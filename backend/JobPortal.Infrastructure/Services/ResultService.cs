@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.Results;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -11,11 +12,16 @@ namespace JobPortal.Infrastructure.Services;
 public class ResultService : IResultService
 {
     private readonly AppDbContext _db;
+    private readonly ISocialShareService? _social;
 
-    public ResultService(AppDbContext db)
+    public ResultService(AppDbContext db, ISocialShareService? social = null)
     {
         _db = db;
+        _social = social;
     }
+
+    private Task ShareAsync(int id, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.Result, id, skip, userId);
 
     public async Task<List<ResultListItemDto>> GetAllAsync(bool includeInactive = false)
     {
@@ -73,6 +79,7 @@ public class ResultService : IResultService
         };
         _db.Results.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.Results.Include(r => r.Category).FirstAsync(r => r.Id == entity.Id);
         return ServiceResult<ResultDto>.Ok(ToFullDto(saved));
     }
@@ -123,6 +130,7 @@ public class ResultService : IResultService
         };
         _db.Results.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.Results.Include(r => r.Category).FirstAsync(r => r.Id == entity.Id);
         return ServiceResult<ResultDto>.Ok(ToFullDto(saved));
     }
@@ -151,10 +159,12 @@ public class ResultService : IResultService
         entity.District = request.District;
         entity.Description = request.Description;
         entity.IsFeatured = request.IsFeatured;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.Results.Include(r => r.Category).FirstAsync(r => r.Id == id);
         return ServiceResult<ResultDto>.Ok(ToFullDto(saved));
     }

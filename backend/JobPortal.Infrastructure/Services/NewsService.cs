@@ -1,4 +1,5 @@
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.News;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -10,11 +11,16 @@ namespace JobPortal.Infrastructure.Services;
 public class NewsService : INewsService
 {
     private readonly AppDbContext _db;
+    private readonly ISocialShareService? _social;
 
-    public NewsService(AppDbContext db)
+    public NewsService(AppDbContext db, ISocialShareService? social = null)
     {
         _db = db;
+        _social = social;
     }
+
+    private Task ShareAsync(int id, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.News, id, skip, userId);
 
     public async Task<List<NewsListItemDto>> GetAllAsync(bool includeInactive = false)
     {
@@ -72,6 +78,7 @@ public class NewsService : INewsService
         };
         _db.News.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.News.Include(n => n.Category).FirstAsync(n => n.Id == entity.Id);
         return ServiceResult<NewsDto>.Ok(ToFullDto(saved));
     }
@@ -100,10 +107,12 @@ public class NewsService : INewsService
         entity.MetaTitle = request.MetaTitle;
         entity.MetaDescription = request.MetaDescription;
         entity.MetaKeywords = request.MetaKeywords;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.News.Include(n => n.Category).FirstAsync(n => n.Id == id);
         return ServiceResult<NewsDto>.Ok(ToFullDto(saved));
     }

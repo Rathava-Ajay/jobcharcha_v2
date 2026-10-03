@@ -24,4 +24,12 @@ public partial class ContentCategorySetting
     public string? ExtraInstructions { get; set; }
 
     public DateTime UpdatedDate { get; set; }
+
+    /// <summary>When true, clean drafts of this category publish without review. Only allowed for categories in
+    /// ContentCategories.AutoPublishAllowed.</summary>
+    public bool AutoPublish { get; set; }
+
+    /// <summary>The admin who switched auto-publish on; published items are attributed to them.</summary>
+    [StringLength(450)]
+    public string? AutoPublishUserId { get; set; }
 }

@@ -11,7 +11,7 @@ public class ContentDraftServiceTests
 {
     private static ContentDraftService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
         new(db, new ResultService(db), new AdmitCardService(db), new NewsService(db), new GovtSchemeService(db),
-            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
+            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker(), new JobService(db, new FakeBackgroundTaskQueue()));
 
     private static IngestContentDraftRequest News(string title = "GSSSB announces exam calendar", string? link = "https://gsssb.gujarat.gov.in/n/1") => new()
     {
@@ -203,7 +203,7 @@ public class ContentLinkGuardTests
 {
     private static ContentDraftService Create(JobPortal.Infrastructure.Data.AppDbContext db) =>
         new(db, new ResultService(db), new AdmitCardService(db), new NewsService(db), new GovtSchemeService(db),
-            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
+            new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker(), new JobService(db, new FakeBackgroundTaskQueue()));
 
     private static IngestContentDraftRequest AdmitCard(string? downloadLink) => new()
     {
@@ -367,8 +367,45 @@ public class ContentPhase3Tests
         var db = TestDb.Create(TestDb.NewDbName());
         var links = new FakeLinkChecker();
         var service = new ContentDraftService(db, new ResultService(db), new AdmitCardService(db), new NewsService(db),
-            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), links);
+            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), links, new JobService(db, new FakeBackgroundTaskQueue()));
         return (service, links);
+    }
+
+    private static IngestContentDraftRequest Job(string title, string? apply, string? pdf) => new()
+    {
+        Category = "job", SourceName = "GSSSB",
+        Payload = JsonSerializer.SerializeToElement(new
+        {
+            title, department = "GSSSB", categoryId = 1, focusKeyword = "k", lastDate = "2099-12-31",
+            applyLink = apply, officialNotificationPdf = pdf, shortDescription = "s", overview = "o", howToApply = "<ol><li>x</li></ol>",
+            metaTitle = "m", metaDescription = "md",
+        }),
+    };
+
+    [Fact]
+    public async Task Job_WithOnlyAHomePage_IsRejected()
+    {
+        var (service, _) = Create();
+        var r = await service.IngestAsync(Job("GSSSB Clerk 2026", "https://gsssb.gujarat.gov.in", null));
+        Assert.False(r.Succeeded);
+        Assert.Contains("deep link", r.Error);
+    }
+
+    [Fact]
+    public async Task Job_WithNoLink_IsRejected()
+    {
+        var (service, _) = Create();
+        Assert.False((await service.IngestAsync(Job("GSSSB Clerk 2026", null, null))).Succeeded);
+    }
+
+    [Fact]
+    public async Task Job_SameNotificationPdf_IsOneDraft()
+    {
+        var (service, _) = Create();
+        var first = await service.IngestAsync(Job("GSSSB Clerk 2026", null, "https://gsssb.gujarat.gov.in/adv/12.pdf"));
+        var again = await service.IngestAsync(Job("GSSSB Junior Clerk Recruitment", null, "https://gsssb.gujarat.gov.in/adv/12.pdf"));
+        Assert.Equal("Created", first.Data!.Outcome);
+        Assert.Equal("SkippedPending", again.Data!.Outcome);
     }
 
     private static IngestContentDraftRequest Result(string title, string? link, string? pdf) => new()
@@ -573,7 +610,7 @@ public class ContentOrphanRecoveryTests
         });
         await db.SaveChangesAsync();
         var drafts = new ContentDraftService(db, new ResultService(db), new AdmitCardService(db), new NewsService(db),
-            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker());
+            new GovtSchemeService(db), new OldPaperService(db), new StudyMaterialService(db), new FakeLinkChecker(), new JobService(db, new FakeBackgroundTaskQueue()));
 
         var summary = await drafts.GetSummaryAsync();
 

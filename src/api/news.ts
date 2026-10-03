@@ -26,6 +26,8 @@ export interface ApiNewsDetail extends ApiNewsListItem {
 }
 
 export interface UpsertNewsPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   titleGujarati?: string;
   slug?: string;

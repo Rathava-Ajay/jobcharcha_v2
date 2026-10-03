@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.Jobs;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -13,11 +14,13 @@ public class JobService : IJobService
 {
     private readonly AppDbContext _db;
     private readonly IBackgroundTaskQueue _taskQueue;
+    private readonly ISocialShareService? _social;
 
-    public JobService(AppDbContext db, IBackgroundTaskQueue taskQueue)
+    public JobService(AppDbContext db, IBackgroundTaskQueue taskQueue, ISocialShareService? social = null)
     {
         _db = db;
         _taskQueue = taskQueue;
+        _social = social;
     }
 
     /// <summary>
@@ -37,6 +40,9 @@ public class JobService : IJobService
         if (excludeId.HasValue) q = q.Where(j => j.Id != excludeId.Value);
         return await q.AnyAsync();
     }
+
+    private Task ShareAsync(int jobId, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.Job, jobId, skip, userId);
 
     private void EnqueueAlertDispatch(int jobId)
     {
@@ -205,7 +211,7 @@ public class JobService : IJobService
         };
         _db.Jobs.Add(entity);
         await _db.SaveChangesAsync();
-        if (entity.IsActive) EnqueueAlertDispatch(entity.Id);
+        if (entity.IsActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, request.SkipSocial, userId); }
 
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == entity.Id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
@@ -296,7 +302,7 @@ public class JobService : IJobService
         };
         _db.Jobs.Add(entity);
         await _db.SaveChangesAsync();
-        if (entity.IsActive) EnqueueAlertDispatch(entity.Id);
+        if (entity.IsActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, request.SkipSocial, userId); }
 
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == entity.Id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
@@ -345,11 +351,13 @@ public class JobService : IJobService
         entity.SyllabusPdf = request.SyllabusPdf;
         entity.OrganizationLogo = request.OrganizationLogo;
         entity.Status = request.Status;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedById = userId;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
     }
@@ -383,7 +391,7 @@ public class JobService : IJobService
         entity.UpdatedById = userId;
         entity.UpdatedDate = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        if (isActive && !wasActive) EnqueueAlertDispatch(entity.Id);
+        if (isActive && !wasActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, false, userId); }
         return ServiceResult.Ok();
     }
 

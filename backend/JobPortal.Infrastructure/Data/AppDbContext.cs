@@ -118,6 +118,12 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<ContentSyncRun> ContentSyncRuns { get; set; }
 
+    public virtual DbSet<SocialShareSetting> SocialShareSettings { get; set; }
+
+    public virtual DbSet<SocialShareJob> SocialShareJobs { get; set; }
+
+    public virtual DbSet<SocialImageUsage> SocialImageUsages { get; set; }
+
     public virtual DbSet<JobDraftQueue> JobDraftQueues { get; set; }
 
     public virtual DbSet<JobFeedSource> JobFeedSources { get; set; }

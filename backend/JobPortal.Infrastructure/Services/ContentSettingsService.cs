@@ -28,12 +28,16 @@ public class ContentSettingsService : IContentSettingsService
         FreshnessDays = config.GetValue("ContentSync:FreshnessDays", 7),
         ExtraInstructions = null,
         IsCustomized = false,
+        AutoPublish = false,
+        AutoPublishAllowed = ContentCategories.CanAutoPublish(category),
     };
 
     public static ContentCategorySettingDto ToDto(ContentCategorySetting s) => new()
     {
         Category = s.Category, IsEnabled = s.IsEnabled, MaxItemsPerRun = s.MaxItemsPerRun,
         FreshnessDays = s.FreshnessDays, ExtraInstructions = s.ExtraInstructions, IsCustomized = true,
+        AutoPublish = s.AutoPublish && ContentCategories.CanAutoPublish(s.Category),
+        AutoPublishAllowed = ContentCategories.CanAutoPublish(s.Category),
     };
 
     /// <summary>Merges saved rows over the defaults so callers always get one setting per category.</summary>
@@ -48,7 +52,7 @@ public class ContentSettingsService : IContentSettingsService
     public async Task<List<ContentCategorySettingDto>> GetAllAsync() =>
         Merge(await _db.ContentCategorySettings.AsNoTracking().ToListAsync(), _config);
 
-    public async Task<ServiceResult<ContentCategorySettingDto>> UpdateAsync(string category, UpdateContentCategorySettingRequest request)
+    public async Task<ServiceResult<ContentCategorySettingDto>> UpdateAsync(string category, UpdateContentCategorySettingRequest request, string? userId = null)
     {
         category = (category ?? "").Trim().ToLowerInvariant();
         if (!ContentCategories.IsValid(category))
@@ -57,6 +61,12 @@ public class ContentSettingsService : IContentSettingsService
         var problems = new List<ValidationResult>();
         if (!Validator.TryValidateObject(request, new ValidationContext(request), problems, validateAllProperties: true))
             return ServiceResult<ContentCategorySettingDto>.Fail("Invalid", string.Join("; ", problems.Select(p => p.ErrorMessage)));
+
+        if (request.AutoPublish && !ContentCategories.CanAutoPublish(category))
+            return ServiceResult<ContentCategorySettingDto>.Fail("AutoPublishNotAllowed",
+                "Auto-publish is only available for News and Study Notes. Jobs, results, admit cards, old papers and schemes always need a human check.");
+        if (request.AutoPublish && string.IsNullOrEmpty(userId))
+            return ServiceResult<ContentCategorySettingDto>.Fail("AutoPublishNeedsUser", "Auto-publish must be switched on by a signed-in admin.");
 
         var row = await _db.ContentCategorySettings.FindAsync(category);
         if (row is null)
@@ -69,6 +79,9 @@ public class ContentSettingsService : IContentSettingsService
         row.MaxItemsPerRun = request.MaxItemsPerRun;
         row.FreshnessDays = request.FreshnessDays;
         row.ExtraInstructions = string.IsNullOrWhiteSpace(request.ExtraInstructions) ? null : request.ExtraInstructions.Trim();
+        if (request.AutoPublish && !row.AutoPublish) row.AutoPublishUserId = userId;
+        if (!request.AutoPublish) row.AutoPublishUserId = null;
+        row.AutoPublish = request.AutoPublish;
         row.UpdatedDate = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return ServiceResult<ContentCategorySettingDto>.Ok(ToDto(row));

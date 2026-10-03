@@ -10,6 +10,7 @@ import { getCategories, ApiCategory } from '../api/categories';
 import { aiImportAdmitCard, AiImportAdmitCardPayload } from '../api/admitCards';
 import { uploadAdminDocument } from '../api/uploads';
 import { ApiError } from '../api/client';
+import { SkipSocialCheckbox } from '../components/admin/SocialShareControls';
 import { buildAdmitCardExtractionPrompt, buildInstagramCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiAdmitCardImport, ParsedAiAdmitCard } from '../utils/aiAdmitCardImportValidation';
 import { DocumentPreview } from '../components/DocumentPreview';
@@ -49,6 +50,7 @@ export default function AdminMobilePostAdmitCardPage() {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [postedSlug, setPostedSlug] = useState<string | null>(null);
+  const [skipSocial, setSkipSocial] = useState(false);
   const [captionText, setCaptionText] = useState('');
   const [admitCardFileName, setAdmitCardFileName] = useState<string | null>(null);
   const [admitCardFileUrl, setAdmitCardFileUrl] = useState<string | null>(null);
@@ -123,6 +125,7 @@ export default function AdminMobilePostAdmitCardPage() {
         ogTitle: parsed.ogTitle,
         ogDescription: parsed.ogDescription,
         autoPublish: parsed.autoPublish,
+        skipSocial,
       };
       const created = await aiImportAdmitCard(payload);
       setPostedSlug(created.slug);
@@ -319,6 +322,7 @@ export default function AdminMobilePostAdmitCardPage() {
                 </div>
               )}
 
+              {parsed.autoPublish && <SkipSocialCheckbox checked={skipSocial} onChange={setSkipSocial} />}
               {postError && <div className="text-[13px] font-semibold text-red-600">{postError}</div>}
 
               <button
@@ -375,6 +379,7 @@ export default function AdminMobilePostAdmitCardPage() {
                   setPasteText('');
                   setParsed(null);
                   setPostedSlug(null);
+                  setSkipSocial(false);
                   setCaptionText('');
                   setErrors([]);
                   setWarnings([]);

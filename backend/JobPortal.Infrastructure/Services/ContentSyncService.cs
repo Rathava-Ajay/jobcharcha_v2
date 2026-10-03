@@ -49,11 +49,15 @@ public class ContentSyncService : IContentSyncService
         _logger = logger;
     }
 
+    /// <summary>Appended to the agent prompt when the admin picks the Gujarat filter.</summary>
+    public const string GujaratScopeInstructions =
+        "\nSCOPE FILTER (set by the admin for this run): GUJARAT ONLY. Collect only items that are about Gujarat: Gujarat state government departments and boards (GSSSB, GPSC, GSEB, GUJCET, Gujarat Police, GPSSB and similar), Gujarat state schemes, Gujarat universities, and central or national items only when they explicitly apply to Gujarat (a Gujarat vacancy, a Gujarat centre list, a Gujarat-specific result). Skip everything that is for other states or generic all-India with no Gujarat angle. If nothing Gujarat-related is found, return an empty items list and say so in the note.\n";
+
     internal static ContentSyncRunDto ToDto(ContentSyncRun r) => new()
     {
         Id = r.Id, Category = r.Category, Status = r.Status, StartedAt = r.StartedAt, FinishedAt = r.FinishedAt,
         NewCount = r.NewCount, SkippedCount = r.SkippedCount, InvalidCount = r.InvalidCount,
-        ErrorMessage = r.ErrorMessage, Note = r.Note,
+        ErrorMessage = r.ErrorMessage, Note = r.Note, Scope = r.Scope,
     };
 
     public async Task<List<ContentSyncRunDto>> GetRecentRunsAsync(string? category, int take = 20)
@@ -84,8 +88,12 @@ public class ContentSyncService : IContentSyncService
         if (db.ChangeTracker.HasChanges()) await db.SaveChangesAsync();
     }
 
-    public async Task<ServiceResult<List<ContentSyncRunDto>>> StartAsync(string? category, string userId)
+    public async Task<ServiceResult<List<ContentSyncRunDto>>> StartAsync(string? category, string userId, string? scope = null)
     {
+        scope = ContentCategories.NormalizeScope(scope);
+        if (!ContentCategories.Scopes.Contains(scope))
+            return ServiceResult<List<ContentSyncRunDto>>.Fail("InvalidScope", "Scope must be \"all\" or \"gujarat\".");
+
         if (!_config.GetValue("ContentSync:Enabled", false))
             return ServiceResult<List<ContentSyncRunDto>>.Fail("NotAvailable",
                 "AI sync isn't available here — the Claude agent isn't set up to run on this machine.");
@@ -114,7 +122,7 @@ public class ContentSyncService : IContentSyncService
 
         var runs = requested.Select(c => new ContentSyncRun
         {
-            Category = c, Status = ContentSyncStatus.Queued, StartedAt = DateTime.UtcNow, TriggeredById = userId,
+            Category = c, Status = ContentSyncStatus.Queued, StartedAt = DateTime.UtcNow, TriggeredById = userId, Scope = scope,
         }).ToList();
         _db.ContentSyncRuns.AddRange(runs);
         await _db.SaveChangesAsync();
@@ -219,6 +227,8 @@ public class ContentSyncService : IContentSyncService
             var extra = string.IsNullOrWhiteSpace(setting.ExtraInstructions)
                 ? ""
                 : "\nEXTRA INSTRUCTIONS FROM THE SITE ADMIN (follow these, but never at the cost of accuracy or the rules above):\n" + setting.ExtraInstructions + "\n";
+            if (run.Scope == "gujarat")
+                extra += GujaratScopeInstructions;
             var siteCategories = await db.Categories.AsNoTracking().OrderBy(c => c.Id)
                 .Select(c => new { c.Id, c.Name }).ToListAsync();
 

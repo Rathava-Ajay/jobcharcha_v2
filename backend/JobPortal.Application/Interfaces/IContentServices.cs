@@ -34,14 +34,14 @@ public interface IContentSettingsService
 {
     /// <summary>Always one entry per category; categories without a saved row show the server defaults.</summary>
     Task<List<ContentCategorySettingDto>> GetAllAsync();
-    Task<ServiceResult<ContentCategorySettingDto>> UpdateAsync(string category, UpdateContentCategorySettingRequest request);
+    Task<ServiceResult<ContentCategorySettingDto>> UpdateAsync(string category, UpdateContentCategorySettingRequest request, string? userId = null);
 }
 
 public interface IContentSyncService
 {
     /// <summary>Queues an AI-agent run for one category (or all of them, one after another). Returns once the
     /// runs are queued — the agent itself runs in the background for minutes.</summary>
-    Task<ServiceResult<List<ContentSyncRunDto>>> StartAsync(string? category, string userId);
+    Task<ServiceResult<List<ContentSyncRunDto>>> StartAsync(string? category, string userId, string? scope = null);
     Task<List<ContentSyncRunDto>> GetRecentRunsAsync(string? category, int take = 20);
     /// <summary>Cancels one run, or every queued/running run when no id is given. Returns how many were cancelled.</summary>
     Task<ServiceResult<int>> CancelAsync(int? runId);

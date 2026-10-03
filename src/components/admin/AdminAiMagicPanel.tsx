@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Sparkles, RefreshCw, Loader2, Briefcase, Trophy, Award, FileText, Newspaper, Landmark, GraduationCap,
   CheckCircle2, XCircle, AlertTriangle, Info, X, ExternalLink, ChevronDown, ChevronUp, Trash2, Send, Rss, Clock3,
-  Plus, Globe2, MessageCircle, Settings2, Code2, Radar, History, Ban, Pencil, Eye,
+  Plus, Globe2, MessageCircle, Settings2, Code2, Radar, History, Ban, Pencil, Eye, Search,
 } from 'lucide-react';
 import { AdminJobDraftsPanel } from './AdminJobDraftsPanel';
 import { DRAFT_FIELDS, parseFieldValue, displayFieldValue, trimStrings } from './aiMagicFields';
@@ -12,15 +12,17 @@ import {
   ApiContentCategorySummary, ApiContentDraftListItem, ApiContentDraft, ApiContentSyncRun, ApiContentSource,
   getContentSummary, searchContentDrafts, getContentDraft, approveContentDraft, rejectContentDraft, deleteContentDraft,
   startContentSync, cancelContentSync, getContentSyncRuns, getContentSources, createContentSource, updateContentSource, deleteContentSource,
-  getContentSettings, updateContentSetting, ApiContentCategorySetting,
+  getContentSettings, updateContentSetting, ApiContentCategorySetting, SyncScope,
 } from '../../api/contentDrafts';
 import { getCategories, ApiCategory } from '../../api/categories';
+import { SHARE_CATEGORIES } from '../../api/socialShare';
 import { ApiError } from '../../api/client';
 
 type TabId = 'jobs' | ContentCategory;
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string }>; blurb: string }[] = [
-  { id: 'jobs', label: 'Jobs', icon: Briefcase, blurb: 'New recruitment posts found on your watched websites and Telegram channels.' },
+  { id: 'job', label: 'Jobs', icon: Briefcase, blurb: 'Open recruitments from your registered websites and Telegram channels, plus the latest official notifications the AI agent finds by searching the web.' },
+  { id: 'jobs', label: 'Scraper queue', icon: Search, blurb: 'Raw recruitment posts picked up automatically from your watched websites and Telegram channels.' },
   { id: 'result', label: 'Results', icon: Trophy, blurb: 'Freshly declared results and merit lists, written up ready to publish.' },
   { id: 'admitcard', label: 'Admit cards', icon: Award, blurb: 'Released hall tickets and call letters for upcoming exams.' },
   { id: 'oldpaper', label: 'Old papers', icon: FileText, blurb: 'Official previous-year papers and answer keys (links to official PDFs only).' },
@@ -37,7 +39,10 @@ const STATUS_TABS = [
 
 const RUN_ACTIVE = (r?: ApiContentSyncRun | null) => !!r && (r.status === SYNC_STATUS.Queued || r.status === SYNC_STATUS.Running);
 
-const SKIP_KEYS = new Set(['description', 'content', 'faqSchema', 'cutOffBreakdown', 'secondaryKeywords', 'lsiKeywords', 'internalLinkAnchors', 'metaKeywords', 'ogTitle', 'ogDescription', 'autoPublish', 'isActive']);
+/** Categories that auto-share to Telegram / Facebook / Instagram when published. */
+const SHAREABLE = new Set<string>(SHARE_CATEGORIES.map((c) => c.id));
+
+const SKIP_KEYS = new Set(['description', 'content', 'faqSchema', 'cutOffBreakdown', 'secondaryKeywords', 'lsiKeywords', 'internalLinkAnchors', 'metaKeywords', 'ogTitle', 'ogDescription', 'autoPublish', 'isActive', 'overview', 'howToApply', 'keyHighlights', 'eligibilityDetails', 'importantNotes', 'documentsRequired', 'vacancyBreakdown', 'applicationFee', 'selectionProcess', 'importantDates']);
 
 /** Preview-only: keeps paragraph / heading / bullet breaks instead of flattening the HTML into one blob. */
 function htmlToPlainText(html: string): string {
@@ -77,11 +82,12 @@ const STATUS_LABEL: Record<number, { text: string; cls: string }> = {
 };
 
 export const AdminAiMagicPanel: React.FC = () => {
-  const [tab, setTab] = useState<TabId>('jobs');
+  const [tab, setTab] = useState<TabId>('job');
   const [summary, setSummary] = useState<ApiContentCategorySummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [scope, setScope] = useState<SyncScope>('all');
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -108,10 +114,10 @@ export const AdminAiMagicPanel: React.FC = () => {
   const sync = async (category?: ContentCategory) => {
     setStarting(true); setError(null); setNotice(null);
     try {
-      await startContentSync(category);
+      await startContentSync(category, scope);
       setNotice(category
-        ? 'AI agent started. It usually takes a few minutes; drafts appear below as it finds them.'
-        : 'AI agent started for all categories, one after another. This can take 15–30 minutes; drafts appear as each category finishes.');
+        ? `AI agent started${scope === 'gujarat' ? ' (Gujarat only)' : ''}. It usually takes a few minutes; drafts appear below as it finds them.`
+        : `AI agent started for all categories${scope === 'gujarat' ? ' (Gujarat only)' : ''}, one after another. This can take 15–30 minutes; drafts appear as each category finishes.`);
       loadSummary();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'Could not start the sync.');
@@ -138,7 +144,7 @@ export const AdminAiMagicPanel: React.FC = () => {
   const activeSummary = tab === 'jobs' ? null : bySummary.get(tab);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-sm:[&_button]:min-h-[44px] max-sm:[&_input[type=checkbox]]:w-5 max-sm:[&_input[type=checkbox]]:h-5">
       <section className="relative overflow-hidden rounded-2xl text-white p-5 sm:p-6 bg-[radial-gradient(420px_220px_at_100%_0%,rgba(167,139,250,0.4),transparent_60%),linear-gradient(135deg,#1e1b4b,#4338ca_60%,#7c3aed)]">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -153,6 +159,14 @@ export const AdminAiMagicPanel: React.FC = () => {
               className={`inline-flex items-center justify-center gap-1.5 rounded-xl border text-white font-bold text-[13px] px-3.5 py-2.5 cursor-pointer whitespace-nowrap ${showHistory ? 'border-white/60 bg-white/20' : 'border-white/25 bg-white/10 hover:bg-white/20'}`}>
               <History className="w-4 h-4" /> Run history
             </button>
+            <div role="group" aria-label="Sync scope" className="inline-flex rounded-xl border border-white/25 bg-white/10 p-0.5">
+              {([['all', 'All India'], ['gujarat', 'Gujarat only']] as const).map(([id, text]) => (
+                <button key={id} onClick={() => setScope(id)} disabled={anyRunning} aria-pressed={scope === id}
+                  className={`rounded-[10px] px-3 py-2 text-[13px] font-bold cursor-pointer whitespace-nowrap disabled:cursor-not-allowed ${scope === id ? 'bg-white text-indigo-900' : 'text-white hover:bg-white/15'}`}>
+                  {text}
+                </button>
+              ))}
+            </div>
             {anyRunning && (
               <button onClick={cancel} disabled={cancelling}
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300/60 bg-rose-500/90 hover:bg-rose-500 text-white font-extrabold text-[13px] px-3.5 py-2.5 cursor-pointer disabled:opacity-60 whitespace-nowrap">
@@ -248,6 +262,7 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [bulkStep, setBulkStep] = useState<'idle' | 'approve' | 'reject'>('idle');
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkSkipSocial, setBulkSkipSocial] = useState(false);
   const [bulkResult, setBulkResult] = useState<string[] | null>(null);
 
   const load = useCallback(() => {
@@ -304,7 +319,7 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
     let done = 0;
     for (const it of targets) {
       try {
-        if (kind === 'approve') await approveContentDraft(it.id); else await rejectContentDraft(it.id);
+        if (kind === 'approve') await approveContentDraft(it.id, undefined, bulkSkipSocial); else await rejectContentDraft(it.id);
         done += 1;
       } catch (e) {
         failures.push(`${it.title}: ${e instanceof ApiError ? e.message : 'failed'}`);
@@ -404,6 +419,11 @@ const CategoryPane: React.FC<CategoryPaneProps> = ({ category, label, blurb, sum
               {bulkStep === 'approve' && (
                 <>
                   <span className="text-[13px] font-bold text-emerald-800">Publish {eligible.length} draft{eligible.length === 1 ? '' : 's'} to the live site?</span>
+                  {selectedItems.some((i) => SHAREABLE.has(i.category)) && (
+                    <label className="inline-flex items-center gap-2 min-h-[36px] text-[12.5px] font-bold text-slate-700 cursor-pointer">
+                      <input type="checkbox" checked={bulkSkipSocial} onChange={(e) => setBulkSkipSocial(e.target.checked)} className="w-4 h-4" /> Skip social posting
+                    </label>
+                  )}
                   <button onClick={() => runBulk('approve')} disabled={bulkBusy}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px] font-extrabold px-3.5 py-1.5 cursor-pointer disabled:opacity-60">
                     {bulkBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Yes, publish
@@ -503,6 +523,8 @@ const DraftCard: React.FC<{
     finally { setBusy(false); }
   };
 
+  const [skipSocial, setSkipSocial] = useState(false);
+
   const approve = () => {
     let payload: Record<string, unknown> | undefined;
     if (mode === 'json') {
@@ -510,7 +532,7 @@ const DraftCard: React.FC<{
     } else if (full) {
       payload = trimStrings(full.payload);
     }
-    return run(() => approveContentDraft(draft.id, payload), 'Could not publish this draft.');
+    return run(() => approveContentDraft(draft.id, payload, skipSocial), 'Could not publish this draft.');
   };
 
   const payload = full?.payload ?? {};
@@ -530,6 +552,9 @@ const DraftCard: React.FC<{
             )}
             <h4 className="font-extrabold text-[15px] leading-snug text-slate-900 break-words min-w-0">{draft.title}</h4>
           </div>
+          {draft.autoPublished && (
+            <span className="inline-block rounded-md bg-violet-100 text-violet-800 text-[11.5px] font-extrabold px-2 py-0.5">Auto-published by AI — no review</span>
+          )}
           {draft.summary && <p className="text-[13px] text-slate-600 leading-relaxed">{draft.summary}</p>}
           {pending && draft.warnings?.length > 0 && (
             <ul className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 space-y-0.5" aria-label="Check before publishing">
@@ -556,6 +581,11 @@ const DraftCard: React.FC<{
           </button>
           {pending && !rejecting && (
             <>
+              {SHAREABLE.has(draft.category) && (
+                <label className="inline-flex items-center gap-2 min-h-[40px] px-1 text-[12.5px] font-bold text-slate-700 cursor-pointer">
+                  <input type="checkbox" checked={skipSocial} onChange={(e) => setSkipSocial(e.target.checked)} className="w-4 h-4" /> Skip social posting
+                </label>
+              )}
               <button onClick={approve} disabled={busy || !full}
                 title={!full ? 'Open the preview first to check what will be published' : undefined}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-[13px] font-extrabold px-4 py-2 cursor-pointer disabled:opacity-50 whitespace-nowrap">
@@ -731,11 +761,12 @@ const SettingsManager: React.FC<{
   const [maxItems, setMaxItems] = useState(10);
   const [freshDays, setFreshDays] = useState(7);
   const [extra, setExtra] = useState('');
+  const [autoPublish, setAutoPublish] = useState(false);
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
   const apply = (s: ApiContentCategorySetting) => {
-    setSaved(s); setIsEnabled(s.isEnabled); setMaxItems(s.maxItemsPerRun); setFreshDays(s.freshnessDays); setExtra(s.extraInstructions ?? '');
+    setSaved(s); setIsEnabled(s.isEnabled); setMaxItems(s.maxItemsPerRun); setFreshDays(s.freshnessDays); setExtra(s.extraInstructions ?? ''); setAutoPublish(s.autoPublish);
   };
 
   useEffect(() => {
@@ -747,12 +778,12 @@ const SettingsManager: React.FC<{
   }, [category]);
 
   const invalid = !(maxItems >= 1 && maxItems <= 30) || !(freshDays >= 1 && freshDays <= 365);
-  const dirty = !!saved && (saved.isEnabled !== isEnabled || saved.maxItemsPerRun !== maxItems || saved.freshnessDays !== freshDays || (saved.extraInstructions ?? '') !== extra.trim());
+  const dirty = !!saved && (saved.isEnabled !== isEnabled || saved.maxItemsPerRun !== maxItems || saved.freshnessDays !== freshDays || (saved.extraInstructions ?? '') !== extra.trim() || saved.autoPublish !== autoPublish);
 
   const save = async () => {
     setSaving(true); onError(null); setJustSaved(false);
     try {
-      apply(await updateContentSetting(category, { isEnabled, maxItemsPerRun: maxItems, freshnessDays: freshDays, extraInstructions: extra.trim() || null }));
+      apply(await updateContentSetting(category, { isEnabled, maxItemsPerRun: maxItems, freshnessDays: freshDays, extraInstructions: extra.trim() || null, autoPublish }));
       setJustSaved(true);
       onSaved();
     } catch (e) {
@@ -795,6 +826,16 @@ const SettingsManager: React.FC<{
           className={field} />
         <span className="text-[11.5px] text-slate-400">{extra.length}/1000 · The AI still has to follow the accuracy and copyright rules.</span>
       </label>
+
+      {saved?.autoPublishAllowed ? (
+        <label className="flex flex-wrap items-center gap-x-2.5 gap-y-1 cursor-pointer w-fit">
+          <input type="checkbox" checked={autoPublish} onChange={(e) => setAutoPublish(e.target.checked)} className="w-4 h-4 accent-violet-600" />
+          <span className="text-[13px] font-bold text-slate-800">Auto-publish without review</span>
+          <span className="text-[12px] text-slate-500">Off by default. Only drafts whose links all check out are published; the rest still wait for you. Turn on once you trust the output.</span>
+        </label>
+      ) : (
+        <p className="text-[12px] text-slate-500">Every draft here waits for your approval. Auto-publish is only available for News and Study Notes.</p>
+      )}
 
       <div className="flex items-center gap-3">
         <button onClick={save} disabled={saving || invalid || !dirty}
@@ -840,6 +881,7 @@ const RunHistory: React.FC<{ anyRunning: boolean }> = ({ anyRunning }) => {
               <li key={r.id} className="py-2.5 flex flex-col sm:flex-row sm:items-start gap-x-4 gap-y-1">
                 <div className="sm:w-44 shrink-0 flex items-center gap-2">
                   <span className="font-bold text-[13px] text-slate-800">{labelOf(r.category)}</span>
+                  {r.scope === 'gujarat' && <span className="rounded-full bg-orange-100 text-orange-800 px-2 py-0.5 text-[11px] font-extrabold">Gujarat</span>}
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${st.cls}`}>{st.text}</span>
                 </div>
                 <div className="flex-1 min-w-0 text-[12.5px] text-slate-600">

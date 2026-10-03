@@ -204,7 +204,7 @@ export const AdminJobDraftsPanel: React.FC = () => {
   const activeSources = sources.filter((x) => x.isActive).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 max-sm:[&_button]:min-h-[44px] max-sm:[&_input[type=checkbox]]:w-5 max-sm:[&_input[type=checkbox]]:h-5">
       <section className="relative overflow-hidden rounded-2xl text-white p-5 sm:p-6 bg-[radial-gradient(420px_220px_at_100%_0%,rgba(34,211,238,0.35),transparent_60%),linear-gradient(135deg,#0b1a3f,#1e3a8a_60%,#0e7490)]">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-start gap-3 flex-1 min-w-0">

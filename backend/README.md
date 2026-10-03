@@ -125,3 +125,103 @@ to stand in for that server behavior, purely for this one test.
     mid-flow, network drop).
   - `POST /api/admin/payments/{id}/resync` — re-checks a stuck payment against
     Razorpay's own order-payments record and resolves it to Paid/Failed.
+
+## Social auto-share (Telegram, Facebook, Instagram)
+
+Publishing a Job, Result, Admit Card, Scheme or News item queues a share to Telegram, a Facebook Page and an
+Instagram Business account. This covers every publish path: the web admin forms, AI Magic, Job AI / the mobile posting
+pages, and the scraper queue. Publishing never waits on the social APIs. A background worker (`SocialShareWorker`)
+posts from the `SocialShareJobs` table, which is also the Activity Log.
+
+**How a share flows**
+
+1. A post goes live. `SocialShareService.EnqueueAsync` writes one `SocialShareJobs` row per enabled channel. Editing,
+   unpublishing and republishing never re-share, and a unique index stops duplicates.
+2. If the category's **Ask me to approve first** is on (the default), the worker builds the image and caption and the share
+   waits in *Admin → Auto-share → Activity log → Needs approval*. Approving (optionally after editing the caption) queues it.
+3. The worker generates one image per post: a text-free AI background from OpenAI, with the title and key details drawn
+   on top by the site using bundled Noto Sans and Noto Sans Gujarati fonts. If OpenAI is off, fails or the daily cap is
+   reached, the branded gradient template is used. The image is saved under `/uploads/social/`, which must be publicly reachable.
+4. Each channel posts independently. Failures retry with exponential backoff (60s, 2m, 4m, ...) up to `MaxAttempts`
+   (default 4), then show as *Failed* with a **Retry** button. Telegram falls back to text-only without an image, and
+   Facebook falls back to a link post. Instagram needs an image.
+5. The Telegram `message_id`, Facebook post id and Instagram media id are stored on the row. A row that already has an id
+   is never posted again.
+
+Use **Skip social posting** on a publish form to opt a single post out, and **Share again** to re-post manually.
+
+### Environment variables (server only)
+
+Never put these in the frontend or in git. Locally use `dotnet user-secrets set NAME value` from `JobPortal.Api`. On the
+server use `Environment=` lines in the systemd unit or `/etc/...` env file. `.env.example` lists the names with no values.
+
+| Variable | Needed for |
+| --- | --- |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | Telegram |
+| `OPENAI_API_KEY` | AI backgrounds (optional; without it the gradient template is used) |
+| `META_PAGE_ACCESS_TOKEN`, `META_PAGE_ID` | Facebook Page posts |
+| `META_PAGE_ACCESS_TOKEN`, `INSTAGRAM_ACCOUNT_ID` | Instagram posts |
+| `META_APP_ID`, `META_APP_SECRET` | Optional. Lets the admin page show the token's expiry date and any missing permissions |
+
+A channel with missing variables is skipped (shown as *Skipped* with the reason) and never blocks a publish.
+
+Optional settings (appsettings `SocialShare` section, or env vars such as `SocialShare__DailyImageCap=10`):
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `OpenAiImageModel` | `gpt-image-1` | Image model name. Change it here when OpenAI recommends a newer one |
+| `DailyImageCap` | `20` | Maximum OpenAI image generations per UTC day (cost control) |
+| `MaxAttempts` | `4` | Attempts per channel (maximum 5) |
+| `BaseBackoffSeconds` | `60` | First retry delay; doubles each time, capped at 1 hour |
+| `TokenWarnDays` | `14` | Warn in admin when the Meta token expires within this many days |
+| `PublicBaseUrl` | `App:FrontendBaseUrl` | Origin used for post links and the image URLs Instagram downloads |
+| `WorkerEnabled` | `true` | Set `false` to stop the worker (it also respects `BackgroundSweeps:Enabled`) |
+| `MetaGraphVersion` | `v21.0` | Graph API version |
+
+### Telegram bot
+
+1. In Telegram open **@BotFather**, send `/newbot`, and copy the token into `TELEGRAM_BOT_TOKEN`.
+2. Open your channel, then *Administrators → Add administrator*, and add the bot with **Post messages** permission.
+3. Set `TELEGRAM_CHANNEL_ID` to `@your_channel_username` for a public channel. For a private channel use its numeric id
+   (it looks like `-100123456789`).
+4. In *Admin → Auto-share*, click **Telegram test**. A test message should appear in the channel.
+
+### Meta (Facebook Page and Instagram)
+
+1. The Instagram account must be a **Business or Creator** account **linked to your Facebook Page**.
+2. In [developers.facebook.com](https://developers.facebook.com) create an app (type *Business*) and add the Facebook
+   Login for Business or Pages API products.
+3. Request these permissions: **`pages_manage_posts`**, **`pages_read_engagement`**, **`instagram_content_publish`**
+   (plus `instagram_basic` and `pages_show_list`, which the token flow needs). In development mode they work for app
+   admins and testers. Public use needs App Review.
+4. Generate a **long-lived** token:
+   1. In the Graph API Explorer, get a *User* token with the permissions above.
+   2. Exchange it for a long-lived user token:
+      `GET /oauth/access_token?grant_type=fb_exchange_token&client_id={app-id}&client_secret={app-secret}&fb_exchange_token={short-token}`
+   3. With that token call `GET /me/accounts`. The `access_token` returned for your Page is a **non-expiring Page token**.
+      Put it in `META_PAGE_ACCESS_TOKEN` and the Page's `id` in `META_PAGE_ID`.
+   4. Find the Instagram id: `GET /{page-id}?fields=instagram_business_account`, then set `INSTAGRAM_ACCOUNT_ID`.
+5. Set `META_APP_ID` and `META_APP_SECRET` if you want the admin page to show the real expiry date and warn about missing
+   permissions. Without them it can only tell when the token has stopped working.
+6. The site shows an amber warning in *Admin → Auto-share* when the token expires within `TokenWarnDays`, has expired, or was
+   rejected by Meta, and a post that Meta rejects with an expired token flips the warning immediately.
+
+Instagram downloads the image from your server, so `PublicBaseUrl` must be a real public `https://` origin. `localhost`
+cannot be fetched, so test Instagram on a deployed server. The image is JPEG, 1080×1080 or 1080×1350 (set per category).
+
+### Database
+
+Apply migration `AddSocialShare` (adds `SocialShareSettings`, `SocialShareJobs`, `SocialImageUsages`):
+
+```
+dotnet ef database update --project JobPortal.Infrastructure --startup-project JobPortal.Api
+```
+
+For production, generate and review a script first: `dotnet ef migrations script --idempotent ...`.
+
+### Tests
+
+`SocialShareEnqueueTests` (queuing, skip, one-share-per-post idempotency), `TelegramShareTests` (template rendering and escaping),
+`MetaShareTests` (Graph calls, captions, token warnings), `SocialImageTests` (composition, daily cap, fallbacks),
+`SocialShareProcessorTests` (retry and backoff, idempotency, channel isolation, approval), `SocialShareSettingsTests`.
+A manual end-to-end checklist is in [`AUTO_SHARE_TEST_CHECKLIST.md`](../AUTO_SHARE_TEST_CHECKLIST.md).

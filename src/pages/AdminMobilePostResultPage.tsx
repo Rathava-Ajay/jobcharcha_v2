@@ -10,6 +10,7 @@ import { getCategories, ApiCategory } from '../api/categories';
 import { aiImportResult, AiImportResultPayload } from '../api/results';
 import { uploadAdminDocument } from '../api/uploads';
 import { ApiError } from '../api/client';
+import { SkipSocialCheckbox } from '../components/admin/SocialShareControls';
 import { buildResultExtractionPrompt, buildInstagramCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiResultImport, ParsedAiResult } from '../utils/aiResultImportValidation';
 import { DocumentPreview } from '../components/DocumentPreview';
@@ -49,6 +50,7 @@ export default function AdminMobilePostResultPage() {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [postedSlug, setPostedSlug] = useState<string | null>(null);
+  const [skipSocial, setSkipSocial] = useState(false);
   const [captionText, setCaptionText] = useState('');
   const [resultFileName, setResultFileName] = useState<string | null>(null);
   const [resultFileUrl, setResultFileUrl] = useState<string | null>(null);
@@ -121,6 +123,7 @@ export default function AdminMobilePostResultPage() {
         ogTitle: parsed.ogTitle,
         ogDescription: parsed.ogDescription,
         autoPublish: parsed.autoPublish,
+        skipSocial,
       };
       const created = await aiImportResult(payload);
       setPostedSlug(created.slug);
@@ -308,6 +311,7 @@ export default function AdminMobilePostResultPage() {
                 </div>
               )}
 
+              {parsed.autoPublish && <SkipSocialCheckbox checked={skipSocial} onChange={setSkipSocial} />}
               {postError && <div className="text-[13px] font-semibold text-red-600">{postError}</div>}
 
               <button
@@ -364,6 +368,7 @@ export default function AdminMobilePostResultPage() {
                   setPasteText('');
                   setParsed(null);
                   setPostedSlug(null);
+                  setSkipSocial(false);
                   setCaptionText('');
                   setErrors([]);
                   setWarnings([]);

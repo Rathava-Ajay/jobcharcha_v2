@@ -5,7 +5,7 @@ import {
   Layers, PlusCircle, Trash2, Pencil, X, Clock3, Award, Trophy, Smartphone,
   Landmark, Newspaper, GraduationCap, Rss, BellRing, ShieldAlert, CreditCard,
   ShoppingBag, Wallet, Receipt, AlertTriangle, ScrollText, QrCode, Sparkles,
-  CircleCheck, CircleDashed, CircleX, UserPlus, ChevronRight, ArrowRight,
+  CircleCheck, CircleDashed, CircleX, UserPlus, ChevronRight, ArrowRight, Share2,
 } from 'lucide-react';
 import { DashboardLayout, DashNavGroup, StatTile } from './dashboard/DashboardLayout';
 import { Job } from '../types';
@@ -40,13 +40,15 @@ import { AdminDisputesPanel } from './admin/AdminDisputesPanel';
 import { AdminAuditLogPanel } from './admin/AdminAuditLogPanel';
 import { AdminCampaignLinksPanel } from './admin/AdminCampaignLinksPanel';
 import { AdminAiMagicPanel } from './admin/AdminAiMagicPanel';
+import { AdminAutoSharePanel } from './admin/AdminAutoSharePanel';
+import { SkipSocialCheckbox, ShareAgainButton } from './admin/SocialShareControls';
 import { getContentSummary, ApiContentCategorySummary } from '../api/contentDrafts';
 import { searchJobDrafts, JOB_DRAFT_STATUS } from '../api/jobDrafts';
 import { BulkImportExportBar } from './admin/BulkImportExportBar';
 import { OfficialDocumentUpload } from './admin/OfficialDocumentUpload';
 import { Select } from './ui/Select';
 
-type AdminTab = 'overview' | 'jobs' | 'aimagic' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
+type AdminTab = 'overview' | 'jobs' | 'aimagic' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'autoshare' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
 
 const ComingSoonBadge = () => (
   <span className="inline-flex items-center gap-1 bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
@@ -106,7 +108,7 @@ export const AdminDashboardSection: React.FC = () => {
   // AI Magic drafts waiting for review (all content categories + the jobs scraper queue), for the overview banner.
   const [aiPending, setAiPending] = useState<{ total: number; parts: string[] } | null>(null);
   const loadAiPending = useCallback(() => {
-    const labels: Record<string, string> = { result: 'results', admitcard: 'admit cards', oldpaper: 'old papers', news: 'news', scheme: 'schemes', study: 'study notes' };
+    const labels: Record<string, string> = { job: 'jobs', result: 'results', admitcard: 'admit cards', oldpaper: 'old papers', news: 'news', scheme: 'schemes', study: 'study notes' };
     Promise.all([
       getContentSummary().catch((): ApiContentCategorySummary[] => []),
       searchJobDrafts(JOB_DRAFT_STATUS.Pending, 1, 1).then((r) => r.totalCount).catch(() => 0),
@@ -275,6 +277,7 @@ export const AdminDashboardSection: React.FC = () => {
     { title: 'Audience', items: [
       { id: 'users', label: 'User accounts', icon: Users, badge: stats?.totalUsers?.toLocaleString('en-IN') ?? null },
       { id: 'alerts', label: 'Job alerts', icon: BellRing },
+      { id: 'autoshare', label: 'Auto-share', icon: Share2 },
       { id: 'social', label: 'Social broadcast', icon: Send },
       { id: 'campaign', label: 'Campaign links / QR', icon: QrCode },
     ] },
@@ -541,6 +544,7 @@ export const AdminDashboardSection: React.FC = () => {
                     <label className="flex items-center gap-1.5"><input type="checkbox" checked={jobForm.isUrgent} onChange={(e) => setJobForm({ ...jobForm, isUrgent: e.target.checked })} /> Urgent</label>
                   </div>
                 </div>
+                <SkipSocialCheckbox checked={!!jobForm.skipSocial} onChange={(v) => setJobForm({ ...jobForm, skipSocial: v })} />
                 <button type="submit" className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-6 py-3 rounded-xl cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)] transition-colors">
                   {editingJobId ? 'Save Changes' : 'Publish Job'}
                 </button>
@@ -558,6 +562,7 @@ export const AdminDashboardSection: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={() => handleEditJob(j as Job & { id: string })} className="bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-700 text-slate-700 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+                    <ShareAgainButton category="job" entityId={Number((j as { id: string }).id)} />
                     <button onClick={() => handleToggleJobActive(j.id, j.status !== 'Active')} className="bg-indigo-50 text-indigo-800 font-bold px-3 py-1.5 rounded-xl cursor-pointer">
                       {j.status === 'Active' ? 'Deactivate' : 'Activate'}
                     </button>
@@ -760,6 +765,11 @@ export const AdminDashboardSection: React.FC = () => {
         {/* CAMPAIGN LINKS / QR */}
         {activeTab === 'campaign' && (
           <AdminCampaignLinksPanel />
+        )}
+
+        {/* AUTO-SHARE (Telegram / Facebook / Instagram) */}
+        {activeTab === 'autoshare' && (
+          <AdminAutoSharePanel />
         )}
 
         {/* DEFERRED MODULES */}

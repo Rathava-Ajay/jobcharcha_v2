@@ -8,6 +8,7 @@ import { ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
 import { OfficialDocumentUpload } from './OfficialDocumentUpload';
 import { Select } from '../ui/Select';
+import { SkipSocialCheckbox, ShareAgainButton } from './SocialShareControls';
 
 const emptyForm: UpsertNewsPayload = {
   title: '',
@@ -152,6 +153,7 @@ export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
               <label className="flex items-center gap-1.5"><input type="checkbox" checked={form.isActive !== false} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
             </div>
           </div>
+          <SkipSocialCheckbox checked={!!form.skipSocial} onChange={(v) => setForm({ ...form, skipSocial: v })} />
           <button type="submit" className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-6 py-3 rounded-xl cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)] transition-colors">
             {editingId ? 'Save Changes' : 'Publish Article'}
           </button>
@@ -171,6 +173,7 @@ export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => handleEdit(item)} className="bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-700 text-slate-700 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+              <ShareAgainButton category="news" entityId={item.id} />
               <button onClick={() => handleDelete(item.id)} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> {confirmDeleteId === item.id ? 'Confirm Delete?' : 'Delete'}
               </button>

@@ -100,6 +100,8 @@ export interface JobQuery {
 }
 
 export interface UpsertJobPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string;
   organizationName: string;
@@ -146,6 +148,8 @@ export interface AiImportImportantDates {
 }
 
 export interface AiImportJobPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string | null;
   department: string;

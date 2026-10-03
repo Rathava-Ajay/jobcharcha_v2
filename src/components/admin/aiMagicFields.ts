@@ -17,6 +17,25 @@ export interface DraftField {
  * Keys mirror each category's create-request JSON exactly.
  */
 export const DRAFT_FIELDS: Record<ContentCategory, DraftField[]> = {
+  job: [
+    { key: 'title', label: 'Title', kind: 'text', required: true },
+    { key: 'department', label: 'Organization', kind: 'text', required: true },
+    { key: 'advertisementNumber', label: 'Advertisement no.', kind: 'text' },
+    { key: 'totalPosts', label: 'Total posts', kind: 'number' },
+    { key: 'lastDate', label: 'Last date to apply', kind: 'date', required: true },
+    { key: 'qualification', label: 'Qualification', kind: 'text' },
+    { key: 'ageLimit', label: 'Age limit', kind: 'text' },
+    { key: 'salary', label: 'Salary', kind: 'text' },
+    { key: 'location', label: 'Location', kind: 'text' },
+    { key: 'applyLink', label: 'Official apply page', kind: 'url' },
+    { key: 'officialNotificationPdf', label: 'Official notification PDF', kind: 'url' },
+    { key: 'officialWebsite', label: 'Official recruitment page', kind: 'url' },
+    { key: 'shortDescription', label: 'Short description', kind: 'textarea', required: true, hint: 'Max 400 characters.' },
+    { key: 'overview', label: 'Job summary', kind: 'textarea', required: true },
+    { key: 'howToApply', label: 'How to apply (HTML)', kind: 'textarea', required: true, hint: 'Simple HTML: <ol><li>.' },
+    { key: 'metaTitle', label: 'SEO title', kind: 'text', required: true, hint: 'Max 60 characters.' },
+    { key: 'metaDescription', label: 'SEO description', kind: 'textarea', required: true, hint: 'Max 155 characters.' },
+  ],
   result: [
     { key: 'title', label: 'Title', kind: 'text', required: true },
     { key: 'examName', label: 'Exam name', kind: 'text' },

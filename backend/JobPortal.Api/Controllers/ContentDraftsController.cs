@@ -81,7 +81,7 @@ public class ContentDraftsController : ControllerBase
     [HttpPost("sync")]
     public async Task<IActionResult> StartSync(StartContentSyncRequest request)
     {
-        var result = await _sync.StartAsync(request.Category, UserId);
+        var result = await _sync.StartAsync(request.Category, UserId, request.Scope);
         return result.Succeeded ? Ok(result.Data) : BadRequest(new { result.ErrorCode, result.Error });
     }
 
@@ -104,7 +104,7 @@ public class ContentDraftsController : ControllerBase
     [HttpPut("settings/{category}")]
     public async Task<IActionResult> UpdateSettings(string category, UpdateContentCategorySettingRequest request)
     {
-        var result = await _settings.UpdateAsync(category, request);
+        var result = await _settings.UpdateAsync(category, request, UserId);
         return result.Succeeded ? Ok(result.Data) : BadRequest(new { result.ErrorCode, result.Error });
     }
 

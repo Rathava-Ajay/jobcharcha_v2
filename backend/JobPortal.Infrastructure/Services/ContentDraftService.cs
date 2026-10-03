@@ -36,11 +36,13 @@ public class ContentDraftService : IContentDraftService
     private readonly IOldPaperService _oldPapers;
     private readonly IStudyMaterialService _study;
     private readonly IContentLinkChecker _links;
+    private readonly IJobService _jobs;
 
     public ContentDraftService(AppDbContext db, IResultService results, IAdmitCardService admitCards, INewsService news,
-        IGovtSchemeService schemes, IOldPaperService oldPapers, IStudyMaterialService study, IContentLinkChecker links)
+        IGovtSchemeService schemes, IOldPaperService oldPapers, IStudyMaterialService study, IContentLinkChecker links, IJobService jobs)
     {
         _links = links;
+        _jobs = jobs;
         _db = db;
         _results = results;
         _admitCards = admitCards;
@@ -59,7 +61,7 @@ public class ContentDraftService : IContentDraftService
     {
         Id = d.Id, Category = d.Category, SourceName = d.SourceName, SourceUrl = d.SourceUrl,
         Title = d.Title, Summary = d.Summary, Status = d.Status, CreatedDate = d.CreatedDate,
-        Warnings = SplitWarnings(d.Warnings),
+        Warnings = SplitWarnings(d.Warnings), AutoPublished = d.AutoPublished,
     };
 
     private static List<string> SplitWarnings(string? w) =>
@@ -79,7 +81,7 @@ public class ContentDraftService : IContentDraftService
     {
         Id = d.Id, Category = d.Category, SourceName = d.SourceName, SourceUrl = d.SourceUrl,
         Title = d.Title, Summary = d.Summary, Status = d.Status, CreatedDate = d.CreatedDate,
-        Warnings = SplitWarnings(d.Warnings),
+        Warnings = SplitWarnings(d.Warnings), AutoPublished = d.AutoPublished,
         Payload = JsonDocument.Parse(d.PayloadJson).RootElement.Clone(),
         CreatedEntityId = d.CreatedEntityId, ReviewedAt = d.ReviewedAt, ReviewNotes = d.ReviewNotes,
     };
@@ -158,6 +160,29 @@ public class ContentDraftService : IContentDraftService
         {
             switch (category)
             {
+                case ContentCategories.Job:
+                {
+                    var p = payload.Deserialize<AiImportJobRequest>(ReadOptions)!;
+                    var err = MissingFields(("title", p.Title), ("department", p.Department), ("focusKeyword", p.FocusKeyword),
+                        ("shortDescription", p.ShortDescription), ("overview", p.Overview), ("howToApply", p.HowToApply),
+                        ("metaTitle", p.MetaTitle), ("metaDescription", p.MetaDescription));
+                    if (err is null && p.CategoryId <= 0) err = "Missing required field(s): categoryId";
+                    if (err is null && p.LastDate == default) err = "Missing required field(s): lastDate";
+                    if (err is not null) return (err, "", "", false, null);
+                    if (string.IsNullOrWhiteSpace(p.ApplyLink) && string.IsNullOrWhiteSpace(p.OfficialNotificationPdf))
+                        return ("A job needs applyLink or officialNotificationPdf: a deep link to the official apply page or notification PDF.", "", "", false, null);
+                    if (!IsDeepLink(p.ApplyLink) || !IsDeepLink(p.OfficialNotificationPdf))
+                        return ("applyLink / officialNotificationPdf must be deep links to the actual page or PDF, not a site home page.", "", "", false, null);
+                    var t = Norm(p.Title);
+                    var org = Norm(p.Department);
+                    // The official notification PDF is the strongest identity; otherwise title + organization + last date,
+                    // the same fingerprint JobService uses to refuse duplicates.
+                    var jobBasis = string.IsNullOrWhiteSpace(p.OfficialNotificationPdf)
+                        ? $"job|{t}|{org}|{p.LastDate:yyyy-MM-dd}" : $"job|pdf|{NormUrl(p.OfficialNotificationPdf)}";
+                    var fingerprint = $"{t}|{org}|{p.LastDate:yyyy-MM-dd}";
+                    return (null, p.Title.Trim(), jobBasis,
+                        await _db.Jobs.AsNoTracking().AnyAsync(j => j.DuplicateFingerprint == fingerprint), p.ShortDescription);
+                }
                 case ContentCategories.Result:
                 {
                     var p = payload.Deserialize<AiImportResultRequest>(ReadOptions)!;
@@ -305,6 +330,15 @@ public class ContentDraftService : IContentDraftService
         }
 
         await BumpRunAsync(request.RunId, created: 1);
+
+        // Auto-publish: only for categories where a mistake is cheap, only when every link checked out, and
+        // attributed to the admin who switched it on. Anything else stays in the review queue.
+        if (warnings is null && ContentCategories.CanAutoPublish(category))
+        {
+            var setting = await _db.ContentCategorySettings.AsNoTracking().FirstOrDefaultAsync(s => s.Category == category);
+            if (setting is { AutoPublish: true, AutoPublishUserId: { Length: > 0 } publisher })
+                await ApproveCoreAsync(entity.Id, new ApproveContentDraftRequest(), publisher, autoPublished: true);
+        }
         return ServiceResult<ContentDraftIngestResultDto>.Ok(new() { Outcome = ContentIngestOutcome.Created, Draft = ToListItem(entity) });
     }
 
@@ -320,6 +354,7 @@ public class ContentDraftService : IContentDraftService
     /// <summary>The URL-bearing payload fields per category — these are what a reviewer would click.</summary>
     private static readonly Dictionary<string, string[]> LinkFields = new()
     {
+        [ContentCategories.Job] = new[] { "applyLink", "officialNotificationPdf", "officialWebsite", "syllabusLink" },
         [ContentCategories.Result] = new[] { "resultLink", "resultPdf" },
         [ContentCategories.AdmitCard] = new[] { "downloadLink" },
         [ContentCategories.OldPaper] = new[] { "paperPdfLink", "solutionPdfLink" },
@@ -367,7 +402,10 @@ public class ContentDraftService : IContentDraftService
 
     // ---- Review -------------------------------------------------------------------------------
 
-    public async Task<ServiceResult<ContentApprovedResultDto>> ApproveAsync(int id, ApproveContentDraftRequest request, string userId)
+    public Task<ServiceResult<ContentApprovedResultDto>> ApproveAsync(int id, ApproveContentDraftRequest request, string userId)
+        => ApproveCoreAsync(id, request, userId, autoPublished: false);
+
+    private async Task<ServiceResult<ContentApprovedResultDto>> ApproveCoreAsync(int id, ApproveContentDraftRequest request, string userId, bool autoPublished)
     {
         var draft = await _db.ContentDrafts.FindAsync(id);
         if (draft is null || !draft.IsActive) return ServiceResult<ContentApprovedResultDto>.Fail("NotFound", "Draft not found.");
@@ -381,7 +419,7 @@ public class ContentDraftService : IContentDraftService
         ServiceResult<int> created;
         try
         {
-            created = await PublishAsync(draft.Category, json, userId);
+            created = await PublishAsync(draft.Category, json, userId, request.SkipSocial);
         }
         catch (JsonException ex)
         {
@@ -391,6 +429,7 @@ public class ContentDraftService : IContentDraftService
             return ServiceResult<ContentApprovedResultDto>.Fail(created.ErrorCode ?? "PublishFailed", created.Error ?? "Could not publish.");
 
         draft.Status = ContentDraftStatus.Approved;
+        draft.AutoPublished = autoPublished;
         draft.CreatedEntityId = created.Data;
         draft.ReviewedById = userId;
         draft.ReviewedAt = DateTime.UtcNow;
@@ -422,7 +461,15 @@ public class ContentDraftService : IContentDraftService
         return (lastDash > 40 ? cut[..lastDash] : cut).Trim('-');
     }
 
-    private async Task<ServiceResult<int>> PublishAsync(string category, string json, string userId)
+    /// <summary>Applies the admin's "Skip social posting" choice on top of whatever the stored payload says.</summary>
+    private static T Skip<T>(T request, bool skipSocial) where T : class
+    {
+        if (!skipSocial) return request;
+        request.GetType().GetProperty("SkipSocial")?.SetValue(request, true);
+        return request;
+    }
+
+    private async Task<ServiceResult<int>> PublishAsync(string category, string json, string userId, bool skipSocial = false)
     {
         json = WithCleanSlug(json);
         static ServiceResult<int> Map<T>(ServiceResult<T> r, Func<T, int> id) =>
@@ -430,14 +477,16 @@ public class ContentDraftService : IContentDraftService
 
         switch (category)
         {
+            case ContentCategories.Job:
+                return Map(await _jobs.CreateFromAiImportAsync(Skip(JsonSerializer.Deserialize<AiImportJobRequest>(json, ReadOptions)!, skipSocial), userId), d => d.Id);
             case ContentCategories.Result:
-                return Map(await _results.CreateFromAiImportAsync(JsonSerializer.Deserialize<AiImportResultRequest>(json, ReadOptions)!, userId), d => d.Id);
+                return Map(await _results.CreateFromAiImportAsync(Skip(JsonSerializer.Deserialize<AiImportResultRequest>(json, ReadOptions)!, skipSocial), userId), d => d.Id);
             case ContentCategories.AdmitCard:
-                return Map(await _admitCards.CreateFromAiImportAsync(JsonSerializer.Deserialize<AiImportAdmitCardRequest>(json, ReadOptions)!, userId), d => d.Id);
+                return Map(await _admitCards.CreateFromAiImportAsync(Skip(JsonSerializer.Deserialize<AiImportAdmitCardRequest>(json, ReadOptions)!, skipSocial), userId), d => d.Id);
             case ContentCategories.News:
-                return Map(await _news.CreateAsync(JsonSerializer.Deserialize<UpsertNewsRequest>(json, ReadOptions)!, userId), d => d.Id);
+                return Map(await _news.CreateAsync(Skip(JsonSerializer.Deserialize<UpsertNewsRequest>(json, ReadOptions)!, skipSocial), userId), d => d.Id);
             case ContentCategories.Scheme:
-                return Map(await _schemes.CreateAsync(JsonSerializer.Deserialize<UpsertGovtSchemeRequest>(json, ReadOptions)!, userId), d => d.Id);
+                return Map(await _schemes.CreateAsync(Skip(JsonSerializer.Deserialize<UpsertGovtSchemeRequest>(json, ReadOptions)!, skipSocial), userId), d => d.Id);
             case ContentCategories.OldPaper:
                 return Map(await _oldPapers.CreateAsync(JsonSerializer.Deserialize<UpsertOldPaperRequest>(json, ReadOptions)!, userId), d => d.Id);
             case ContentCategories.Study:

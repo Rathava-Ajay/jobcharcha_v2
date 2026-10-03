@@ -11,6 +11,7 @@ import { aiImportJob, AiImportJobPayload } from '../api/jobs';
 import { approveJobDraft } from '../api/jobDrafts';
 import { uploadAdminDocument } from '../api/uploads';
 import { ApiError } from '../api/client';
+import { SkipSocialCheckbox } from '../components/admin/SocialShareControls';
 import { buildJobExtractionPrompt, buildInstagramCaptionPrompt } from '../utils/aiPrompts';
 import { validateAiJobImport, ParsedAiJob } from '../utils/aiJobImportValidation';
 import { DocumentPreview } from '../components/DocumentPreview';
@@ -52,6 +53,7 @@ export default function AdminMobilePostPage() {
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
   const [postedSlug, setPostedSlug] = useState<string | null>(null);
+  const [skipSocial, setSkipSocial] = useState(false);
   const [captionText, setCaptionText] = useState('');
   const [notificationFileName, setNotificationFileName] = useState<string | null>(null);
   const [notificationFileUrl, setNotificationFileUrl] = useState<string | null>(null);
@@ -150,6 +152,7 @@ export default function AdminMobilePostPage() {
         ogTitle: parsed.ogTitle,
         ogDescription: parsed.ogDescription,
         autoPublish: parsed.autoPublish,
+        skipSocial,
       };
       const created = draftId ? await approveJobDraft(draftId, payload) : await aiImportJob(payload);
       setPostedSlug(created.slug);
@@ -192,6 +195,7 @@ export default function AdminMobilePostPage() {
     setPasteText('');
     setParsed(null);
     setPostedSlug(null);
+    setSkipSocial(false);
     setCaptionText('');
     setErrors([]);
     setWarnings([]);
@@ -370,6 +374,12 @@ export default function AdminMobilePostPage() {
             </div>
             {postError && <ErrorList title="Couldn't post" items={[postError]} />}
           </section>
+
+          {parsed.autoPublish && (
+            <section className={aiUi.card}>
+              <SkipSocialCheckbox checked={skipSocial} onChange={setSkipSocial} />
+            </section>
+          )}
 
           <ActionBar>
             <button onClick={() => goStep('review')} className={aiUi.secondary}><ArrowLeft className="w-4 h-4" /><span className="hidden sm:inline">Back</span></button>

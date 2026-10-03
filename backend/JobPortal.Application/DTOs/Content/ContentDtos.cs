@@ -6,6 +6,7 @@ namespace JobPortal.Application.DTOs.Content;
 /// <summary>Categories the AI Magic content pipeline covers (Jobs keep their own queue).</summary>
 public static class ContentCategories
 {
+    public const string Job = "job";
     public const string Result = "result";
     public const string AdmitCard = "admitcard";
     public const string OldPaper = "oldpaper";
@@ -13,7 +14,17 @@ public static class ContentCategories
     public const string Scheme = "scheme";
     public const string Study = "study";
 
-    public static readonly string[] All = { Result, AdmitCard, OldPaper, News, Scheme, Study };
+    public static readonly string[] All = { Job, Result, AdmitCard, OldPaper, News, Scheme, Study };
+
+    /// <summary>Categories where a wrong item is cheap, so an admin may let AI drafts publish without review.
+    /// Results, admit cards, jobs, schemes and old papers always need a human check.</summary>
+    public static readonly string[] AutoPublishAllowed = { News, Study };
+
+    public static readonly string[] Scopes = { "all", "gujarat" };
+
+    public static string NormalizeScope(string? scope) => string.IsNullOrWhiteSpace(scope) ? "all" : scope.Trim().ToLowerInvariant();
+
+    public static bool CanAutoPublish(string? category) => category is not null && AutoPublishAllowed.Contains(category);
 
     public static bool IsValid(string? category) => category is not null && All.Contains(category);
 }
@@ -72,6 +83,8 @@ public class ContentDraftListItemDto
     public DateTime CreatedDate { get; set; }
     /// <summary>Heads-ups for the reviewer, e.g. a link that didn't respond. Empty when the draft looks clean.</summary>
     public List<string> Warnings { get; set; } = new();
+    /// <summary>True when the draft was published automatically (auto-publish) rather than by an admin click.</summary>
+    public bool AutoPublished { get; set; }
 }
 
 public class ContentDraftDto : ContentDraftListItemDto
@@ -84,6 +97,9 @@ public class ContentDraftDto : ContentDraftListItemDto
 
 public class ApproveContentDraftRequest
 {
+    /// <summary>"Skip social posting" — publish without auto-sharing to Telegram/Facebook/Instagram.</summary>
+    public bool SkipSocial { get; set; }
+
     /// <summary>Optional admin-edited payload; when omitted the stored payload is published as-is.</summary>
     public JsonElement? Payload { get; set; }
 }
@@ -121,12 +137,15 @@ public class ContentSyncRunDto
     public string? ErrorMessage { get; set; }
     /// <summary>The agent's one-line explanation of the run, e.g. why it found nothing.</summary>
     public string? Note { get; set; }
+    public string Scope { get; set; } = "all";
 }
 
 public class StartContentSyncRequest
 {
     /// <summary>One category, or null/omitted to sync every category one after another.</summary>
     public string? Category { get; set; }
+    /// <summary>"all" (default) or "gujarat".</summary>
+    public string? Scope { get; set; }
 }
 
 public class ContentCategorySettingDto
@@ -138,6 +157,10 @@ public class ContentCategorySettingDto
     public string? ExtraInstructions { get; set; }
     /// <summary>False while the category still uses the server defaults (no row saved yet).</summary>
     public bool IsCustomized { get; set; }
+    /// <summary>Drafts publish without review. Only honoured for News and Study.</summary>
+    public bool AutoPublish { get; set; }
+    /// <summary>Whether this category may ever be auto-published (News and Study only).</summary>
+    public bool AutoPublishAllowed { get; set; }
 }
 
 public class UpdateContentCategorySettingRequest
@@ -146,6 +169,7 @@ public class UpdateContentCategorySettingRequest
     [Range(1, 30)] public int MaxItemsPerRun { get; set; } = 10;
     [Range(1, 365)] public int FreshnessDays { get; set; } = 7;
     [StringLength(1000)] public string? ExtraInstructions { get; set; }
+    public bool AutoPublish { get; set; }
 }
 
 public class ContentSourceDto

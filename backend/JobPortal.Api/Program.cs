@@ -46,6 +46,7 @@ if (builder.Configuration.GetValue("BackgroundSweeps:Enabled", true))
 {
     builder.Services.AddHostedService<EmployerNotificationSweepService>();
     builder.Services.AddHostedService<PaymentReconciliationService>();
+    builder.Services.AddHostedService<SocialShareWorker>();
 }
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();

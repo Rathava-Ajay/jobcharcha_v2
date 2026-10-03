@@ -40,4 +40,8 @@ public partial class ContentSyncRun
 
     [StringLength(450)]
     public string? TriggeredById { get; set; }
+
+    /// <summary>"all" (all India) or "gujarat" (only items about Gujarat). Chosen by the admin when starting the sync.</summary>
+    [StringLength(20)]
+    public string Scope { get; set; } = "all";
 }

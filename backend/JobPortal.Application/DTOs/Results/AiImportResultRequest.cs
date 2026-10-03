@@ -23,6 +23,9 @@ public class CutOffRowRequest
 /// </summary>
 public class AiImportResultRequest
 {
+    /// <summary>"Skip social posting" — publish without auto-sharing to Telegram/Facebook/Instagram.</summary>
+    public bool SkipSocial { get; set; }
+
     public string Title { get; set; } = null!;
     public string? Slug { get; set; }
     public string? ExamName { get; set; }

@@ -145,6 +145,9 @@ public class JobQuery
 
 public class UpsertJobRequest
 {
+    /// <summary>"Skip social posting" — publish without auto-sharing to Telegram/Facebook/Instagram.</summary>
+    public bool SkipSocial { get; set; }
+
     [Required(AllowEmptyStrings = false), StringLength(300, MinimumLength = 3)]
     public string Title { get; set; } = null!;
 

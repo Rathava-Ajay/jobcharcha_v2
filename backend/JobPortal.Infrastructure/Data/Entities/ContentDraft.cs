@@ -59,4 +59,7 @@ public partial class ContentDraft
     public DateTime? UpdatedDate { get; set; }
 
     public bool IsActive { get; set; }
+
+    /// <summary>Published by auto-publish instead of an admin approval.</summary>
+    public bool AutoPublished { get; set; }
 }

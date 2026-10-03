@@ -1,7 +1,7 @@
 import { apiFetch, toQueryString } from './client';
 import { PagedResult } from './jobs';
 
-export type ContentCategory = 'result' | 'admitcard' | 'oldpaper' | 'news' | 'scheme' | 'study';
+export type ContentCategory = 'job' | 'result' | 'admitcard' | 'oldpaper' | 'news' | 'scheme' | 'study';
 
 export const CONTENT_DRAFT_STATUS = { Pending: 0, Approved: 1, Rejected: 2 } as const;
 export const SYNC_STATUS = { Queued: 0, Running: 1, Completed: 2, Failed: 3, Cancelled: 4 } as const;
@@ -18,6 +18,8 @@ export interface ApiContentSyncRun {
   errorMessage?: string | null;
   /** The agent's own one-line explanation of the run, e.g. why it found nothing. */
   note?: string | null;
+  /** "all" or "gujarat" – the filter chosen when the sync was started. */
+  scope?: string;
 }
 
 export interface ApiContentCategorySummary {
@@ -40,6 +42,8 @@ export interface ApiContentDraftListItem {
   createdDate: string;
   /** Heads-ups found when the draft was collected, e.g. "downloadLink returned HTTP 404". Empty when clean. */
   warnings: string[];
+  /** Published automatically (no admin click). */
+  autoPublished?: boolean;
 }
 
 export interface ApiContentDraft extends ApiContentDraftListItem {
@@ -78,8 +82,8 @@ export const searchContentDrafts = (category: ContentCategory, status: number, p
 export const getContentDraft = (id: number) =>
   apiFetch<ApiContentDraft>(`${base}/${id}`, { auth: true });
 
-export const approveContentDraft = (id: number, payload?: Record<string, unknown>) =>
-  apiFetch<{ createdEntityId: number }>(`${base}/${id}/approve`, { method: 'POST', auth: true, body: { payload } });
+export const approveContentDraft = (id: number, payload?: Record<string, unknown>, skipSocial = false) =>
+  apiFetch<{ createdEntityId: number }>(`${base}/${id}/approve`, { method: 'POST', auth: true, body: { payload, skipSocial } });
 
 export const rejectContentDraft = (id: number, reviewNotes?: string) =>
   apiFetch<void>(`${base}/${id}/reject`, { method: 'POST', auth: true, body: { reviewNotes } });
@@ -88,8 +92,10 @@ export const deleteContentDraft = (id: number) =>
   apiFetch<void>(`${base}/${id}`, { method: 'DELETE', auth: true });
 
 /** Starts the AI agent for one category, or every category (one after another) when omitted. */
-export const startContentSync = (category?: ContentCategory) =>
-  apiFetch<ApiContentSyncRun[]>(`${base}/sync`, { method: 'POST', auth: true, body: { category: category ?? null } });
+export type SyncScope = 'all' | 'gujarat';
+
+export const startContentSync = (category?: ContentCategory, scope: SyncScope = 'all') =>
+  apiFetch<ApiContentSyncRun[]>(`${base}/sync`, { method: 'POST', auth: true, body: { category: category ?? null, scope } });
 
 /** Cancels one run, or every queued/running run when no id is given. A running agent is stopped. */
 export const cancelContentSync = (runId?: number) =>
@@ -118,6 +124,9 @@ export interface ApiContentCategorySetting {
   extraInstructions?: string | null;
   /** False while the category still uses the server defaults (nothing saved yet). */
   isCustomized: boolean;
+  autoPublish: boolean;
+  /** Only News and Study Notes may ever auto-publish. */
+  autoPublishAllowed: boolean;
 }
 
 export interface UpdateContentCategorySettingPayload {
@@ -125,6 +134,7 @@ export interface UpdateContentCategorySettingPayload {
   maxItemsPerRun: number;
   freshnessDays: number;
   extraInstructions?: string | null;
+  autoPublish?: boolean;
 }
 
 export const getContentSettings = () =>

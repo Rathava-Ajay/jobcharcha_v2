@@ -29,6 +29,8 @@ export interface ApiGovtSchemeListItem {
 }
 
 export interface UpsertGovtSchemePayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   titleGujarati?: string;
   slug?: string;
