@@ -56,6 +56,7 @@ export const AdminProductsPanel: React.FC = () => {
       subCategory: item.subCategory ?? undefined,
       googleDriveDownloadUrl: item.googleDriveDownloadUrl ?? undefined,
       googleDriveViewUrl: item.googleDriveViewUrl ?? undefined,
+      privateFileName: item.privateFileName ?? undefined,
       coverImageUrl: item.coverImageUrl ?? undefined,
       isFree: item.isFree,
       price: item.price ?? undefined,
@@ -121,6 +122,12 @@ export const AdminProductsPanel: React.FC = () => {
               <label className="text-slate-700 block mb-1.5 text-[12.5px]">Google Drive Download URL</label>
               <input value={form.googleDriveDownloadUrl ?? ''} onChange={(e) => setForm({ ...form, googleDriveDownloadUrl: e.target.value })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Private file name (on the server)</label>
+              <input value={form.privateFileName ?? ''} onChange={(e) => setForm({ ...form, privateFileName: e.target.value })} placeholder="e.g. gpsc-class-1-2-3-bundle.pdf"
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
+              <p className="mt-1 text-[12px] text-slate-500 font-medium">File name only. Upload the file to the server's private folder first. When set, buyers get a short-lived link and the Drive URL above is not used. Leave empty to keep using the Drive URL.</p>
             </div>
             <div>
               <label className="text-slate-700 block mb-1.5 text-[12.5px]">Cover Image URL</label>

@@ -50,3 +50,27 @@ Small daily budget; ad landing pages = open job pages and the free tools (job al
 - The live checks were read-only GETs plus two forged webhook calls and unauthenticated checkout probes that the server rejected; expect two `webhook.signature_*` rows in `PaymentLogs` dated 2026-10-06.
 - The live product-API response (which contained the Drive links) was printed once to this session's terminal during testing; I did not copy it into any file. Another reason to replace those links.
 - My local API instance was started by me on :5101 (output in the session scratchpad). The local DB may be the same one production uses; the audit wrote nothing to it.
+
+---
+
+## Update 2026-10-06 (evening) — re-verified on the live site
+
+Re-run: `E2E_BASE_URL=https://jobcharcha.com E2E_API_URL=https://jobcharcha.com npx playwright test seo-and-hosting store-payments-security --project=desktop` → **10 passed, 1 failed** (was 4 passed / 6 failed).
+
+| Blocker | Status now |
+|---|---|
+| C1 paid Drive links in `/api/products` | **Fixed on live** (`googleDriveDownloadUrl: null`). Owner reports the three Drive links were replaced. |
+| H1 `/sitemap.xml` | **Fixed** (real XML, 200) |
+| M1 security headers | **Fixed** (HSTS, nosniff, X-Frame-Options, Referrer-Policy present) |
+| M2 `www` duplicate | **Fixed** (nginx config rewritten; `www` → 301 → apex) |
+| Uploads / notification PDFs | `wwwroot/uploads` restored after a bad redeploy; sample PDF returns 200 via `jobcharcha.com/uploads/...` |
+| H5 per-page HTML (title/canonical/OG) | **STILL OPEN.** `/jobs/tiss-non-teaching-bharti-2026-16-posts` returns the generic homepage title, no canonical, no OG, no JSON-LD in raw HTML. Shared job links will preview generically. Run/restore `deploy/prerender.sh` and re-check. |
+| H2 Razorpay webhook + test purchase | Not verified (needs owner) |
+| H3 missing notification PDFs | Not re-checked in full |
+| H4 permanent shareable download link | Unchanged |
+
+Remaining test failure: API sends `X-Content-Type-Options: nosniff, nosniff` (API and nginx both add it). Harmless; fix with `proxy_hide_header X-Content-Type-Options;` in the nginx `/api/` block.
+
+Social auto-share: Instagram image generation was failing on the server (missing SkiaSharp assembly / stale `deps.json`, then SqlClient stub after a mixed deploy). Both resolved by a clean `-r linux-x64` publish. Telegram from the server was timing out (`api.telegram.org` unreachable) — not resolved.
+
+**Status now: LIMITED PILOT is reasonable once H5 (prerender) and one Razorpay test purchase are done.**

@@ -397,7 +397,8 @@ public class StoreOrderService : IStoreOrderService
         if (item.DownloadCount >= item.MaxDownloadCount) return ServiceResult<string>.Fail("DownloadLimitReached", "You've used up all download attempts for this item.");
 
         var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.ProductId == item.ProductId);
-        if (product?.GoogleDriveDownloadUrl is null) return ServiceResult<string>.Fail("NoDownloadUrl", "No download is available for this item.");
+        var hasPrivate = !string.IsNullOrWhiteSpace(product?.PrivateFileName);
+        if (product is null || (!hasPrivate && product.GoogleDriveDownloadUrl is null)) return ServiceResult<string>.Fail("NoDownloadUrl", "No download is available for this item.");
 
         item.DownloadCount += 1;
         if (item.FirstDownloadDate is null) item.FirstDownloadDate = DateTime.UtcNow;
@@ -405,7 +406,24 @@ public class StoreOrderService : IStoreOrderService
         product.TotalDownloads += 1;
         await _db.SaveChangesAsync();
 
-        return ServiceResult<string>.Ok(product.GoogleDriveDownloadUrl);
+        // A private file is served by this API through a short-lived link the controller signs; the marker tells it which item.
+        return ServiceResult<string>.Ok(hasPrivate ? PrivateItemMarker + item.OrderItemId : product.GoogleDriveDownloadUrl!);
+    }
+
+    public const string PrivateItemMarker = "private-item:";
+
+    public async Task<ServiceResult<string>> GetPrivateFileNameAsync(int orderItemId)
+    {
+        var row = await _db.OrderItems.AsNoTracking()
+            .Where(i => i.OrderItemId == orderItemId)
+            .Select(i => new { i.ProductId, i.Order.PaymentStatus })
+            .FirstOrDefaultAsync();
+        if (row is null || row.PaymentStatus != "Paid") return ServiceResult<string>.Fail("NotFound", "File not available.");
+
+        var name = await _db.Products.AsNoTracking().Where(p => p.ProductId == row.ProductId).Select(p => p.PrivateFileName).FirstOrDefaultAsync();
+        return string.IsNullOrWhiteSpace(name) || name != Path.GetFileName(name)
+            ? ServiceResult<string>.Fail("NotFound", "File not available.")
+            : ServiceResult<string>.Ok(name);
     }
 
     private async Task<ServiceResult<CheckoutResponse>> DebitWalletForOrderAsync(string userId, int orderId)

@@ -66,6 +66,7 @@ public class ProductService : IProductService
             GoogleDriveFileId = request.GoogleDriveFileId,
             GoogleDriveDownloadUrl = request.GoogleDriveDownloadUrl,
             GoogleDriveViewUrl = request.GoogleDriveViewUrl,
+            PrivateFileName = NormalizeFileName(request.PrivateFileName),
             CoverImageUrl = request.CoverImageUrl,
             FileSize = request.FileSize,
             PageCount = request.PageCount,
@@ -105,6 +106,7 @@ public class ProductService : IProductService
         entity.GoogleDriveFileId = request.GoogleDriveFileId;
         entity.GoogleDriveDownloadUrl = request.GoogleDriveDownloadUrl;
         entity.GoogleDriveViewUrl = request.GoogleDriveViewUrl;
+        entity.PrivateFileName = NormalizeFileName(request.PrivateFileName);
         entity.CoverImageUrl = request.CoverImageUrl;
         entity.FileSize = request.FileSize;
         entity.PageCount = request.PageCount;
@@ -152,6 +154,12 @@ public class ProductService : IProductService
         return slug;
     }
 
+    private static string? NormalizeFileName(string? name)
+    {
+        var trimmed = name?.Trim();
+        return string.IsNullOrEmpty(trimmed) || trimmed != Path.GetFileName(trimmed) ? null : trimmed;
+    }
+
     private static string Slugify(string value) =>
         value.Trim().ToLowerInvariant().Replace(" ", "-").Replace("/", "-").Replace("--", "-");
 
@@ -168,6 +176,7 @@ public class ProductService : IProductService
         SubCategory = p.SubCategory,
         GoogleDriveDownloadUrl = includeFileLinks ? p.GoogleDriveDownloadUrl : null,
         GoogleDriveViewUrl = includeFileLinks ? p.GoogleDriveViewUrl : null,
+        PrivateFileName = includeFileLinks ? p.PrivateFileName : null,
         CoverImageUrl = p.CoverImageUrl,
         FileSize = p.FileSize,
         PageCount = p.PageCount,

@@ -9,6 +9,9 @@ public interface IStoreOrderService
     Task<ServiceResult<VerifyStoreOrderResponse>> VerifyAsync(string userId, VerifyStoreOrderRequest request);
     Task<List<StoreOrderDto>> GetMyOrdersAsync(string userId);
     Task<ServiceResult<string>> GetDownloadUrlAsync(string userId, int orderId, int orderItemId);
+
+    /// <summary>Name of the private file behind a paid order item. Used by the signed-link file endpoint; null result = not allowed.</summary>
+    Task<ServiceResult<string>> GetPrivateFileNameAsync(int orderItemId);
     /// <summary>Settles a store order from a signed Razorpay <c>payment.captured</c>/<c>order.paid</c> webhook, so a buyer who paid and
     /// closed the browser before /verify still gets the order. Returns false when the Razorpay order is not a store order.</summary>
     Task<bool> FulfillCapturedAsync(string razorpayOrderId, string? razorpayPaymentId, long? amountPaise, string? currency);

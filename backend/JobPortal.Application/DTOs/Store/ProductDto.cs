@@ -11,6 +11,7 @@ public class ProductDto
     public string? SubCategory { get; set; }
     public string? GoogleDriveDownloadUrl { get; set; }
     public string? GoogleDriveViewUrl { get; set; }
+    public string? PrivateFileName { get; set; }
     public string? CoverImageUrl { get; set; }
     public long? FileSize { get; set; }
     public int? PageCount { get; set; }

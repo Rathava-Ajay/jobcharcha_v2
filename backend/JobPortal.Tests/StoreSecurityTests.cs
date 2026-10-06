@@ -252,4 +252,45 @@ public class StoreSecurityTests
         Assert.Single(paidOnly.Items);
         Assert.Equal("pay_1", paidOnly.Items[0].RazorpayPaymentId);
     }
+
+    // ---- private server-side files ---------------------------------------------------------------------
+
+    [Fact]
+    public async Task PrivateFile_ReplacesTheDriveLink_AndTheFileLookupIsOnlyForPaidOrders()
+    {
+        var db = await SeedAsync();
+        var product = await db.Products.SingleAsync();
+        product.PrivateFileName = "bundle.pdf";
+        await db.SaveChangesAsync();
+        var order = await AddPendingOrderAsync(db);
+        var itemId = order.OrderItems.Single().OrderItemId;
+        var service = NewService(db);
+
+        Assert.False((await service.GetPrivateFileNameAsync(itemId)).Succeeded);          // unpaid: no file
+        await service.VerifyAsync("buyer", new VerifyStoreOrderRequest { RazorpayOrderId = "order_1", RazorpayPaymentId = "pay_1", RazorpaySignature = Sign("order_1|pay_1") });
+
+        var url = await service.GetDownloadUrlAsync("buyer", order.OrderId, itemId);
+        Assert.Equal(StoreOrderService.PrivateItemMarker + itemId, url.Data);             // never the Drive link
+        Assert.DoesNotContain("drive.google.com", url.Data);
+        Assert.Equal("bundle.pdf", (await service.GetPrivateFileNameAsync(itemId)).Data);
+        Assert.False((await service.GetPrivateFileNameAsync(itemId + 999)).Succeeded);    // forged item id
+    }
+
+    [Fact]
+    public async Task PrivateFileName_WithAFolderPath_IsRejectedByTheServiceAndNeverReturned()
+    {
+        var db = await SeedAsync();
+        var order = await AddPendingOrderAsync(db);
+        var itemId = order.OrderItems.Single().OrderItemId;
+        var service = NewService(db);
+        await service.VerifyAsync("buyer", new VerifyStoreOrderRequest { RazorpayOrderId = "order_1", RazorpayPaymentId = "pay_1", RazorpaySignature = Sign("order_1|pay_1") });
+
+        var product = await db.Products.SingleAsync();
+        product.PrivateFileName = "../../etc/passwd";                                       // as if written straight to the database
+        await db.SaveChangesAsync();
+        Assert.False((await service.GetPrivateFileNameAsync(itemId)).Succeeded);
+
+        var saved = await new ProductService(db).CreateAsync(new UpsertProductRequest { Title = "Another book", Category = "GPSC", Price = 9m, PrivateFileName = "../x.pdf" });
+        Assert.Null(saved.Data!.PrivateFileName);                                           // folders are stripped to nothing, not trusted
+    }
 }
