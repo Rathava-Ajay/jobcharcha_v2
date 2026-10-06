@@ -49,15 +49,45 @@ public class SocialShareProcessor
         var now = _clock.GetUtcNow().UtcDateTime;
         var handled = 0;
 
+        // Shares made while the post link pointed at a dev machine (http://localhost:...) would send readers, and Telegram's link button, to an
+        // address nobody else can open. Once a public address is configured, point them at it and rebuild the message that quoted the old one.
+        if (PublicUrl.IsReachable(_options.PublicBaseUrl))
+        {
+            var localLinks = await _db.SocialShareJobs
+                .Where(j => (j.Status == SocialShareStatus.AwaitingApproval || j.Status == SocialShareStatus.Pending)
+                            && (j.Url.Contains("localhost") || j.Url.Contains("127.0.0.1") || j.Url.Contains("192.168.")))
+                .ToListAsync(ct);
+            var fixedAny = false;
+            foreach (var job in localLinks.Where(j => !PublicUrl.IsReachable(j.Url)))
+            {
+                if (!Uri.TryCreate(job.Url, UriKind.Absolute, out var old)) continue;
+                job.Url = _options.PublicBaseUrl.TrimEnd('/') + old.PathAndQuery;
+                job.Message = null;
+                job.UpdatedDate = now;
+                fixedAny = true;
+            }
+            if (fixedAny) await _db.SaveChangesAsync(ct);
+        }
+
         var stuck = await _db.SocialShareJobs
             .Where(j => j.Status == SocialShareStatus.Processing && j.UpdatedDate < now - StuckAfter)
             .ToListAsync(ct);
         foreach (var job in stuck)
         {
-            job.Status = SocialShareStatus.Pending;
-            job.NextAttemptAt = now;
-            job.Error = "Recovered after an interrupted attempt.";
             job.UpdatedDate = now;
+            if (job.Channel == SocialChannels.Telegram)
+            {
+                job.Status = SocialShareStatus.Pending;
+                job.NextAttemptAt = now;
+                job.Error = "Recovered after an interrupted attempt.";
+            }
+            else
+            {
+                // The post may already be live on Instagram/Facebook; re-posting blindly would duplicate it.
+                job.Status = SocialShareStatus.Failed;
+                job.NextAttemptAt = null;
+                job.Error = $"The attempt was interrupted and {job.Channel} may already have published it. Check {job.Channel}, then press \"Mark as posted\" or \"Retry\".";
+            }
         }
         if (stuck.Count > 0) await _db.SaveChangesAsync(ct);
 
@@ -67,7 +97,36 @@ public class SocialShareProcessor
         foreach (var job in toPrepare)
         {
             if (!_options.IsConfigured(job.Channel)) continue;
-            await PrepareAsync(job, ct);
+            try
+            {
+                await PrepareAsync(job, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // One broken share must not stall the preview of every share behind it, nor leave the admin on "Building the preview…" forever.
+                _logger.LogError(ex, "Could not prepare the preview of share #{Id} ({Channel}).", job.Id, job.Channel);
+                _db.ChangeTracker.Clear();
+                var failed = await _db.SocialShareJobs.FirstOrDefaultAsync(j => j.Id == job.Id, ct);
+                if (failed is not null)
+                {
+                    failed.Message = SocialMessages.Build(failed.Channel, failed, await LoadSettingAsync(failed.Category, ct));
+                    failed.Error = $"Preview could not be fully built: {ex.GetType().Name}: {ex.Message}";
+                    failed.Error = failed.Error.Length > 1000 ? failed.Error[..1000] : failed.Error;
+                    failed.UpdatedDate = _clock.GetUtcNow().UtcDateTime;
+                    await _db.SaveChangesAsync(ct);
+                }
+            }
+            handled++;
+        }
+
+        // Shares whose image link cannot be downloaded from outside (an old localhost link) are rebuilt and hosted again, whatever their state.
+        var withImage = await _db.SocialShareJobs
+            .Where(j => (j.Status == SocialShareStatus.AwaitingApproval || j.Status == SocialShareStatus.Pending) && j.ImageUrl != null)
+            .Take(batchSize * 5).ToListAsync(ct);
+        foreach (var job in withImage.Where(j => _images.NeedsRehost(j.ImageUrl)))
+        {
+            if (!_options.IsConfigured(job.Channel)) continue;
+            await _images.EnsureImageAsync(job, await LoadSettingAsync(job.Category, ct), ct);
             handled++;
         }
 
@@ -111,18 +170,20 @@ public class SocialShareProcessor
             return;
         }
 
-        job.Status = SocialShareStatus.Processing;
-        job.UpdatedDate = now;
-        await _db.SaveChangesAsync(ct);
+        // Atomic claim: only one worker/server (e.g. a dev machine sharing the live database) may move a share from
+        // Pending to Processing. The loser skips it, so the same image is never posted twice in parallel.
+        if (!await TryClaimAsync(job, now, ct)) return;
 
         try
         {
             var setting = await LoadSettingAsync(job.Category, ct);
-            if (string.IsNullOrWhiteSpace(job.Message))
-            {
+            // A retried share keeps its message but may have lost (or never got) its image, so build the image whenever it is missing.
+            if (string.IsNullOrWhiteSpace(job.Message) || string.IsNullOrWhiteSpace(job.ImageUrl))
                 await _images.EnsureImageAsync(job, setting, ct);
+            if (string.IsNullOrWhiteSpace(job.ImageUrl) && job.Channel == SocialChannels.Instagram && _images.LastError is { } imageError)
+                throw new SocialShareException($"Instagram needs an image; building it failed: {imageError}", retryable: true);
+            if (string.IsNullOrWhiteSpace(job.Message))
                 job.Message = SocialMessages.Build(job.Channel, job, setting);
-            }
 
             var externalId = await _channels[job.Channel].PostAsync(job, setting, ct);
 
@@ -134,7 +195,7 @@ public class SocialShareProcessor
             job.Attempts++;
             job.UpdatedDate = job.PostedAt.Value;
             // Saved straight away: the id is what stops a retry from posting this share twice.
-            await _db.SaveChangesAsync(CancellationToken.None);
+            await SaveAfterPostAsync(job);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -145,6 +206,48 @@ public class SocialShareProcessor
         {
             await RecordFailureAsync(job, ex);
         }
+    }
+
+    /// <summary>The post is already live, so a failed save must not fall into the retry path (that would post it again).</summary>
+    private async Task SaveAfterPostAsync(SocialShareJob job)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try { await _db.SaveChangesAsync(CancellationToken.None); return; }
+            catch (Exception ex) when (attempt < 3)
+            {
+                _logger.LogWarning(ex, "Share #{Id} is posted but saving the result failed (try {Attempt}); retrying.", job.Id, attempt);
+                await Task.Delay(TimeSpan.FromMilliseconds(500 * attempt));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogCritical(ex, "Share #{Id} ({Channel}) was POSTED (external id {ExternalId}) but the result could not be saved.", job.Id, job.Channel, job.ExternalId);
+                return;
+            }
+        }
+    }
+
+    private async Task<bool> TryClaimAsync(SocialShareJob job, DateTime now, CancellationToken ct)
+    {
+        int claimed;
+        try
+        {
+            claimed = await _db.SocialShareJobs
+                .Where(j => j.Id == job.Id && j.Status == SocialShareStatus.Pending)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.Status, SocialShareStatus.Processing).SetProperty(j => j.UpdatedDate, now), ct);
+        }
+        catch (InvalidOperationException)
+        {
+            // Provider without set-based updates (the in-memory test provider): plain save.
+            job.Status = SocialShareStatus.Processing;
+            job.UpdatedDate = now;
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+
+        if (claimed == 0) return false;     // cancelled, completed or claimed by someone else in the meantime
+        await _db.Entry(job).ReloadAsync(ct);
+        return job.Status == SocialShareStatus.Processing;
     }
 
     private async Task RecordFailureAsync(SocialShareJob job, Exception ex)

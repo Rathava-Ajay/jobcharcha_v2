@@ -18,7 +18,7 @@ public class PlansController : ControllerBase
     }
 
     [HttpGet]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll() => Ok(await _planService.GetAllAsync());
 
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.SuperAdmin}")]

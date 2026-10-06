@@ -27,6 +27,10 @@ public partial class SocialShareJob
 
     public int Generation { get; set; }
 
+    /// <summary>Which of the six colour templates this share's image uses (0-5). All channels of one post share it. Posts rotate
+    /// through the templates: each new post gets the one after the previous post's. Null on shares made before templates existed.</summary>
+    public int? Template { get; set; }
+
     public int Status { get; set; }
 
     public int Attempts { get; set; }

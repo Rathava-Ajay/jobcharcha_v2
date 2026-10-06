@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Send, Facebook, Instagram, CheckCircle2, XCircle, Clock, AlertTriangle, RefreshCw, RotateCcw, ExternalLink, Share2,
-  ChevronLeft, ChevronRight, ImageIcon, Loader2, Save, ShieldAlert,
+  ChevronLeft, ChevronRight, ImageIcon, Loader2, Save, ShieldAlert, Upload,
 } from 'lucide-react';
 import { ApiError } from '../../api/client';
+import { AdminPosterDesigner } from './AdminPosterDesigner';
 import {
   ApiSocialShare, ApiSocialSetting, ApiSocialStatus, ApiSocialSummary, ShareCategory, ShareChannel, SHARE_CATEGORIES, SHARE_STATUS,
   approveSocialShare, fetchSocialPreviewImage, getSocialSettings, getSocialStatus, getSocialSummary, regenerateSocialShare,
-  rejectSocialShare, retrySocialShare, searchSocialShares, sendTelegramTest, shareAgain, updateSocialSetting,
+  cancelSocialShare, completeSocialShare, rejectSocialShare, retrySocialShare, searchSocialShares, sendTelegramTest, shareAgain, updateSocialSetting, uploadHero,
 } from '../../api/socialShare';
 
 const input = 'w-full bg-white border border-slate-200 rounded-xl px-3.5 py-3 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10';
@@ -56,7 +57,6 @@ const StatusBanner: React.FC<{ status: ApiSocialStatus | null; onRecheck: () => 
     { label: 'Telegram', ok: status.telegram.configured, hint: status.telegram.hint },
     { label: 'Facebook', ok: status.facebook.configured, hint: status.facebook.hint },
     { label: 'Instagram', ok: status.instagram.configured, hint: status.instagram.hint },
-    { label: `OpenAI (${status.openAiModel})`, ok: status.openAi.configured, hint: status.openAi.hint },
   ];
 
   const runTest = async () => {
@@ -91,7 +91,7 @@ const StatusBanner: React.FC<{ status: ApiSocialStatus | null; onRecheck: () => 
           ))}
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[12.5px] text-slate-600 font-semibold">
-          <span>AI images today: <b className="text-slate-900">{status.imagesToday}</b> / {status.dailyImageCap}</span>
+          <span>Next post: <b className="text-slate-900">template {status.nextTemplate + 1}</b>{status.templateNames[status.nextTemplate] ? ` (${status.templateNames[status.nextTemplate]})` : ""}</span>
           {status.metaToken.daysLeft != null && <span>Meta token: <b className="text-slate-900">{status.metaToken.daysLeft} day(s)</b> left</span>}
           <span className="sm:ml-auto flex flex-col sm:flex-row gap-2">
             <button type="button" className={btnGhost} onClick={onRecheck} disabled={busy}><RefreshCw className={`w-4 h-4 ${busy ? 'animate-spin' : ''}`} />Re-check token</button>
@@ -107,6 +107,44 @@ const StatusBanner: React.FC<{ status: ApiSocialStatus | null; onRecheck: () => 
 // ================================================================================================
 // Activity log
 // ================================================================================================
+
+/** Replace the poster's header picture with one the admin uploads. */
+const OwnPicture: React.FC<{ shareId: number; onDone: () => void }> = ({ shareId, onDone }) => {
+  const [busy, setBusy] = useState<'upload' | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    setBusy('upload'); setMsg(null);
+    try {
+      await uploadHero(shareId, file);
+      setMsg({ ok: true, text: 'Picture applied to all channels of this post.' });
+      onDone();
+    } catch (err) {
+      setMsg({ ok: false, text: errText(err, 'Could not use that picture.') });
+    } finally {
+      setBusy(null);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 space-y-2">
+      <div>
+        <div className="text-[13px] font-extrabold text-slate-800">Use your own picture</div>
+        <p className="text-[12px] text-slate-500 font-medium">Upload a header picture. The title and details are added by the site.</p>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button type="button" className={btnGhost} disabled={!!busy} onClick={() => fileRef.current?.click()}>
+          {busy === 'upload' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}Upload picture
+        </button>
+        <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => upload(e.target.files?.[0])} />
+      </div>
+      {msg && <p className={`text-[12.5px] font-semibold ${msg.ok ? 'text-emerald-700' : 'text-rose-600'}`} role="status">{msg.text}</p>}
+    </div>
+  );
+};
 
 const ShareCard: React.FC<{ item: ApiSocialShare; onChanged: () => void }> = ({ item, onChanged }) => {
   const [open, setOpen] = useState(item.status === SHARE_STATUS.AwaitingApproval);
@@ -157,7 +195,7 @@ const ShareCard: React.FC<{ item: ApiSocialShare; onChanged: () => void }> = ({ 
             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11.5px] font-bold ${st.tone}`}>
               <StIcon className={`w-3 h-3 ${item.status === SHARE_STATUS.Processing ? 'animate-spin' : ''}`} />{st.label}
             </span>
-            <span className="text-[11.5px] font-semibold text-slate-500">{catLabel(item.category)}{item.generation > 0 ? ` · repost #${item.generation}` : ''}</span>
+            <span className="text-[11.5px] font-semibold text-slate-500">{catLabel(item.category)}{item.template != null ? ` · template ${item.template + 1}` : ""}{item.generation > 0 ? ` · repost #${item.generation}` : ""}</span>
           </div>
           <div className="font-bold text-[14px] text-slate-900 leading-snug break-words line-clamp-2">{item.title}</div>
           <div className="text-[12px] text-slate-500 font-medium">
@@ -198,6 +236,8 @@ const ShareCard: React.FC<{ item: ApiSocialShare; onChanged: () => void }> = ({ 
             )}
           </div>
 
+          {awaiting && <OwnPicture shareId={item.id} onDone={onChanged} />}
+
           <div className="text-[12px] text-slate-500 font-medium break-all space-y-0.5">
             <div>Post: <a href={item.url} target="_blank" rel="noreferrer" className="text-blue-700 hover:underline">{item.url}</a></div>
             {item.externalId && <div>{ch.label} id: <span className="font-mono text-slate-700">{item.externalId}</span></div>}
@@ -217,6 +257,18 @@ const ShareCard: React.FC<{ item: ApiSocialShare; onChanged: () => void }> = ({ 
                 </button>
                 <button type="button" className={btnDanger} disabled={!!busy} onClick={() => act('reject', () => rejectSocialShare(item.id))}><XCircle className="w-4 h-4" />Reject</button>
               </>
+            )}
+            {(item.status === SHARE_STATUS.Pending || item.status === SHARE_STATUS.Processing) && (
+              <button type="button" className={btnDanger} disabled={!!busy}
+                onClick={() => act('cancel', () => cancelSocialShare(item.id), 'Cancelled — it will not be posted.')}>
+                {busy === 'cancel' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}Cancel
+              </button>
+            )}
+            {(item.status === SHARE_STATUS.Pending || item.status === SHARE_STATUS.Processing || item.status === SHARE_STATUS.Failed) && (
+              <button type="button" className={btnGhost} disabled={!!busy}
+                onClick={() => { if (window.confirm(`Mark this ${item.channel} share as posted? Do this only if it is already live on ${item.channel}.`)) void act('complete', () => completeSocialShare(item.id), 'Marked as posted.'); }}>
+                {busy === 'complete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}Mark as posted
+              </button>
             )}
             {item.status === SHARE_STATUS.Failed && (
               <button type="button" className={btnPrimary} disabled={!!busy} onClick={() => act('retry', () => retrySocialShare(item.id), 'Re-queued.')}>
@@ -448,14 +500,9 @@ const SettingsEditor: React.FC<{ setting: ApiSocialSetting; onSaved: (s: ApiSoci
             <label className="text-slate-700 block mb-1.5 text-[12.5px] font-bold" htmlFor="img-logo">Logo URL (optional)</label>
             <input id="img-logo" value={d.logoUrl ?? ''} onChange={(e) => set('logoUrl', e.target.value)} placeholder="/uploads/logo.png or https://…" className={input} />
           </div>
-          <ColorField label="Brand colour" value={d.brandColor ?? ''} fallback="#1D4ED8" onChange={(v) => set('brandColor', v)} />
-          <ColorField label="Accent colour" value={d.accentColor ?? ''} fallback="#F59E0B" onChange={(v) => set('accentColor', v)} />
-          <div className="sm:col-span-2">
-            <label className="text-slate-700 block mb-1.5 text-[12.5px] font-bold" htmlFor="img-style">Background style (sent to the AI image model)</label>
-            <input id="img-style" value={d.imageStyle ?? ''} onChange={(e) => set('imageStyle', e.target.value)} maxLength={500}
-              placeholder="e.g. clean blue gradient with soft geometric shapes" className={input} />
-            <p className="text-[12px] text-slate-500 font-medium mt-1">The AI only draws the background. Titles and details are always added by the site, so spelling is exact.</p>
-          </div>
+          <ColorField label="Brand colour (optional)" value={d.brandColor ?? ''} fallback="#1D4ED8" onChange={(v) => set('brandColor', v)} />
+          <ColorField label="Accent colour (optional)" value={d.accentColor ?? ''} fallback="#F59E0B" onChange={(v) => set('accentColor', v)} />
+          <p className="sm:col-span-2 -mt-1 text-[12px] text-slate-500 font-medium">Leave both empty to use the six built-in rotating templates. Setting a colour re-colours every template with it.</p>
         </div>
         <div className="space-y-2">
           <button type="button" className={btnGhost} onClick={showPreview} disabled={previewing}>
@@ -463,6 +510,11 @@ const SettingsEditor: React.FC<{ setting: ApiSocialSetting; onSaved: (s: ApiSoci
           </button>
           {preview && <img src={preview} alt="Sample share image" className="w-full max-w-[360px] rounded-xl border border-slate-200" />}
         </div>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="text-[14px] font-extrabold text-slate-900">Poster designer (HTML/CSS templates)</h4>
+        <AdminPosterDesigner />
       </section>
 
       <section className="space-y-2">
@@ -502,7 +554,54 @@ const SettingsEditor: React.FC<{ setting: ApiSocialSetting; onSaved: (s: ApiSoci
   );
 };
 
-const SettingsTab: React.FC = () => {
+/** The six colour templates. Posts use them in turn: post 1 -> template 1, post 2 -> template 2, ... post 7 -> template 1 again. */
+const TemplateGallery: React.FC<{ nextTemplate: number | null; names: string[] }> = ({ nextTemplate, names }) => {
+  const [urls, setUrls] = useState<(string | null)[]>(() => Array(6).fill(null));
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const made: string[] = [];
+    Promise.all(Array.from({ length: 6 }, (_, i) =>
+      fetchSocialPreviewImage({ category: 'job', size: 'portrait', template: i })
+        .then((u) => { made.push(u); return u; })
+        .catch(() => null)))
+      .then((all) => {
+        if (cancelled) { made.forEach((u) => URL.revokeObjectURL(u)); return; }
+        setUrls(all);
+        setFailed(all.every((u) => u === null));
+      });
+    return () => { cancelled = true; made.forEach((u) => URL.revokeObjectURL(u)); };
+  }, []);
+
+  return (
+    <section className="bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-5 space-y-3">
+      <div>
+        <h3 className="text-[15px] font-extrabold text-slate-900">Image templates</h3>
+        <p className="text-[12.5px] text-slate-500 font-medium">
+          Same notice layout in six colour schemes, used in turn so your feed does not repeat itself. Each new post takes the next one
+          {nextTemplate != null && <> — the next post will use <b className="text-slate-800">template {nextTemplate + 1}{names[nextTemplate] ? ` (${names[nextTemplate]})` : ''}</b></>}.
+        </p>
+      </div>
+      {failed && <p className="text-[12.5px] font-semibold text-rose-600">Could not load the template previews.</p>}
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
+        {urls.map((u, i) => (
+          <figure key={i} className={`rounded-xl border p-1.5 ${nextTemplate === i ? 'border-blue-500 ring-4 ring-blue-500/10 bg-blue-50/40' : 'border-slate-200 bg-slate-50/50'}`}>
+            <div className="aspect-[4/5] rounded-lg bg-slate-100 overflow-hidden grid place-items-center">
+              {u ? <img src={u} alt={`Template ${i + 1}: ${names[i] ?? ''}`} className="w-full h-full object-cover" loading="lazy" /> : <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
+            </div>
+            <figcaption className="mt-1.5 text-center leading-tight">
+              <div className="text-[12px] font-extrabold text-slate-800">Template {i + 1}{nextTemplate === i && <span className="ml-1 text-blue-700">· next</span>}</div>
+              <div className="text-[10.5px] font-semibold text-slate-500">{names[i] ?? ''}</div>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const SettingsTab: React.FC<{ nextTemplate: number | null; templateNames: string[] }> = ({ nextTemplate, templateNames }) => {
   const [settings, setSettings] = useState<ApiSocialSetting[] | null>(null);
   const [category, setCategory] = useState<ShareCategory>('job');
   const [error, setError] = useState<string | null>(null);
@@ -516,6 +615,7 @@ const SettingsTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      <TemplateGallery nextTemplate={nextTemplate} names={templateNames} />
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1" role="tablist" aria-label="Category">
         {SHARE_CATEGORIES.map((c) => (
           <button key={c.id} type="button" role="tab" aria-selected={category === c.id} onClick={() => setCategory(c.id)}
@@ -536,7 +636,7 @@ const SettingsTab: React.FC = () => {
 // ================================================================================================
 
 export const AdminAutoSharePanel: React.FC = () => {
-  const [tab, setTab] = useState<'log' | 'settings'>('log');
+  const [tab, setTab] = useState<'log' | 'settings' | 'designer'>('log');
   const [status, setStatus] = useState<ApiSocialStatus | null>(null);
   const [summary, setSummary] = useState<ApiSocialSummary | null>(null);
   const [checking, setChecking] = useState(false);
@@ -559,7 +659,7 @@ export const AdminAutoSharePanel: React.FC = () => {
       <StatusBanner status={status} onRecheck={() => loadStatus(true)} busy={checking} />
 
       <div className="flex gap-2" role="tablist">
-        {([['log', 'Activity log'], ['settings', 'Settings']] as const).map(([id, label]) => (
+        {([['log', 'Activity log'], ['settings', 'Settings'], ['designer', 'Poster designer']] as const).map(([id, label]) => (
           <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
             className={`flex-1 sm:flex-none sm:min-w-[150px] min-h-[46px] px-5 rounded-xl text-[14px] font-extrabold cursor-pointer border transition-colors ${tab === id ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}>
             {label}{id === 'log' && summary && summary.awaitingApproval > 0 && <span className="ml-2 inline-grid place-items-center min-w-[22px] h-[22px] px-1 rounded-full bg-amber-400 text-amber-950 text-[12px]">{summary.awaitingApproval}</span>}
@@ -569,7 +669,7 @@ export const AdminAutoSharePanel: React.FC = () => {
 
       {tab === 'log'
         ? <ActivityLog summary={summary} onChanged={loadSummary} />
-        : <SettingsTab />}
+        : <SettingsTab nextTemplate={status?.nextTemplate ?? null} templateNames={status?.templateNames ?? []} />}
     </div>
   );
 };

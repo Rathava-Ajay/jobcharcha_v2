@@ -23,11 +23,11 @@ public class ResultsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll() => Ok(await _resultService.GetAllAsync());
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var item = await _resultService.GetBySlugAsync(slug);

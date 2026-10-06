@@ -20,7 +20,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Search([FromQuery] string? category, [FromQuery] string? pricing, [FromQuery] string? search) =>
         Ok(await _productService.SearchAsync(category, pricing, search));
 

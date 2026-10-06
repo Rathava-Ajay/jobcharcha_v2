@@ -7,11 +7,10 @@ namespace JobPortal.Infrastructure.Services;
 public record SocialChannelStatus(bool Configured, string? Hint);
 public record SocialStatusDto(
     SocialChannelStatus Telegram, SocialChannelStatus Facebook, SocialChannelStatus Instagram,
-    SocialChannelStatus OpenAi, string OpenAiModel, int ImagesToday, int DailyImageCap,
-    MetaTokenStatus MetaToken, List<string> Warnings);
+    MetaTokenStatus MetaToken, List<string> Warnings, int NextTemplate, string[] TemplateNames);
 
-/// <summary>Everything the admin "Auto-share status" panel needs: which channels have credentials, today's OpenAI image
-/// usage against the cap, and the Meta token health with a ready-made list of warnings to show.</summary>
+/// <summary>Everything the admin "Auto-share status" panel needs: which channels have credentials and the Meta token health
+/// with a ready-made list of warnings to show.</summary>
 public class SocialStatusService
 {
     private readonly AppDbContext _db;
@@ -27,20 +26,22 @@ public class SocialStatusService
 
     public async Task<SocialStatusDto> GetAsync(bool refreshToken = false, CancellationToken ct = default)
     {
-        var day = DateTime.UtcNow.Date;
-        var used = await _db.SocialImageUsages.AsNoTracking().Where(u => u.Day == day).Select(u => u.Count).FirstOrDefaultAsync(ct);
         var token = await _meta.GetTokenStatusAsync(refreshToken, ct);
 
         var warnings = new List<string>();
         if (token.Warning is not null) warnings.Add(token.Warning);
-        if (!_options.OpenAiConfigured) warnings.Add("OPENAI_API_KEY isn't set — share images use the plain branded template.");
-        else if (used >= _options.DailyImageCap) warnings.Add($"Today's OpenAI image cap ({_options.DailyImageCap}) is reached — new shares use the plain branded template until tomorrow (UTC).");
 
         return new SocialStatusDto(
             new(_options.TelegramConfigured, _options.TelegramConfigured ? null : "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHANNEL_ID."),
             new(_options.FacebookConfigured, _options.FacebookConfigured ? null : "Set META_PAGE_ACCESS_TOKEN and META_PAGE_ID."),
             new(_options.InstagramConfigured, _options.InstagramConfigured ? null : "Set META_PAGE_ACCESS_TOKEN and INSTAGRAM_ACCOUNT_ID."),
-            new(_options.OpenAiConfigured, _options.OpenAiConfigured ? null : "Set OPENAI_API_KEY."),
-            _options.OpenAiImageModel, used, _options.DailyImageCap, token, warnings);
+            token, warnings,
+            await NextTemplateOrZeroAsync(), SocialTheme.All.Select(t => t.Name).ToArray());
+    }
+
+    private async Task<int> NextTemplateOrZeroAsync()
+    {
+        try { return await SocialShareService.NextTemplateAsync(_db); }
+        catch { return 0; }
     }
 }

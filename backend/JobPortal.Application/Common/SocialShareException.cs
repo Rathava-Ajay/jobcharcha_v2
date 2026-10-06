@@ -8,6 +8,8 @@ public class SocialShareException : Exception
     public bool Retryable { get; }
     /// <summary>Server-suggested wait before the next attempt (e.g. Telegram's retry_after), if any.</summary>
     public TimeSpan? RetryAfter { get; }
+    /// <summary>Provider error code when one was given.</summary>
+    public string? ErrorCode { get; init; }
 
     public SocialShareException(string message, bool retryable, TimeSpan? retryAfter = null, Exception? inner = null)
         : base(message, inner)

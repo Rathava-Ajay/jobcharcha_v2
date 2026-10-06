@@ -19,6 +19,10 @@ public interface IMetaGraphClient
     /// <summary>Instagram: create a media container, wait until it is ready, then media_publish. Returns the media id.</summary>
     Task<string> PublishInstagramPhotoAsync(string imageUrl, string caption, CancellationToken ct = default);
 
+    /// <summary>Uploads a picture as an UNPUBLISHED photo on the Page and returns Meta's public CDN link for it. Lets Facebook, Instagram and Telegram
+    /// download images even when this site is not reachable from the internet (local testing). Nothing appears on the Page timeline.</summary>
+    Task<string> HostImageAsync(byte[] jpeg, CancellationToken ct = default);
+
     Task<MetaTokenStatus> GetTokenStatusAsync(bool force = false, CancellationToken ct = default);
 }
 
@@ -71,6 +75,44 @@ public class MetaGraphClient : IMetaGraphClient
         return Str(json.RootElement, "id") ?? throw new SocialShareException("Facebook returned no post id.", retryable: false);
     }
 
+    public async Task<string> HostImageAsync(byte[] jpeg, CancellationToken ct = default)
+    {
+        RequireFacebook();
+        using var form = new MultipartFormDataContent
+        {
+            { new StringContent("false"), "published" },
+            { new StringContent(_options.MetaPageAccessToken!), "access_token" },
+            { new ByteArrayContent(jpeg), "source", "share.jpg" },
+        };
+
+        HttpResponseMessage response;
+        try { response = await _http.PostAsync($"{Base}/{_options.MetaPageId}/photos", form, ct); }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            throw new SocialShareException("Could not reach Meta to host the share image (network error or timeout).", retryable: true);
+        }
+
+        string photoId;
+        using (response)
+        {
+            var text = await response.Content.ReadAsStringAsync(ct);
+            using var doc = JsonDocument.Parse(text);
+            if (!response.IsSuccessStatusCode || !doc.RootElement.TryGetProperty("id", out var idEl))
+            {
+                var message = doc.RootElement.TryGetProperty("error", out var err) ? Str(err, "message") : null;
+                throw new SocialShareException($"Meta could not host the share image ({(int)response.StatusCode}): {message ?? "unknown error"}", (int)response.StatusCode >= 500);
+            }
+            photoId = idEl.ToString();
+        }
+
+        using var info = await SendAsync(HttpMethod.Get, $"{Base}/{photoId}", new() { ["fields"] = "images" }, ct);
+        if (info.RootElement.TryGetProperty("images", out var images) && images.ValueKind == JsonValueKind.Array && images.GetArrayLength() > 0
+            && Str(images[0], "source") is { Length: > 0 } source)
+            return source;
+        throw new SocialShareException("Meta did not return a link for the hosted share image.", retryable: true);
+    }
+
     // ---- Instagram -----------------------------------------------------------------------------
 
     public async Task<string> PublishInstagramPhotoAsync(string imageUrl, string caption, CancellationToken ct = default)
@@ -88,8 +130,22 @@ public class MetaGraphClient : IMetaGraphClient
 
         await WaitUntilReadyAsync(creationId, ct);
 
-        using var published = await SendAsync(HttpMethod.Post, $"{Base}/{_options.InstagramAccountId}/media_publish",
-            new() { ["creation_id"] = creationId }, ct);
+        JsonDocument published;
+        try
+        {
+            published = await SendAsync(HttpMethod.Post, $"{Base}/{_options.InstagramAccountId}/media_publish",
+                new() { ["creation_id"] = creationId }, ct);
+        }
+        catch (SocialShareException ex) when (ex.Retryable)
+        {
+            // A timeout / 5xx here does not tell us whether Instagram already published the photo. Retrying would create a
+            // second container and post the same image again, so stop and let an admin check Instagram.
+            throw new SocialShareException(
+                $"Instagram did not confirm the publish ({ex.Message}). It may already be live on Instagram — check, then press \"Mark as posted\" or \"Retry\".",
+                retryable: false);
+        }
+
+        using var _ = published;
         return Str(published.RootElement, "id")
                ?? throw new SocialShareException("Instagram returned no media id.", retryable: false);
     }

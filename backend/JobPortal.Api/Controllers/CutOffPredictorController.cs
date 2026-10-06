@@ -17,15 +17,15 @@ public class CutOffPredictorController : ControllerBase
     }
 
     [HttpGet("exams")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetExams() => Ok(await _cutOffService.GetExamsAsync());
 
     [HttpGet("exams/{slug}/posts")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetPostNames(string slug) => Ok(await _cutOffService.GetPostNamesAsync(slug));
 
     [HttpGet("records")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Search([FromQuery] string? slug, [FromQuery] int? year, [FromQuery] string? postName) =>
         Ok(await _cutOffService.SearchAsync(slug, year, postName));
 

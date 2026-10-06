@@ -40,16 +40,20 @@ public static class DependencyInjection
         services.AddScoped<IContentLinkChecker, ContentLinkChecker>();
         services.AddScoped<IContentSettingsService, ContentSettingsService>();
         services.AddScoped<ISocialShareService, SocialShareService>();
+        services.AddScoped<IAiUsageService, AiUsageService>();
         services.AddHttpClient<ITelegramClient, TelegramClient>(c => c.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers(); // bot token is in the URL path — keep it out of request logs
         services.AddScoped<ISocialChannel, TelegramChannel>();
         services.AddSingleton<MetaTokenCache>();
         services.AddHttpClient<IMetaGraphClient, MetaGraphClient>(c => c.Timeout = TimeSpan.FromSeconds(60)).RemoveAllLoggers(); // Graph GETs carry tokens in the query string
         services.AddScoped<SocialStatusService>();
+        services.AddScoped<SocialPreviewService>();
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<SocialShareProcessor>();
+        services.AddSingleton<PosterTemplateStore>();
+        services.AddSingleton<IPosterRenderer, HeadlessPosterRenderer>();
+        services.AddScoped<SocialPosterService>();
         services.AddScoped<ISocialChannel, FacebookChannel>();
         services.AddScoped<ISocialChannel, InstagramChannel>();
-        services.AddHttpClient<IOpenAiImageClient, OpenAiImageClient>(c => c.Timeout = TimeSpan.FromSeconds(150));
         services.AddHttpClient<ISocialImageService, SocialImageService>(c => c.Timeout = TimeSpan.FromSeconds(30));
         services.AddScoped<IContentSyncService, ContentSyncService>();
         services.AddScoped<ICategoryService, CategoryService>();

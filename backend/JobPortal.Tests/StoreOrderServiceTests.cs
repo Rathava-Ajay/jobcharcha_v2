@@ -108,7 +108,7 @@ public class StoreOrderServiceTests
     }
 
     [Fact]
-    public async Task VerifyAsync_InvalidSignature_MarksFailedAndDoesNotUpdateCounters()
+    public async Task VerifyAsync_InvalidSignature_KeepsOrderPendingAndDoesNotUpdateCounters()
     {
         var (service, db, order, product) = await SeedPendingOrderAsync(TestDb.NewDbName());
 
@@ -123,7 +123,7 @@ public class StoreOrderServiceTests
         Assert.Equal("SignatureMismatch", result.ErrorCode);
 
         var reloadedOrder = await db.Orders.AsNoTracking().FirstAsync(o => o.OrderId == order.OrderId);
-        Assert.Equal("Failed", reloadedOrder.PaymentStatus);
+        Assert.Equal("Pending", reloadedOrder.PaymentStatus);   // a bad /verify call must not cancel an order the buyer may really have paid for
 
         var reloadedProduct = await db.Products.AsNoTracking().FirstAsync(p => p.ProductId == product.ProductId);
         Assert.Equal(2, reloadedProduct.TotalSales); // unchanged

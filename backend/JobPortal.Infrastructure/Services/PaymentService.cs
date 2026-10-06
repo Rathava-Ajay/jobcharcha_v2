@@ -19,13 +19,15 @@ public class PaymentService : IPaymentService
     private readonly IRazorpayClient _razorpay;
     private readonly RazorpaySettings _settings;
     private readonly IAuditService _audit;
+    private readonly IStoreOrderService? _storeOrders;
 
-    public PaymentService(AppDbContext db, IRazorpayClient razorpay, IOptions<RazorpaySettings> options, IAuditService audit)
+    public PaymentService(AppDbContext db, IRazorpayClient razorpay, IOptions<RazorpaySettings> options, IAuditService audit, IStoreOrderService? storeOrders = null)
     {
         _db = db;
         _razorpay = razorpay;
         _settings = options.Value;
         _audit = audit;
+        _storeOrders = storeOrders;
     }
 
     /// <summary>Writes a Billing audit row once an aspirant payment is fulfilled. Plan → a
@@ -327,12 +329,16 @@ public class PaymentService : IPaymentService
 
         string? orderId = null;
         string? paymentId = null;
+        long? capturedAmountPaise = null;
+        string? capturedCurrency = null;
         if (root.TryGetProperty("payload", out var payloadEl))
         {
             if (payloadEl.TryGetProperty("payment", out var paymentEl) && paymentEl.TryGetProperty("entity", out var payEntity))
             {
                 orderId = payEntity.TryGetProperty("order_id", out var oid) ? oid.GetString() : null;
                 paymentId = payEntity.TryGetProperty("id", out var pid) ? pid.GetString() : null;
+                capturedAmountPaise = payEntity.TryGetProperty("amount", out var amt) && amt.TryGetInt64(out var amtVal) ? amtVal : null;
+                capturedCurrency = payEntity.TryGetProperty("currency", out var cur) ? cur.GetString() : null;
             }
             if (orderId is null && payloadEl.TryGetProperty("order", out var orderEl) && orderEl.TryGetProperty("entity", out var orderEntity))
             {
@@ -363,6 +369,13 @@ public class PaymentService : IPaymentService
 
         var isDuplicate = false;
         var fulfilledNow = false;
+
+        // Not an aspirant payment (plan / test / wallet top-up): it may be a Store order, which has its own Razorpay order id.
+        if (payment is null && _storeOrders is not null && !string.IsNullOrEmpty(orderId)
+            && (eventName.Equals("payment.captured", StringComparison.OrdinalIgnoreCase) || eventName.Equals("order.paid", StringComparison.OrdinalIgnoreCase)))
+        {
+            await _storeOrders.FulfillCapturedAsync(orderId, paymentId, capturedAmountPaise, capturedCurrency);
+        }
         if (payment is not null)
         {
             var isCaptureEvent = eventName.Equals("payment.captured", StringComparison.OrdinalIgnoreCase)

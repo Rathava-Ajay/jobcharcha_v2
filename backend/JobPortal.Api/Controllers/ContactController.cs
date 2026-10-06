@@ -1,6 +1,7 @@
 using JobPortal.Application.DTOs.Contact;
 using JobPortal.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace JobPortal.Api.Controllers;
 
@@ -16,6 +17,7 @@ public class ContactController : ControllerBase
     }
 
     [HttpPost]
+    [EnableRateLimiting("auth")]
     public async Task<IActionResult> Submit(ContactSubmitRequest request)
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();

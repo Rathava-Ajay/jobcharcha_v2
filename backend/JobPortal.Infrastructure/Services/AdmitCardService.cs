@@ -28,7 +28,7 @@ public class AdmitCardService : IAdmitCardService
         var query = _db.AdmitCards.AsNoTracking().Include(a => a.Category).AsQueryable();
         if (!includeInactive) query = query.Where(a => a.IsActive);
 
-        var items = await query.OrderByDescending(a => a.AdmitCardReleaseDate).ToListAsync();
+        var items = await query.OrderByDescending(a => a.CreatedDate).ThenByDescending(a => a.Id).ToListAsync();
         return items.Select(ToListItemDto).ToList();
     }
 

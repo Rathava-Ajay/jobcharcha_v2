@@ -44,6 +44,12 @@ public class SocialShareProcessorTests
         public int Calls { get; private set; }
         public bool Fail { get; set; }
 
+        public Task<byte[]?> RenderPreviewAsync(SocialShareJob job, SocialShareSetting setting, CancellationToken ct = default) => Task.FromResult<byte[]?>(null);
+
+        public Task<string?> ApplyCustomHeroAsync(SocialShareJob job, SocialShareSetting setting, byte[] hero, CancellationToken ct = default) => Task.FromResult<string?>("https://x.test/custom.jpg");
+
+        public bool NeedsRehost(string? imageUrl) => false;
+
         public Task<string?> EnsureImageAsync(SocialShareJob job, SocialShareSetting setting, CancellationToken ct = default)
         {
             Calls++;
@@ -100,6 +106,22 @@ public class SocialShareProcessorTests
     }
 
     private static Task<SocialShareJob> Reload(Rig r, int id) => r.Db.SocialShareJobs.AsNoTracking().SingleAsync(j => j.Id == id);
+
+    [Fact]
+    public async Task RetriedShare_WithAMessageButNoImage_GetsItsImageBuiltBeforePosting()
+    {
+        var r = Create();
+        var job = await Add(r, "instagram");
+        job.Message = "caption from an earlier failed attempt";      // the earlier attempt died before an image existed
+        await r.Db.SaveChangesAsync();
+
+        Assert.Equal(1, await r.Processor.RunOnceAsync());
+
+        var saved = await Reload(r, job.Id);
+        Assert.Equal(SocialShareStatus.Posted, saved.Status);
+        Assert.Equal("https://x.test/uploads/social/1.jpg", r.Instagram.Images.Single());
+        Assert.Equal("caption from an earlier failed attempt", saved.Message);   // the caption is kept
+    }
 
     // ---- posting & idempotency --------------------------------------------------------------------
 

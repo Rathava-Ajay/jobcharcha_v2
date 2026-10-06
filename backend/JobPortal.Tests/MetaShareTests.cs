@@ -301,6 +301,7 @@ public class MetaShareTests
     private sealed class FakeMeta : IMetaGraphClient
     {
         public List<string> Calls { get; } = new();
+        public Task<string> HostImageAsync(byte[] jpeg, CancellationToken ct = default) => Task.FromResult("https://scontent.fbcdn.net/hosted.jpg");
         public Task<string> PostPagePhotoAsync(string imageUrl, string caption, CancellationToken ct = default) { Calls.Add("photo:" + caption); return Task.FromResult("fb-photo"); }
         public Task<string> PostPageFeedAsync(string message, string link, CancellationToken ct = default) { Calls.Add("feed:" + link); return Task.FromResult("fb-feed"); }
         public Task<string> PublishInstagramPhotoAsync(string imageUrl, string caption, CancellationToken ct = default) { Calls.Add("ig:" + caption); return Task.FromResult("ig-1"); }

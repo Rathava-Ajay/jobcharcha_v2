@@ -14,3 +14,8 @@ appsettings.json
 appsettings.*.json
 !appsettings.Example.json
 /.vs
+
+# Playwright
+e2e-report/
+e2e-results/
+e2e-results.json

@@ -38,7 +38,7 @@ public class SocialShareService : ISocialShareService
         InstagramEnabled = true,
         FacebookEnabled = true,
         RequireApproval = true,
-        ImageSize = "square",
+        ImageSize = "portrait",       // 4:5, the Instagram feed size the account already uses
     };
 
     public async Task EnqueueAsync(string category, int entityId, bool skip = false, string? userId = null)
@@ -73,6 +73,15 @@ public class SocialShareService : ISocialShareService
         }
     }
 
+    /// <summary>The template the next post will use: the one after the most recent post's, wrapping 6 -> 1. Posts skipped with
+    /// "Skip social posting" never reach this, so they do not use up a slot.</summary>
+    public static async Task<int> NextTemplateAsync(AppDbContext db)
+    {
+        var last = await db.SocialShareJobs.AsNoTracking().Where(j => j.Template != null)
+            .OrderByDescending(j => j.Id).Select(j => j.Template).FirstOrDefaultAsync();
+        return last is null ? 0 : (last.Value + 1) % SocialTheme.Count;
+    }
+
     /// <summary>Returns null when the post isn't found/live, otherwise how many new share rows were created.</summary>
     private async Task<int?> QueueAsync(string category, int entityId, string? userId, string trigger, bool honorApproval, bool newGeneration)
     {
@@ -88,6 +97,7 @@ public class SocialShareService : ISocialShareService
             .ToListAsync();
 
         var detailsJson = JsonSerializer.Serialize(post.Details);
+        var template = await NextTemplateAsync(_db);          // one colour template per POST, shared by its channels
         var now = Now;
         var created = 0;
 
@@ -119,6 +129,7 @@ public class SocialShareService : ISocialShareService
                 EntityId = entityId,
                 Channel = channel,
                 Generation = generation,
+                Template = template,
                 Status = !configured ? SocialShareStatus.Skipped
                        : honorApproval && setting.RequireApproval ? SocialShareStatus.AwaitingApproval
                        : SocialShareStatus.Pending,
@@ -192,6 +203,44 @@ public class SocialShareService : ISocialShareService
         job.Status = SocialShareStatus.Pending;
         job.Attempts = 0;
         job.NextAttemptAt = Now;
+        job.Error = null;
+        job.UpdatedDate = Now;
+        await _db.SaveChangesAsync();
+        return ServiceResult.Ok();
+    }
+
+    /// <summary>A share that is mid-attempt is only cancellable once it looks stuck, so an admin can't race a live post.</summary>
+    private static readonly TimeSpan CancelProcessingAfter = TimeSpan.FromMinutes(2);
+
+    public async Task<ServiceResult> CancelAsync(int shareId, string userId)
+    {
+        var job = await _db.SocialShareJobs.FindAsync(shareId);
+        if (job is null) return ServiceResult.Fail("NotFound", "Share not found.");
+        if (job.Status is not (SocialShareStatus.AwaitingApproval or SocialShareStatus.Pending or SocialShareStatus.Processing))
+            return ServiceResult.Fail("NotCancellable", "Only a share that is still waiting or queued can be cancelled.");
+        if (job.Status == SocialShareStatus.Processing && Now - job.UpdatedDate < CancelProcessingAfter)
+            return ServiceResult.Fail("InProgress", "This share is being posted right now. If it is still stuck in a minute or two, cancel it then.");
+
+        job.Status = SocialShareStatus.Skipped;
+        job.NextAttemptAt = null;
+        job.Error = "Cancelled by an admin.";
+        job.UpdatedDate = Now;
+        await _db.SaveChangesAsync();
+        return ServiceResult.Ok();
+    }
+
+    /// <summary>For a share that really is live on the channel but is still shown as queued/failed: marks it posted so it is never posted again.</summary>
+    public async Task<ServiceResult> CompleteAsync(int shareId, string userId)
+    {
+        var job = await _db.SocialShareJobs.FindAsync(shareId);
+        if (job is null) return ServiceResult.Fail("NotFound", "Share not found.");
+        if (job.Status is not (SocialShareStatus.Pending or SocialShareStatus.Processing or SocialShareStatus.Failed))
+            return ServiceResult.Fail("NotCompletable", "Only a queued or failed share can be marked as posted.");
+
+        job.Status = SocialShareStatus.Posted;
+        job.ExternalId ??= "manual";                 // also what stops the worker from ever posting it
+        job.PostedAt ??= Now;
+        job.NextAttemptAt = null;
         job.Error = null;
         job.UpdatedDate = Now;
         await _db.SaveChangesAsync();
@@ -324,7 +373,7 @@ public class SocialShareService : ISocialShareService
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(j => new SocialShareJobDto
             {
-                Id = j.Id, Category = j.Category, EntityId = j.EntityId, Channel = j.Channel, Generation = j.Generation,
+                Id = j.Id, Category = j.Category, EntityId = j.EntityId, Channel = j.Channel, Generation = j.Generation, Template = j.Template,
                 Status = j.Status, Attempts = j.Attempts, NextAttemptAt = j.NextAttemptAt, Title = j.Title, Url = j.Url,
                 ImageUrl = j.ImageUrl, Message = j.Message, ExternalId = j.ExternalId, Error = j.Error, Trigger = j.Trigger,
                 CreatedDate = j.CreatedDate, UpdatedDate = j.UpdatedDate, PostedAt = j.PostedAt,
@@ -355,7 +404,9 @@ public class SocialShareService : ISocialShareService
     };
 
 
-    private sealed record PostFacts(string Title, string Url, List<SocialDetail> Details);
+    public async Task<SocialPostFacts?> GetPostFactsAsync(string category, int entityId) =>
+        SocialShareCategories.IsValid(category) ? await LoadPostAsync(category, entityId) : null;
+
 
     private static string PathFor(string category) => category switch
     {
@@ -367,7 +418,7 @@ public class SocialShareService : ISocialShareService
     };
 
     /// <summary>Reads the live post and builds its sanitized title, public URL and key-detail lines.</summary>
-    private async Task<PostFacts?> LoadPostAsync(string category, int id)
+    private async Task<SocialPostFacts?> LoadPostAsync(string category, int id)
     {
         string title, slug;
         var d = new List<SocialDetail>();
@@ -384,11 +435,15 @@ public class SocialShareService : ISocialShareService
                 var e = await _db.Jobs.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
                 if (e is null) return null;
                 title = e.Title; slug = e.Slug;
+                // Order = order of the cards on the poster (organisation and last date get their own spots).
                 Add("Organization", e.OrganizationName);
                 Add("Vacancies", e.TotalPosts?.ToString());
-                Add("Qualification", e.QualificationRequired);
-                Add("Last date", SocialText.Date(e.LastDate));
+                Add("Post", e.PostDetails, 90);
+                Add("Qualification", e.QualificationRequired, 100);
+                Add("Age limit", e.MinAge is > 0 && e.MaxAge is > 0 ? $"{e.MinAge} - {e.MaxAge} years" : e.MaxAge is > 0 ? $"Up to {e.MaxAge} years" : null, 40);
+                Add("Salary", e.Salary, 60);
                 Add("Location", e.Location ?? e.State, 60);
+                Add("Last date", SocialText.Date(e.LastDate));
                 break;
             }
             case ContentCategories.Result:
@@ -438,6 +493,6 @@ public class SocialShareService : ISocialShareService
         var cleanTitle = SocialText.Clean(title, 200);
         if (cleanTitle.Length == 0 || string.IsNullOrWhiteSpace(slug)) return null;
         var url = $"{_options.PublicBaseUrl}/{PathFor(category)}/{Uri.EscapeDataString(slug)}";
-        return new PostFacts(cleanTitle, url, d);
+        return new SocialPostFacts(cleanTitle, url, d);
     }
 }

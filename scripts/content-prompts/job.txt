@@ -1,0 +1,55 @@
+{{COMMON}}
+
+CATEGORY: JOBS - newly announced government and public-sector recruitment notifications that are OPEN for applications (or about to open): state and central departments, boards, commissions, PSUs, banks, railways, defence, police, universities, and similar official recruiters. Gujarat first, then all-India.
+Where to look: the admin-added sources above, official recruitment/career pages (ojas.gujarat.gov.in, gpsc.gujarat.gov.in, gsssb.gujarat.gov.in, ssc.gov.in, ibps.in, rrb sites, upsc.gov.in, employment news, department "Recruitment / Vacancies / Careers" pages), and reputable job-alert sites - use those only to DISCOVER a vacancy, then confirm every fact on the official notification or apply page.
+Skip: private-company jobs, apprentice or internship spam, "expected" or "rumoured" vacancies, notifications whose last date has already passed, and anything you cannot confirm is a real, open official recruitment.
+
+PAYLOAD for "payload" (follow exactly; use null for unknown optional fields, never invent facts):
+{
+  "title": "keyword-rich, e.g. 'GSSSB Junior Clerk Recruitment 2026 - 1200 Posts, Apply Online'",
+  "department": "full recruiting organization name (required)",
+  "categoryId": <real id from the SITE CATEGORIES list above (required)>,
+  "focusKeyword": "[Organization] [Post] Recruitment [Year] (required)",
+  "secondaryKeywords": ["5-8 realistic search phrases"],
+  "lsiKeywords": ["5-8 related terms"],
+  "internalLinkAnchors": ["3-5 anchor texts"],
+  "totalPosts": <integer or null>,
+  "salary": "short pay summary e.g. 'Level 4: Rs 25,500-81,100' or null",
+  "ageLimit": "e.g. '18-35 years (relaxation as per rules)' or null",
+  "qualification": "short eligibility e.g. 'Graduate in any stream' or null",
+  "location": "Gujarat / city / All India",
+  "state": "Gujarat / other state / All India",
+  "district": "district or null",
+  "lastDate": "YYYY-MM-DD last date to apply (required, from the notice itself, must not be in the past)",
+  "applyLink": "official online-apply page URL or null",
+  "officialNotificationPdf": "official notification / advertisement PDF URL or null",
+  "officialWebsite": "official recruitment page URL or null",
+  "syllabusLink": "official syllabus PDF/page or null",
+  "advertisementNumber": "advt. number e.g. 'GSSSB/202627/12' or null",
+  "minAge": <integer or null>, "maxAge": <integer or null>,
+  "minSalary": <number or null>, "maxSalary": <number or null>,
+  "applicationFeeAmount": <number, general-category fee, or null>,
+  "applicationFeeDetails": "short fee text or null",
+  "shortDescription": "2-3 sentences, max 400 chars, first sentence stands alone as a Google snippet; include organization, post, vacancies and last date (required)",
+  "overview": "(required) 3-5 sentence plain-text direct-answer summary for the 'Job Summary' box",
+  "keyHighlights": "HTML <ul><li>..</li></ul> of 5-8 quick facts (posts, last date, mode, pay, age, qualification) or null",
+  "eligibilityDetails": "HTML with qualification, age and relaxation detail, or null",
+  "howToApply": "(required) HTML <ol><li>..</li></ol> step-by-step application instructions based on the official notice",
+  "importantNotes": "HTML <ul><li>..</li></ul> or null",
+  "documentsRequired": "HTML <ul><li>..</li></ul> or null",
+  "faqSchema": [ {"question": "...", "answer": "plain text, 1-2 sentences"} ],
+  "vacancyBreakdown": [ {"postName": "...", "sc": 0, "st": 0, "obc": 0, "ews": 0, "ur": 0, "total": 0} ]  (empty array if not published),
+  "applicationFee": [ {"category": "General", "fee": "Rs 100"} ]  (empty array if not published),
+  "selectionProcess": ["Written Exam", "Document Verification"]  (empty array if not published),
+  "importantDates": { "notificationDate": "YYYY-MM-DD or null", "applicationStart": "YYYY-MM-DD or null", "applicationEnd": "YYYY-MM-DD or null", "feePaymentEnd": "YYYY-MM-DD or null", "admitCardDate": null, "examDate": "YYYY-MM-DD or null", "resultDate": null, "otherDates": [] },
+  "metaTitle": "max 60 chars, '[Focus Keyword] | JobCharcha' (required)",
+  "metaDescription": "max 155 chars, include focus keyword + call to action like 'Apply Online Now' (required)",
+  "metaKeywords": "10-12 comma-separated keywords",
+  "ogTitle": "max 60 chars", "ogDescription": "max 160 chars",
+  "autoPublish": true
+}
+LINK RULES (strict - drafts are rejected otherwise):
+- Provide at least one deep link: "applyLink" (the exact official apply/notice page for THIS recruitment) and/or "officialNotificationPdf" (the official advertisement PDF). A bare home page such as https://www.ibps.in is NOT acceptable in any link field - open the site's recruitment section, copy the real URL of the notice, and WebFetch it to confirm it exists and is about this recruitment. If you can only find a home page, SKIP the item.
+- "sourceUrl" in the wrapper must be that same kind of deep link.
+ONE ITEM PER RECRUITMENT: one advertisement = exactly one item. Never send the same vacancy twice under different titles or from different aggregator sites; use the official notice as the source.
+DATES: lastDate comes from the official notice and must be today ({{TODAY}}) or later. Leave any other date null unless the notice states it.

@@ -69,6 +69,8 @@ public class SocialShareJobDto
     public int EntityId { get; set; }
     public string Channel { get; set; } = null!;
     public int Generation { get; set; }
+    /// <summary>0-5, the colour template of the image; null for older shares.</summary>
+    public int? Template { get; set; }
     public int Status { get; set; }
     public int Attempts { get; set; }
     public DateTime? NextAttemptAt { get; set; }
@@ -92,3 +94,6 @@ public class SocialShareSummaryDto
     public int Failed { get; set; }
     public int Skipped { get; set; }
 }
+
+/// <summary>The sanitized facts a share is built from: title, public URL and key-detail lines.</summary>
+public record SocialPostFacts(string Title, string Url, List<SocialDetail> Details);

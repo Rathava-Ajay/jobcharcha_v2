@@ -256,6 +256,7 @@ public class ContentSyncService : IContentSyncService
         }
 
         var (exitCode, stdout, stderr, outcome) = await RunClaudeAsync(prompt, logPath, state.Cts.Token);
+        await RecordUsageAsync(stdout, category, runId);   // tokens + cost are spent even if the run is cancelled or fails later
 
         // The admin may have cancelled between the process ending and now — then nothing must be ingested.
         if (outcome == ProcessOutcome.Cancelled || state.CancelRequested) { await FinishAsync(runId, ContentSyncStatus.Cancelled, "Cancelled by an admin.", null); return; }
@@ -283,6 +284,22 @@ public class ContentSyncService : IContentSyncService
         if (state.CancelRequested) { await FinishAsync(runId, ContentSyncStatus.Cancelled, "Cancelled by an admin.", null); return; }
         await FinishAsync(runId, ContentSyncStatus.Completed,
             problems.Count == 0 ? null : Tail($"{problems.Count} item(s) rejected - " + string.Join(" | ", problems)), note);
+    }
+
+    /// <summary>Stores the run's token usage for the admin AI usage tab. Best effort: never affects the run itself.</summary>
+    private async Task RecordUsageAsync(string stdout, string category, int runId)
+    {
+        try
+        {
+            var entry = AiUsageParser.FromClaudeCli(stdout, category, runId);
+            if (entry is null) return;
+            using var scope = _scopes.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IAiUsageService>().RecordAsync(entry);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not record Claude usage for run {RunId}.", runId);
+        }
     }
 
     private static string TitleOf(IngestContentDraftRequest item) =>

@@ -5,7 +5,7 @@ import {
   Layers, PlusCircle, Trash2, Pencil, X, Clock3, Award, Trophy, Smartphone,
   Landmark, Newspaper, GraduationCap, Rss, BellRing, ShieldAlert, CreditCard,
   ShoppingBag, Wallet, Receipt, AlertTriangle, ScrollText, QrCode, Sparkles,
-  CircleCheck, CircleDashed, CircleX, UserPlus, ChevronRight, ArrowRight, Share2,
+  CircleCheck, CircleDashed, CircleX, UserPlus, ChevronRight, ArrowRight, Share2, Coins,
 } from 'lucide-react';
 import { DashboardLayout, DashNavGroup, StatTile } from './dashboard/DashboardLayout';
 import { Job } from '../types';
@@ -41,6 +41,7 @@ import { AdminAuditLogPanel } from './admin/AdminAuditLogPanel';
 import { AdminCampaignLinksPanel } from './admin/AdminCampaignLinksPanel';
 import { AdminAiMagicPanel } from './admin/AdminAiMagicPanel';
 import { AdminAutoSharePanel } from './admin/AdminAutoSharePanel';
+import { AdminAiUsagePanel } from './admin/AdminAiUsagePanel';
 import { SkipSocialCheckbox, ShareAgainButton } from './admin/SocialShareControls';
 import { getContentSummary, ApiContentCategorySummary } from '../api/contentDrafts';
 import { searchJobDrafts, JOB_DRAFT_STATUS } from '../api/jobDrafts';
@@ -48,7 +49,7 @@ import { BulkImportExportBar } from './admin/BulkImportExportBar';
 import { OfficialDocumentUpload } from './admin/OfficialDocumentUpload';
 import { Select } from './ui/Select';
 
-type AdminTab = 'overview' | 'jobs' | 'aimagic' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'autoshare' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
+type AdminTab = 'overview' | 'jobs' | 'aimagic' | 'categories' | 'admitcards' | 'results' | 'schemes' | 'news' | 'study' | 'oldpapers' | 'blog' | 'alerts' | 'users' | 'mocks' | 'exams' | 'social' | 'autoshare' | 'aiusage' | 'employer-jobs' | 'employer-contacts' | 'employer-plans' | 'aspirant-plans' | 'products' | 'wallet' | 'payments' | 'disputes' | 'audit' | 'campaign';
 
 const ComingSoonBadge = () => (
   <span className="inline-flex items-center gap-1 bg-slate-200 text-slate-600 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
@@ -293,7 +294,10 @@ export const AdminDashboardSection: React.FC = () => {
       { id: 'payments', label: 'Payments', icon: Receipt },
       { id: 'disputes', label: 'Disputes', icon: AlertTriangle },
     ] },
-    { title: 'System', items: [{ id: 'audit', label: 'Activity audit', icon: ScrollText }] },
+    { title: 'System', items: [
+      { id: 'aiusage', label: 'AI usage', icon: Coins },
+      { id: 'audit', label: 'Activity audit', icon: ScrollText },
+    ] },
   ];
 
   const health = stats ? [
@@ -765,6 +769,11 @@ export const AdminDashboardSection: React.FC = () => {
         {/* CAMPAIGN LINKS / QR */}
         {activeTab === 'campaign' && (
           <AdminCampaignLinksPanel />
+        )}
+
+        {/* AI USAGE (Claude + OpenAI token consumption) */}
+        {activeTab === 'aiusage' && (
+          <AdminAiUsagePanel />
         )}
 
         {/* AUTO-SHARE (Telegram / Facebook / Instagram) */}

@@ -210,6 +210,8 @@ export default function LandingPage() {
               </div>
             </section>
           )}
+
+          <LatestByCategory categories={categories} />
         </div>
 
         <div id="schemes-section" className="scroll-mt-24"><SchemesNewsSection /></div>
@@ -424,6 +426,42 @@ const JobFeedRow: React.FC<{ job: Job }> = ({ job: j }) => {
         {(daysSince(j.postedDate) ?? 9) <= 2 && <Pill tone="green">{t('home.new')}</Pill>}
       </span>
     </Link>
+  );
+};
+
+/** Newest open jobs for each of the top categories, each with its own "view all" link. */
+const LatestByCategory: React.FC<{ categories: ApiCategory[] }> = ({ categories }) => {
+  const { t } = useTranslation();
+  const top = categories.filter((c) => c.jobCount > 0).slice(0, 6);
+  const key = top.map((c) => c.name).join('|');
+  const [byCat, setByCat] = useState<Record<string, Job[]>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all(top.map((c) =>
+      searchJobs({ category: c.name, openOnly: true, pageSize: 3 }).then((r) => [c.name, r.items] as const).catch(() => [c.name, [] as Job[]] as const),
+    )).then((rows) => { if (!cancelled) setByCat(Object.fromEntries(rows)); });
+    return () => { cancelled = true; };
+    // top is derived from categories; key captures the names
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+
+  const shown = top.filter((c) => (byCat[c.name] ?? []).length > 0);
+  if (shown.length === 0) return null;
+
+  return (
+    <section className="mt-8 sm:mt-10">
+      <SectionHeader title={t('home.latestByCategory', 'Latest by category')} action={{ label: t('home.allCategories'), to: '/jobs' }} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {shown.map((c) => (
+          <div key={c.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden min-w-0">
+            <p className="px-4 py-3 font-extrabold text-[15px] text-slate-900">{c.name}</p>
+            {byCat[c.name].map((j) => <JobFeedRow key={j.id} job={j} />)}
+            <FeedFooter to={`/jobs?category=${encodeURIComponent(c.name)}`} label={t('home.viewAll')} />
+          </div>
+        ))}
+      </div>
+    </section>
   );
 };
 

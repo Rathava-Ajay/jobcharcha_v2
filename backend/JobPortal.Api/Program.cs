@@ -46,6 +46,14 @@ if (builder.Configuration.GetValue("BackgroundSweeps:Enabled", true))
 {
     builder.Services.AddHostedService<EmployerNotificationSweepService>();
     builder.Services.AddHostedService<PaymentReconciliationService>();
+}
+
+// Auto-share posts to LIVE Telegram / Facebook / Instagram. It follows BackgroundSweeps:Enabled like the sweeps above, but
+// SocialShare:WorkerEnabled=true switches it on explicitly (e.g. to try auto-share locally while the sweeps stay off).
+// A channel with no credentials on this machine is never touched, so a bare local run cannot post anything.
+if (builder.Configuration.GetValue("BackgroundSweeps:Enabled", true)
+    || string.Equals(builder.Configuration["SocialShare:WorkerEnabled"], "true", StringComparison.OrdinalIgnoreCase))
+{
     builder.Services.AddHostedService<SocialShareWorker>();
 }
 
@@ -187,6 +195,21 @@ else
     app.UseHsts();
     app.UseHttpsRedirection();
 }
+
+// Baseline hardening headers for everything the API serves (JSON and /uploads files). SAMEORIGIN, not DENY: the site embeds its own uploaded
+// notification PDFs. HSTS is added above in Production; the HTML pages' headers (incl. CSP) are set by nginx — see deploy/nginx-jobcharcha.conf.example.
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        var h = context.Response.Headers;
+        h["X-Content-Type-Options"] = "nosniff";
+        h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        h["X-Frame-Options"] = "SAMEORIGIN";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 
 app.UseStaticFiles();
 

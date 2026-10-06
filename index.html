@@ -11,7 +11,9 @@
     <link rel="preconnect" href="https://job.jobcharcha.com" crossorigin>
     <!-- Razorpay is loaded on demand (see src/utils/loadRazorpay.ts); warm the DNS/TLS early. -->
     <link rel="dns-prefetch" href="https://checkout.razorpay.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fonts load without blocking first paint (media=print swap trick); the system font shows until they arrive. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap"></noscript>
     <meta name="theme-color" content="#1d4ed8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -29,7 +31,8 @@
       function gtag() { window.dataLayer.push(arguments); }
       window.gtag = gtag;
       gtag('js', new Date());
-      gtag('config', 'G-BQHGCRK48X');
+      // send_page_view:false — AnalyticsPageView sends one page_view per route (incl. the first); leaving the default on counted every landing twice.
+      gtag('config', 'G-BQHGCRK48X', { send_page_view: false });
       gtag('config', 'AW-17821775814');
 
       window.addEventListener('load', function () {
@@ -40,7 +43,7 @@
       });
     </script>
 
-    <!-- AdSense: deferred until the user actually interacts (or after 3s) so it never
+    <!-- AdSense: deferred until the user actually interacts (or after 8s) so it never
          competes with the SPA bundle for bandwidth on first load. -->
     <script>
       function loadAdSense() {
@@ -54,7 +57,7 @@
       ['mousedown', 'touchstart', 'scroll', 'keydown'].forEach(function (e) {
         window.addEventListener(e, loadAdSense, { once: true, passive: true });
       });
-      setTimeout(loadAdSense, 3000);
+      window.addEventListener('load', function () { setTimeout(loadAdSense, 8000); });
     </script>
   </head>
   <body class="bg-[#f5f7f8] text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">

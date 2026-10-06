@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { trackJobOutbound, trackJobView } from '../utils/analytics';
 import { useParams, Link } from 'react-router-dom';
 import { getJobBySlug } from '../api/jobs';
 import { Navbar } from '../components/Navbar';
@@ -31,6 +32,21 @@ export default function JobDetailsPage() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  // job_view once per loaded job; apply / official-notification clicks via one delegated listener so every job layout is covered.
+  useEffect(() => {
+    if (!job) return;
+    trackJobView(job.id, job.title, job.companyOrDept);
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (job.applyUrl && href === job.applyUrl) trackJobOutbound('apply', job.id, job.title);
+      else if (job.officialNotificationUrl && href === job.officialNotificationUrl) trackJobOutbound('notification', job.id, job.title);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, [job]);
 
   const handleShare = (platform: 'whatsapp' | 'telegram' | 'facebook') => {
     if (!job) return;

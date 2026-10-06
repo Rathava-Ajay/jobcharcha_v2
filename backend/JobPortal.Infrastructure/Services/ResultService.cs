@@ -28,7 +28,7 @@ public class ResultService : IResultService
         var query = _db.Results.AsNoTracking().Include(r => r.Category).AsQueryable();
         if (!includeInactive) query = query.Where(r => r.IsActive);
 
-        var items = await query.OrderByDescending(r => r.ResultDate).ToListAsync();
+        var items = await query.OrderByDescending(r => r.CreatedDate).ThenByDescending(r => r.Id).ToListAsync();
         return items.Select(ToListItemDto).ToList();
     }
 

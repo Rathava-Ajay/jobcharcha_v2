@@ -21,15 +21,15 @@ public class CategoriesController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll() => Ok(await _categoryService.GetAllAsync());
 
     [HttpGet("featured")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetFeatured() => Ok(await _categoryService.GetFeaturedAsync());
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var category = await _categoryService.GetBySlugAsync(slug);

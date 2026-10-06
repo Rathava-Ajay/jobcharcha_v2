@@ -32,7 +32,7 @@ public class EmployerJobsController : ControllerBase
 
     [AllowAnonymous]
     [HttpGet("public")]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> SearchPublic([FromQuery] string? search, [FromQuery] string? city, [FromQuery] string? jobType) =>
         Ok(await _jobService.SearchPublicAsync(search, city, jobType));
 

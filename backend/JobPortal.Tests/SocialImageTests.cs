@@ -11,7 +11,7 @@ using SkiaSharp;
 
 namespace JobPortal.Tests;
 
-/// <summary>Auto-share step 4: image composition, the daily OpenAI cap, and the fallbacks.</summary>
+/// <summary>Auto-share step 4: image composition and hosting.</summary>
 public class SocialImageTests
 {
     private static readonly SocialDetail[] Details =
@@ -73,29 +73,7 @@ public class SocialImageTests
         Assert.All(lines, l => Assert.True(SocialFonts.Measure(l, 60, true) <= 500 + 1));
     }
 
-    // ---- service: cap & fallbacks ----------------------------------------------------------------
-
-    private sealed class FakeOpenAi : IOpenAiImageClient
-    {
-        public int Calls { get; private set; }
-        public bool Fail { get; set; }
-        public byte[] Png { get; } = MakePng();
-
-        public Task<byte[]> GenerateBackgroundAsync(string prompt, bool portrait, CancellationToken ct = default)
-        {
-            Calls++;
-            if (Fail) throw new SocialShareException("OpenAI image generation failed (500)", true);
-            return Task.FromResult(Png);
-        }
-
-        private static byte[] MakePng()
-        {
-            using var bmp = new SKBitmap(64, 64);
-            bmp.Erase(SKColors.DarkSlateBlue);
-            using var img = SKImage.FromBitmap(bmp);
-            return img.Encode(SKEncodedImageFormat.Png, 100).ToArray();
-        }
-    }
+    // ---- service ----------------------------------------------------------------
 
     private sealed class MemoryStorage : IFileStorageService
     {
@@ -112,14 +90,13 @@ public class SocialImageTests
         public void Delete(string relativeUrl) { }
     }
 
-    private static (SocialImageService Service, AppDbContext Db, FakeOpenAi OpenAi, MemoryStorage Storage) Setup(int cap = 2, bool openAiKey = true)
+    private static (SocialImageService Service, AppDbContext Db, MemoryStorage Storage) Setup()
     {
         var db = TestDb.Create(TestDb.NewDbName());
-        var options = new SocialShareOptions { OpenAiApiKey = openAiKey ? "k" : null, DailyImageCap = cap, PublicBaseUrl = "https://example.test" };
-        var openAi = new FakeOpenAi();
+        var options = new SocialShareOptions { PublicBaseUrl = "https://example.test" };
         var storage = new MemoryStorage();
-        var service = new SocialImageService(db, openAi, storage, new HttpClient(), options, NullLogger<SocialImageService>.Instance);
-        return (service, db, openAi, storage);
+        var service = new SocialImageService(db, storage, new HttpClient(), options, NullLogger<SocialImageService>.Instance);
+        return (service, db, storage);
     }
 
     private static async Task<SocialShareJob> AddJob(AppDbContext db, int entityId = 1, string channel = "telegram")
@@ -137,64 +114,9 @@ public class SocialImageTests
     private static SocialShareSetting Setting() => new() { Category = "job", ImageSize = "square" };
 
     [Fact]
-    public async Task Ensure_GeneratesOnce_StoresPublicUrl_AndSharesItAcrossChannels()
+    public async Task ProducesTheDefaultTemplate()
     {
-        var (service, db, openAi, storage) = Setup();
-        var tg = await AddJob(db, channel: "telegram");
-        var ig = await AddJob(db, channel: "instagram");
-
-        var url1 = await service.EnsureImageAsync(tg, Setting());
-        var url2 = await service.EnsureImageAsync(ig, Setting());
-
-        Assert.Equal("https://example.test/uploads/social/1.jpg", url1);
-        Assert.Equal(url1, url2);
-        Assert.Equal(1, openAi.Calls);          // one generation for the post, not one per channel
-        Assert.Single(storage.Saved);
-        Assert.Equal(1, (await db.SocialImageUsages.SingleAsync()).Count);
-    }
-
-    [Fact]
-    public async Task DailyCap_StopsOpenAiCalls_ButStillProducesTheDefaultTemplate()
-    {
-        var (service, db, openAi, storage) = Setup(cap: 1);
-
-        var first = await service.EnsureImageAsync(await AddJob(db, 1), Setting());
-        var second = await service.EnsureImageAsync(await AddJob(db, 2), Setting());
-
-        Assert.NotNull(first);
-        Assert.NotNull(second);                 // capped post still gets a branded image
-        Assert.Equal(1, openAi.Calls);
-        Assert.Equal(2, storage.Saved.Count);
-    }
-
-    [Fact]
-    public async Task OpenAiFailure_FallsBackToDefaultTemplate_AndReleasesTheCapSlot()
-    {
-        var (service, db, openAi, storage) = Setup();
-        openAi.Fail = true;
-
-        var url = await service.EnsureImageAsync(await AddJob(db), Setting());
-
-        Assert.NotNull(url);
-        Assert.Single(storage.Saved);
-        Assert.Equal(0, (await db.SocialImageUsages.SingleAsync()).Count);
-    }
-
-    [Fact]
-    public async Task WithoutAnOpenAiKey_UsesTheDefaultTemplate_AndNeverCallsOut()
-    {
-        var (service, db, openAi, _) = Setup(openAiKey: false);
+        var (service, db, _) = Setup();
         Assert.NotNull(await service.EnsureImageAsync(await AddJob(db), Setting()));
-        Assert.Equal(0, openAi.Calls);
-    }
-
-    [Fact]
-    public void Prompt_ForbidsTextAndIncludesTheAdminStyle()
-    {
-        var prompt = SocialImageService.BuildPrompt("result", new SocialShareSetting { ImageStyle = "saffron and green tricolour waves", BrandColor = "#112233" });
-        Assert.Contains("saffron and green tricolour waves", prompt);
-        Assert.Contains("#112233", prompt);
-        Assert.Contains("Do NOT include any text", prompt);
-        Assert.Contains("exam result", prompt);
     }
 }

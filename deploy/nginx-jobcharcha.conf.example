@@ -1,0 +1,111 @@
+# JobCharcha — production nginx reference (NOT applied by the repo; review, then copy into /etc/nginx/sites-available/).
+#
+# Why this exists (found by the pre-marketing audit against the live site on 2026-10-06):
+#   1. GET https://jobcharcha.com/sitemap.xml returned the SPA's index.html (HTML, 4314 bytes) instead of the sitemap, so Google had no
+#      sitemap. The API serves it at /sitemap.xml on 127.0.0.1:5101 — it must be proxied (see the `location = /sitemap.xml` block).
+#   2. https://www.jobcharcha.com/ returned a full 200 page (duplicate site). It must 301 to the bare domain.
+#   3. No HSTS / X-Content-Type-Options / X-Frame-Options / Referrer-Policy / CSP headers were sent on HTML responses.
+#
+# After editing:  sudo nginx -t && sudo systemctl reload nginx
+# Verify:         curl -sI https://jobcharcha.com/ | grep -i -E "strict-transport|x-frame|x-content|referrer|content-security"
+#                 curl -s  https://jobcharcha.com/sitemap.xml | head -c 200      # must start with <?xml
+#                 curl -sI https://www.jobcharcha.com/ | head -3                   # must be 301 -> https://jobcharcha.com/
+
+# ---- http -> https, www -> bare (one hop, permanent) -------------------------------------------------------------------------
+server {
+    listen 80;
+    listen [::]:80;
+    server_name jobcharcha.com www.jobcharcha.com;
+    return 301 https://jobcharcha.com$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.jobcharcha.com;
+    # ssl_certificate / ssl_certificate_key: same certificate files as the main server block below.
+    return 301 https://jobcharcha.com$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name jobcharcha.com;
+
+    # ssl_certificate     /etc/letsencrypt/live/jobcharcha.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/jobcharcha.com/privkey.pem;
+
+    root /var/www/jobcharcha/current;      # the symlink deploy/prerender.sh flips atomically
+    index index.html;
+
+    # ---- security headers (inherited by every location that does not set its own add_header) -----------------------------------
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;   # drop includeSubDomains if any subdomain is still http-only
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # Content-Security-Policy: start in REPORT-ONLY. The site legitimately loads Google Analytics/Ads (gtag), AdSense, Razorpay Checkout
+    # (script + iframe), Google Fonts, and inline bootstrap scripts in index.html, so an enforcing CSP written blind would break
+    # analytics, ads or — worst — the checkout. Watch the browser console / a report endpoint for a few days of real traffic, add whatever
+    # legitimate source is reported, THEN rename the header to Content-Security-Policy.
+    add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://checkout.razorpay.com https://ep2.adtrafficquality.google; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net https://lumberjack.razorpay.com https://api.razorpay.com; frame-src https://api.razorpay.com https://checkout.razorpay.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com https://drive.google.com; object-src 'none'; base-uri 'self'; form-action 'self' https://api.razorpay.com; frame-ancestors 'self'" always;
+
+    # ---- sitemap + robots -------------------------------------------------------------------------------------------------------
+    # The API renders the sitemap from the database. Without this block the SPA fallback answers with HTML.
+    location = /sitemap.xml {
+        proxy_pass http://127.0.0.1:5101/sitemap.xml;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        add_header Cache-Control "public, max-age=600" always;
+        add_header X-Content-Type-Options "nosniff" always;     # add_header in a location drops the inherited ones, so repeat the essentials
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    }
+    location = /robots.txt { try_files /robots.txt =404; }
+
+    # ---- API (same host; the frontend's VITE_API_BASE_URL is https://jobcharcha.com) ------------------------------------------------
+    location /api/ {
+        proxy_pass http://127.0.0.1:5101;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        client_max_body_size 25m;                                 # admin notification uploads are capped at 20 MB by the API
+    }
+    location /uploads/ {
+        proxy_pass http://127.0.0.1:5101;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        expires 30d;
+        add_header Cache-Control "public" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    }
+
+    # ---- static assets (hashed filenames) -------------------------------------------------------------------------------------------
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        access_log off;
+    }
+    location /icons/ { expires 30d; add_header Cache-Control "public" always; add_header X-Content-Type-Options "nosniff" always; }
+
+    # ---- HTML: always revalidate so a fresh prerender is picked up immediately ---------------------------------------------------------
+    location / {
+        try_files $uri $uri/index.html /index.html;
+        add_header Cache-Control "no-cache" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+        # The Content-Security-Policy-Report-Only header from the server level must be repeated here (nginx add_header inheritance rule).
+        # Easiest: move all of the add_header lines above into /etc/nginx/snippets/jobcharcha-security-headers.conf and `include` it in every location.
+    }
+
+    # NOT done on purpose: a hard 404 for unknown URLs. Job/result pages are rendered by the prerender job a few minutes AFTER an admin
+    # publishes, so a strict `try_files $uri =404` would 404 brand-new, legitimate pages until the next prerender. Unknown URLs therefore still
+    # fall back to the SPA shell, whose NotFoundPage is `noindex`. Revisit only if Search Console reports "Soft 404" at scale.
+}

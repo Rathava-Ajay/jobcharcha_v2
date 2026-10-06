@@ -19,7 +19,7 @@ public class SocialShareWiringTests
         var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["TELEGRAM_BOT_TOKEN"] = "t", ["TELEGRAM_CHANNEL_ID"] = "@c", ["App:FrontendBaseUrl"] = "https://x.test",
-            ["SocialShare:DailyImageCap"] = "7", ["FileStorage:RootPath"] = Path.Combine(Path.GetTempPath(), "jp-wiring-test"),
+            ["FileStorage:RootPath"] = Path.Combine(Path.GetTempPath(), "jp-wiring-test"),
         }).Build();
 
         var services = new ServiceCollection();
@@ -43,7 +43,6 @@ public class SocialShareWiringTests
         // The publishing services get the share hook injected.
         Assert.NotNull(sp.GetRequiredService<INewsService>());
         var options = sp.GetRequiredService<JobPortal.Application.Common.SocialShareOptions>();
-        Assert.Equal(7, options.DailyImageCap);
         Assert.True(options.TelegramConfigured);
         Assert.False(options.InstagramConfigured);
         Assert.Equal("https://x.test", options.PublicBaseUrl);

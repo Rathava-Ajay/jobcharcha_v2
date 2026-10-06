@@ -14,6 +14,9 @@ namespace JobPortal.Infrastructure.Services;
 
 public class StoreOrderService : IStoreOrderService
 {
+    /// <summary>Digital downloads: more than a handful of copies of one file is never legitimate.</summary>
+    private const int MaxQuantityPerItem = 10;
+
     private readonly AppDbContext _db;
     private readonly IRazorpayClient _razorpay;
     private readonly RazorpaySettings _settings;
@@ -77,7 +80,7 @@ public class StoreOrderService : IStoreOrderService
         foreach (var item in request.Items)
         {
             var product = products.First(p => p.ProductId == item.ProductId);
-            var quantity = Math.Max(1, item.Quantity);
+            var quantity = Math.Clamp(item.Quantity, 1, MaxQuantityPerItem);
             var unitPrice = product.IsFree ? 0 : (product.Price ?? 0);
             subtotal += unitPrice * quantity;
 
@@ -100,6 +103,10 @@ public class StoreOrderService : IStoreOrderService
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
+
+        // A free cart has nothing to charge: Razorpay refuses a zero-amount order and a wallet row may not even exist, so settle it directly.
+        if (order.FinalAmount <= 0)
+            return await CompleteFreeOrderAsync(order.OrderId);
 
         if (isWallet)
             return await DebitWalletForOrderAsync(userId, order.OrderId);
@@ -174,8 +181,8 @@ public class StoreOrderService : IStoreOrderService
 
         if (!isValid)
         {
-            order.PaymentStatus = "Failed";
-            await _db.SaveChangesAsync();
+            // The order stays Pending: a bad or tampered /verify call must not cancel an order the buyer may really have paid for;
+            // the signed webhook (FulfillCapturedAsync) or a correct retry can still settle it.
             _db.PaymentLogs.Add(new PaymentLog
             {
                 OrderId = order.OrderId,
@@ -199,24 +206,7 @@ public class StoreOrderService : IStoreOrderService
         await using var transaction = await _db.Database.BeginTransactionAsync();
         try
         {
-            order.PaymentStatus = "Paid";
-            order.PaymentDate = DateTime.UtcNow;
-            order.PaymentMethod = "razorpay";
-            order.RazorpayPaymentId = request.RazorpayPaymentId;
-            order.RazorpaySignature = request.RazorpaySignature;
-
-            var productIds = order.OrderItems.Select(i => i.ProductId).Distinct().ToList();
-            var products = await _db.Products.Where(p => productIds.Contains(p.ProductId)).ToListAsync();
-            foreach (var item in order.OrderItems)
-            {
-                item.DownloadToken = Guid.NewGuid().ToString("N");
-                var product = products.FirstOrDefault(p => p.ProductId == item.ProductId);
-                if (product is not null)
-                {
-                    product.TotalSales += item.Quantity;
-                    product.TotalRevenue += item.Price * item.Quantity;
-                }
-            }
+            await ApplyRazorpayPaidAsync(order, request.RazorpayPaymentId, request.RazorpaySignature);
 
             _db.PaymentLogs.Add(new PaymentLog
             {
@@ -244,6 +234,125 @@ public class StoreOrderService : IStoreOrderService
         await LogOrderPaidAuditAsync(order, "razorpay");
 
         return ServiceResult<VerifyStoreOrderResponse>.Ok(new VerifyStoreOrderResponse { Unlocked = true, OrderId = order.OrderId });
+    }
+
+    /// <summary>Marks a Razorpay order Paid and applies the per-item download tokens and product counters. The caller saves (and owns the transaction).</summary>
+    private async Task ApplyRazorpayPaidAsync(Order order, string razorpayPaymentId, string? signature)
+    {
+        order.PaymentStatus = "Paid";
+        order.PaymentDate = DateTime.UtcNow;
+        order.PaymentMethod = "razorpay";
+        order.RazorpayPaymentId = razorpayPaymentId;
+        if (signature is not null) order.RazorpaySignature = signature;
+        await ApplyPaidItemsAsync(order);
+    }
+
+    private async Task ApplyPaidItemsAsync(Order order)
+    {
+        var productIds = order.OrderItems.Select(i => i.ProductId).Distinct().ToList();
+        var products = await _db.Products.Where(p => productIds.Contains(p.ProductId)).ToListAsync();
+        foreach (var item in order.OrderItems)
+        {
+            item.DownloadToken = Guid.NewGuid().ToString("N");
+            var product = products.FirstOrDefault(p => p.ProductId == item.ProductId);
+            if (product is not null)
+            {
+                product.TotalSales += item.Quantity;
+                product.TotalRevenue += item.Price * item.Quantity;
+            }
+        }
+    }
+
+    public async Task<bool> FulfillCapturedAsync(string razorpayOrderId, string? razorpayPaymentId, long? amountPaise, string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(razorpayOrderId) || string.IsNullOrWhiteSpace(razorpayPaymentId)) return false;
+
+        var order = await _db.Orders.Include(o => o.OrderItems).FirstOrDefaultAsync(o => o.RazorpayOrderId == razorpayOrderId);
+        if (order is null) return false;                                   // not a store order (e.g. a plan or wallet top-up)
+        if (order.PaymentStatus != "Pending") return true;                  // already settled by /verify, or refunded/cancelled: nothing to do
+
+        // The amount comes from the server-side order, never from the client; the webhook must agree with it.
+        var expectedPaise = (long)Math.Round(order.FinalAmount * 100, MidpointRounding.AwayFromZero);
+        if (amountPaise != expectedPaise || !string.Equals(currency ?? "INR", order.Currency, StringComparison.OrdinalIgnoreCase))
+        {
+            _db.PaymentLogs.Add(new PaymentLog
+            {
+                OrderId = order.OrderId, RazorpayOrderId = razorpayOrderId, RazorpayPaymentId = razorpayPaymentId,
+                Event = "webhook.amount_mismatch", Status = order.PaymentStatus, Amount = amountPaise, Currency = currency,
+                IsSuccess = false, ErrorMessage = $"Webhook amount {amountPaise} {currency} does not match the order ({expectedPaise} {order.Currency}); not fulfilled.",
+                CreatedDate = DateTime.UtcNow,
+            });
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            await ApplyRazorpayPaidAsync(order, razorpayPaymentId, signature: null);
+            _db.PaymentLogs.Add(new PaymentLog
+            {
+                OrderId = order.OrderId, RazorpayOrderId = razorpayOrderId, RazorpayPaymentId = razorpayPaymentId,
+                Event = "payment.captured.webhook", Status = "Paid", Amount = amountPaise, Currency = order.Currency,
+                IsSuccess = true, CreatedDate = DateTime.UtcNow,
+            });
+            await _db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception ex) when (ex is DbUpdateConcurrencyException || (ex is DbUpdateException due && IsUniqueConstraintViolation(due)))
+        {
+            await transaction.RollbackAsync();                              // /verify won the race; its result stands
+            return true;
+        }
+
+        await LogOrderPaidAuditAsync(order, "razorpay-webhook");
+        return true;
+    }
+
+    private async Task<ServiceResult<CheckoutResponse>> CompleteFreeOrderAsync(int orderId)
+    {
+        var order = await _db.Orders.Include(o => o.OrderItems).FirstAsync(o => o.OrderId == orderId);
+        order.PaymentStatus = "Paid";
+        order.PaymentMethod = "free";
+        order.PaymentDate = DateTime.UtcNow;
+        await ApplyPaidItemsAsync(order);
+        await _db.SaveChangesAsync();
+        await LogOrderPaidAuditAsync(order, "free");
+        return ServiceResult<CheckoutResponse>.Ok(new CheckoutResponse
+        {
+            OrderId = order.OrderId, OrderNumber = order.OrderNumber, FinalAmount = order.FinalAmount, AlreadyPaid = true,
+        });
+    }
+
+    public async Task<AdminStoreOrderPage> GetAdminOrdersAsync(string? status, int page, int pageSize)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var all = _db.Orders.AsNoTracking();
+        var counts = await all.GroupBy(o => o.PaymentStatus).Select(g => new { Status = g.Key, Count = g.Count() }).ToListAsync();
+        var revenue = (await all.Where(o => o.PaymentStatus == "Paid").Select(o => o.FinalAmount).ToListAsync()).Sum();   // summed client-side: SQLite/InMemory-safe for decimals
+
+        var query = all;
+        if (!string.IsNullOrWhiteSpace(status)) query = query.Where(o => o.PaymentStatus == status);
+
+        var total = await query.CountAsync();
+        var rows = await query.Include(o => o.OrderItems).OrderByDescending(o => o.OrderDate)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+        return new AdminStoreOrderPage
+        {
+            Total = total,
+            PaidRevenue = revenue,
+            CountsByStatus = counts.ToDictionary(c => c.Status, c => c.Count),
+            Items = rows.Select(o => new AdminStoreOrderDto
+            {
+                OrderId = o.OrderId, OrderNumber = o.OrderNumber, CustomerEmail = o.CustomerEmail, FinalAmount = o.FinalAmount,
+                PaymentStatus = o.PaymentStatus, PaymentMethod = o.PaymentMethod, RazorpayOrderId = o.RazorpayOrderId,
+                RazorpayPaymentId = o.RazorpayPaymentId, OrderDate = o.OrderDate, PaymentDate = o.PaymentDate,
+                Items = o.OrderItems.Select(i => $"{i.ProductTitle} x{i.Quantity}").ToList(),
+            }).ToList(),
+        };
     }
 
     public async Task<List<StoreOrderDto>> GetMyOrdersAsync(string userId)

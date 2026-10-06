@@ -11,6 +11,7 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'script-defer', // registerSW.js was render-blocking
         includeAssets: ['icons/apple-touch-icon.png'],
         manifest: {
           name: 'JobCharcha - Government & Private Jobs',

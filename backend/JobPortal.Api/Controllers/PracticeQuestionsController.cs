@@ -18,15 +18,15 @@ public class PracticeQuestionsController : ControllerBase
     }
 
     [HttpGet("exams")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetExams() => Ok(await _practiceQuestionService.GetExamsAsync());
 
     [HttpGet("subjects")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetSubjects([FromQuery] int examId) => Ok(await _practiceQuestionService.GetSubjectsAsync(examId));
 
     [HttpGet("topics")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetTopics([FromQuery] int examId, [FromQuery] string? subject) =>
         Ok(await _practiceQuestionService.GetTopicsAsync(examId, subject));
 

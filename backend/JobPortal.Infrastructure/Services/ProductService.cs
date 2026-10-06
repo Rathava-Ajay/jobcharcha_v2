@@ -35,19 +35,19 @@ public class ProductService : IProductService
         }
 
         var products = await query.OrderByDescending(p => p.IsFeatured).ThenByDescending(p => p.CreatedDate).ToListAsync();
-        return products.Select(ToDto).ToList();
+        return products.Select(p => ToDto(p, includeFileLinks: false)).ToList();
     }
 
     public async Task<ProductDto?> GetBySlugAsync(string slug)
     {
         var product = await _db.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Slug == slug && p.IsActive);
-        return product is null ? null : ToDto(product);
+        return product is null ? null : ToDto(product, includeFileLinks: false);
     }
 
     public async Task<List<ProductDto>> GetAllForAdminAsync()
     {
         var products = await _db.Products.AsNoTracking().OrderByDescending(p => p.CreatedDate).ToListAsync();
-        return products.Select(ToDto).ToList();
+        return products.Select(p => ToDto(p)).ToList();
     }
 
     public async Task<ServiceResult<ProductDto>> CreateAsync(UpsertProductRequest request)
@@ -155,7 +155,9 @@ public class ProductService : IProductService
     private static string Slugify(string value) =>
         value.Trim().ToLowerInvariant().Replace(" ", "-").Replace("/", "-").Replace("--", "-");
 
-    private static ProductDto ToDto(Product p) => new()
+    /// <summary>The Drive links are the paid file itself, so only the admin screens (which edit them) get them. Public responses must never
+    /// carry them — buyers receive the download link from the authorised order-download endpoint after a verified payment.</summary>
+    private static ProductDto ToDto(Product p, bool includeFileLinks = true) => new()
     {
         ProductId = p.ProductId,
         Title = p.Title,
@@ -164,8 +166,8 @@ public class ProductService : IProductService
         Description = p.Description,
         Category = p.Category,
         SubCategory = p.SubCategory,
-        GoogleDriveDownloadUrl = p.GoogleDriveDownloadUrl,
-        GoogleDriveViewUrl = p.GoogleDriveViewUrl,
+        GoogleDriveDownloadUrl = includeFileLinks ? p.GoogleDriveDownloadUrl : null,
+        GoogleDriveViewUrl = includeFileLinks ? p.GoogleDriveViewUrl : null,
         CoverImageUrl = p.CoverImageUrl,
         FileSize = p.FileSize,
         PageCount = p.PageCount,

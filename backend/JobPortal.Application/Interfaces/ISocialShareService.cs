@@ -23,6 +23,12 @@ public interface ISocialShareService
     /// <summary>Rejects a share that is waiting for review; it is never posted.</summary>
     Task<ServiceResult> RejectAsync(int shareId, string userId);
 
+    /// <summary>Cancels a share that is waiting for approval, queued, or stuck mid-attempt; it is never posted.</summary>
+    Task<ServiceResult> CancelAsync(int shareId, string userId);
+
+    /// <summary>Marks a queued/failed share as posted (it is already live on the channel) so it is not posted again.</summary>
+    Task<ServiceResult> CompleteAsync(int shareId, string userId);
+
     /// <summary>Re-queues a failed share (attempt counter reset).</summary>
     Task<ServiceResult> RetryAsync(int shareId, string userId);
 
@@ -36,4 +42,7 @@ public interface ISocialShareService
     Task<ServiceResult<SocialShareSettingDto>> UpdateSettingAsync(string category, UpdateSocialShareSettingRequest request);
     Task<PagedResult<SocialShareJobDto>> SearchAsync(int? status, string? category, string? channel, int page = 1, int pageSize = 20);
     Task<SocialShareSummaryDto> GetSummaryAsync();
+
+    /// <summary>The title, public URL and key details a share of this live post would use. Null when the post is not found or not published.</summary>
+    Task<SocialPostFacts?> GetPostFactsAsync(string category, int entityId);
 }

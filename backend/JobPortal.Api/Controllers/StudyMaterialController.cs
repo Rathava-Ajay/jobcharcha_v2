@@ -20,7 +20,7 @@ public class StudyMaterialController : ControllerBase
     }
 
     [HttpGet]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Search([FromQuery] int? categoryId, [FromQuery] string? materialType, [FromQuery] string? search) =>
         Ok(await _studyMaterialService.SearchAsync(categoryId, materialType, search));
 
