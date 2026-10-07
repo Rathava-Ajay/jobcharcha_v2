@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.Jobs;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -13,11 +14,13 @@ public class JobService : IJobService
 {
     private readonly AppDbContext _db;
     private readonly IBackgroundTaskQueue _taskQueue;
+    private readonly ISocialShareService? _social;
 
-    public JobService(AppDbContext db, IBackgroundTaskQueue taskQueue)
+    public JobService(AppDbContext db, IBackgroundTaskQueue taskQueue, ISocialShareService? social = null)
     {
         _db = db;
         _taskQueue = taskQueue;
+        _social = social;
     }
 
     /// <summary>
@@ -38,6 +41,9 @@ public class JobService : IJobService
         return await q.AnyAsync();
     }
 
+    private Task ShareAsync(int jobId, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.Job, jobId, skip, userId);
+
     private void EnqueueAlertDispatch(int jobId)
     {
         _taskQueue.QueueBackgroundWorkItem(async (sp, ct) =>
@@ -45,6 +51,32 @@ public class JobService : IJobService
             var dispatchService = sp.GetRequiredService<IJobAlertDispatchService>();
             await dispatchService.DispatchForNewJobAsync(jobId);
         });
+    }
+
+    /// <summary>
+    /// QualificationRequired is free text ("Bachelor's Degree", "Class 12 pass", "Master's / MBA"...), so each
+    /// filter stem the site sends (see src/utils/jobFilters.ts) also matches its common spellings.
+    /// Any other value falls back to a plain case-insensitive contains.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> QualificationSynonyms = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["10th"] = new[] { "10th", "Class 10", "Class X", "Matric", "SSC Pass" },
+        ["12th"] = new[] { "12th", "Class 12", "10+2", "HSC", "Higher Secondary", "Intermediate" },
+        ["Graduat"] = new[] { "Graduat", "Bachelor", "Degree", "B.E.", "B.Tech", "B.Sc", "B.Com", "B.A.", "BCA", "BBA", "LLB", "MBBS" },
+        ["Post Grad"] = new[] { "Post Grad", "Postgrad", "Master", "M.Sc", "M.Tech", "M.E.", "MBA", "MCA", "PGDM", "Ph.D" },
+    };
+
+    public static System.Linq.Expressions.Expression<Func<Job, bool>> QualificationMatches(string value)
+    {
+        var terms = QualificationSynonyms.TryGetValue(value.Trim(), out var t) ? t : new[] { value.Trim() };
+        var j = System.Linq.Expressions.Expression.Parameter(typeof(Job), "j");
+        var prop = System.Linq.Expressions.Expression.Property(j, nameof(Job.QualificationRequired));
+        var contains = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
+        System.Linq.Expressions.Expression body = System.Linq.Expressions.Expression.NotEqual(prop, System.Linq.Expressions.Expression.Constant(null, typeof(string)));
+        System.Linq.Expressions.Expression any = terms
+            .Select(term => (System.Linq.Expressions.Expression)System.Linq.Expressions.Expression.Call(prop, contains, System.Linq.Expressions.Expression.Constant(term)))
+            .Aggregate(System.Linq.Expressions.Expression.OrElse);
+        return System.Linq.Expressions.Expression.Lambda<Func<Job, bool>>(System.Linq.Expressions.Expression.AndAlso(body, any), j);
     }
 
     public async Task<PagedResult<JobListItemDto>> SearchAsync(JobQuery query, bool includeInactive = false)
@@ -55,7 +87,7 @@ public class JobService : IJobService
         if (!string.IsNullOrWhiteSpace(query.Search))
         {
             var term = query.Search.Trim();
-            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term));
+            q = q.Where(j => j.Title.Contains(term) || j.OrganizationName.Contains(term) || j.Category.Name.Contains(term));
         }
         if (!string.IsNullOrWhiteSpace(query.Category) && query.Category != "All")
             q = q.Where(j => j.Category.Name == query.Category || j.Category.Slug == query.Category);
@@ -64,7 +96,7 @@ public class JobService : IJobService
                               j.District != null && j.District.Contains(query.Location) ||
                               j.State != null && j.State.Contains(query.Location));
         if (!string.IsNullOrWhiteSpace(query.Qualification) && query.Qualification != "All Qualifications")
-            q = q.Where(j => j.QualificationRequired != null && j.QualificationRequired.Contains(query.Qualification));
+            q = q.Where(QualificationMatches(query.Qualification));
         if (query.MinSalary.HasValue)
             q = q.Where(j => j.MaxSalary == null || j.MaxSalary >= query.MinSalary);
         if (query.MaxSalary.HasValue)
@@ -72,14 +104,31 @@ public class JobService : IJobService
         if (query.FeaturedOnly == true)
             q = q.Where(j => j.IsFeatured);
 
+        var today = DateTime.UtcNow.Date;
+        if (query.OpenOnly == true || query.ClosingWithinDays.HasValue)
+            q = q.Where(j => j.LastDate >= today);
+        if (query.ClosingWithinDays is > 0)
+        {
+            var until = today.AddDays(query.ClosingWithinDays.Value + 1);
+            q = q.Where(j => j.LastDate < until);
+        }
+
         var totalCount = await q.CountAsync();
 
         var page = Math.Max(1, query.Page);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var items = await q
-            .OrderByDescending(j => j.IsFeatured)
-            .ThenByDescending(j => j.PostedDate)
+        IOrderedQueryable<Job> ordered = query.Sort?.ToLowerInvariant() switch
+        {
+            // Soonest deadline first, but never lead with jobs that already closed.
+            "deadline" => q.OrderBy(j => j.LastDate < today).ThenBy(j => j.LastDate),
+            "popular" => q.OrderByDescending(j => j.Views),
+            "posts" => q.OrderByDescending(j => j.TotalPosts ?? 0),
+            _ => q.OrderByDescending(j => j.IsFeatured).ThenByDescending(j => j.PostedDate),
+        };
+
+        var items = await ordered
+            .ThenByDescending(j => j.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -188,7 +237,7 @@ public class JobService : IJobService
         };
         _db.Jobs.Add(entity);
         await _db.SaveChangesAsync();
-        if (entity.IsActive) EnqueueAlertDispatch(entity.Id);
+        if (entity.IsActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, request.SkipSocial, userId); }
 
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == entity.Id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
@@ -218,8 +267,21 @@ public class JobService : IJobService
             DuplicateFingerprint = fingerprint,
             CategoryId = request.CategoryId,
             Location = request.Location,
+            State = NullIfBlank(request.State),
+            District = NullIfBlank(request.District),
             TotalPosts = request.TotalPosts,
             Salary = request.Salary,
+            MinSalary = request.MinSalary > 0 ? request.MinSalary : null,
+            MaxSalary = request.MaxSalary > 0 ? request.MaxSalary : null,
+            SalaryType = NullIfBlank(request.SalaryType),
+            MinAge = request.MinAge > 0 ? request.MinAge : null,
+            MaxAge = request.MaxAge > 0 ? request.MaxAge : null,
+            ExperienceRequired = request.ExperienceRequired >= 0 ? request.ExperienceRequired : null,
+            AdvertisementNumber = NullIfBlank(request.AdvertisementNumber),
+            OfficialWebsite = NullIfBlank(request.OfficialWebsite),
+            SyllabusPdf = NullIfBlank(request.SyllabusLink),
+            ApplicationFee = request.ApplicationFeeAmount >= 0 ? request.ApplicationFeeAmount : null,
+            ApplicationFeeDetails = NullIfBlank(request.ApplicationFeeDetails),
             QualificationRequired = request.Qualification,
             DetailedEligibility = !string.IsNullOrWhiteSpace(request.EligibilityDetails) ? request.EligibilityDetails : eligibility,
             PostedDate = DateTime.UtcNow,
@@ -266,7 +328,7 @@ public class JobService : IJobService
         };
         _db.Jobs.Add(entity);
         await _db.SaveChangesAsync();
-        if (entity.IsActive) EnqueueAlertDispatch(entity.Id);
+        if (entity.IsActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, request.SkipSocial, userId); }
 
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == entity.Id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
@@ -315,11 +377,13 @@ public class JobService : IJobService
         entity.SyllabusPdf = request.SyllabusPdf;
         entity.OrganizationLogo = request.OrganizationLogo;
         entity.Status = request.Status;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedById = userId;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.Jobs.Include(j => j.Category).FirstAsync(j => j.Id == id);
         return ServiceResult<JobDto>.Ok(ToFullDto(saved));
     }
@@ -353,7 +417,7 @@ public class JobService : IJobService
         entity.UpdatedById = userId;
         entity.UpdatedDate = DateTime.UtcNow;
         await _db.SaveChangesAsync();
-        if (isActive && !wasActive) EnqueueAlertDispatch(entity.Id);
+        if (isActive && !wasActive) { EnqueueAlertDispatch(entity.Id); await ShareAsync(entity.Id, false, userId); }
         return ServiceResult.Ok();
     }
 
@@ -478,6 +542,8 @@ public class JobService : IJobService
         MetaKeywords = j.MetaKeywords,
     };
 
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static List<ImportantDateDto> BuildImportantDates(Job j)
     {
         var dates = new List<ImportantDateDto>();
@@ -493,13 +559,19 @@ public class JobService : IJobService
             catch (JsonException) { /* malformed/legacy JSON — ignore, scalar-column dates still render */ }
         }
 
-        if (extra?.ApplicationEnd is not null) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
+        // "Last Date to Apply" is always added below from j.LastDate — skip an identical Application End row.
+        if (extra?.ApplicationEnd is not null && extra.ApplicationEnd.Value.Date != j.LastDate.Date) dates.Add(new ImportantDateDto { Label = "Application End", Date = extra.ApplicationEnd.Value.ToString("yyyy-MM-dd") });
         if (extra?.FeePaymentEnd is not null) dates.Add(new ImportantDateDto { Label = "Fee Payment Last Date", Date = extra.FeePaymentEnd.Value.ToString("yyyy-MM-dd") });
         dates.Add(new ImportantDateDto { Label = "Last Date to Apply", Date = j.LastDate.ToString("yyyy-MM-dd") });
         if (extra?.AdmitCardDate is not null) dates.Add(new ImportantDateDto { Label = "Admit Card Date", Date = extra.AdmitCardDate.Value.ToString("yyyy-MM-dd") });
         if (j.ExamDate.HasValue) dates.Add(new ImportantDateDto { Label = "Exam Date", Date = j.ExamDate.Value.ToString("yyyy-MM-dd") });
         if (j.InterviewDate.HasValue) dates.Add(new ImportantDateDto { Label = "Interview Date", Date = j.InterviewDate.Value.ToString("yyyy-MM-dd") });
         if (extra?.ResultDate is not null) dates.Add(new ImportantDateDto { Label = "Result Date", Date = extra.ResultDate.Value.ToString("yyyy-MM-dd") });
+        foreach (var other in extra?.OtherDates ?? new())
+        {
+            if (!string.IsNullOrWhiteSpace(other.Label) && !string.IsNullOrWhiteSpace(other.Date))
+                dates.Add(new ImportantDateDto { Label = other.Label.Trim(), Date = other.Date.Trim() });
+        }
         return dates;
     }
 

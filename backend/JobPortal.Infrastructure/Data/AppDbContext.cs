@@ -110,6 +110,22 @@ public partial class AppDbContext : DbContext
 
     public virtual DbSet<JobDocument> JobDocuments { get; set; }
 
+    public virtual DbSet<ContentCategorySetting> ContentCategorySettings { get; set; }
+
+    public virtual DbSet<ContentDraft> ContentDrafts { get; set; }
+
+    public virtual DbSet<ContentSource> ContentSources { get; set; }
+
+    public virtual DbSet<ContentSyncRun> ContentSyncRuns { get; set; }
+
+    public virtual DbSet<SocialShareSetting> SocialShareSettings { get; set; }
+
+    public virtual DbSet<SocialShareJob> SocialShareJobs { get; set; }
+
+    public virtual DbSet<SocialImageUsage> SocialImageUsages { get; set; }
+
+    public virtual DbSet<AiUsageLog> AiUsageLogs { get; set; }
+
     public virtual DbSet<JobDraftQueue> JobDraftQueues { get; set; }
 
     public virtual DbSet<JobFeedSource> JobFeedSources { get; set; }

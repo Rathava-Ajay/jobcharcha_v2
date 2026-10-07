@@ -2,23 +2,40 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JobCharcha - Verified Government & Private Job Vacancies 2026</title>
-    <meta name="description" content="JobCharcha is India's leading portal for government recruitment notifications, UPSC, SSC, Banking, Railways, State PSCs, admit cards, results, CBT mock tests, and youth schemes." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>JobCharcha - Gujarat & Central Govt Jobs, Results 2026</title>
+    <meta name="description" content="Gujarat and central government job notifications: GPSC, GSSSB, OJAS, Police, SSC, Railway, Bank. Admit cards, results, mock tests and job alerts." />
+    <meta property="og:site_name" content="JobCharcha">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="JobCharcha - Gujarat & Central Govt Jobs, Results 2026">
+    <meta property="og:description" content="Gujarat and central government job notifications: GPSC, GSSSB, OJAS, Police, SSC, Railway, Bank. Admit cards, results, mock tests and job alerts.">
+    <meta property="og:url" content="https://jobcharcha.com/">
+    <meta property="og:image" content="https://jobcharcha.com/icons/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JobCharcha - Gujarat & Central Govt Jobs, Results 2026">
+    <meta name="twitter:description" content="Gujarat and central government job notifications: GPSC, GSSSB, OJAS, Police, SSC, Railway, Bank. Admit cards, results, mock tests and job alerts.">
+    <meta name="twitter:image" content="https://jobcharcha.com/icons/og-image.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- API origin is on the critical path (categories/settings load on first paint). -->
     <link rel="preconnect" href="https://job.jobcharcha.com" crossorigin>
     <!-- Razorpay is loaded on demand (see src/utils/loadRazorpay.ts); warm the DNS/TLS early. -->
     <link rel="dns-prefetch" href="https://checkout.razorpay.com">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <meta name="theme-color" content="#0f172a">
+    <!-- Fonts load without blocking first paint (media=print swap trick); the system font shows until they arrive. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap"></noscript>
+    <meta name="theme-color" content="#1d4ed8">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="JobCharcha">
-    <link rel="icon" type="image/png" href="/icons/favicon.png">
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="icon" href="/favicon.ico?v=2" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png?v=2">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png?v=2">
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon.png?v=2">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=2">
 
     <!-- Google tag (gtag.js): GA4 + Google Ads share one dataLayer/script. gtag() calls
          below queue into dataLayer immediately; gtag.js (loaded on window 'load' so it
@@ -28,7 +45,8 @@
       function gtag() { window.dataLayer.push(arguments); }
       window.gtag = gtag;
       gtag('js', new Date());
-      gtag('config', 'G-BQHGCRK48X');
+      // send_page_view:false — AnalyticsPageView sends one page_view per route (incl. the first); leaving the default on counted every landing twice.
+      gtag('config', 'G-BQHGCRK48X', { send_page_view: false });
       gtag('config', 'AW-17821775814');
 
       window.addEventListener('load', function () {
@@ -39,7 +57,7 @@
       });
     </script>
 
-    <!-- AdSense: deferred until the user actually interacts (or after 3s) so it never
+    <!-- AdSense: deferred until the user actually interacts (or after 8s) so it never
          competes with the SPA bundle for bandwidth on first load. -->
     <script>
       function loadAdSense() {
@@ -53,10 +71,10 @@
       ['mousedown', 'touchstart', 'scroll', 'keydown'].forEach(function (e) {
         window.addEventListener(e, loadAdSense, { once: true, passive: true });
       });
-      setTimeout(loadAdSense, 3000);
+      window.addEventListener('load', function () { setTimeout(loadAdSense, 8000); });
     </script>
   </head>
-  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
+  <body class="bg-[#f5f7f8] text-slate-900 antialiased selection:bg-emerald-500 selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

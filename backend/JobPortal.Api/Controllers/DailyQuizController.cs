@@ -23,7 +23,7 @@ public class DailyQuizController : ControllerBase
     private string? UserId => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
     [HttpGet("today")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetToday()
     {
         // "No quiz published for today" is a normal state, not an error — return 200 null so it
@@ -33,11 +33,11 @@ public class DailyQuizController : ControllerBase
     }
 
     [HttpGet("dates")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetDates() => Ok(await _dailyQuizService.GetAvailableDatesAsync());
 
     [HttpGet("by-date/{date}")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetByDate(DateOnly date)
     {
         var quiz = await _dailyQuizService.GetByDateAsync(date);

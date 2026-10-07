@@ -34,6 +34,8 @@ export interface ApiResultDetail extends ApiResultListItem {
 }
 
 export interface UpsertResultPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string;
   examName?: string;
@@ -57,6 +59,8 @@ export interface AiImportResultFaqItem { question: string; answer: string; }
 export interface AiImportCutOffRow { postName: string; general?: string | null; sc?: string | null; st?: string | null; obc?: string | null; ews?: string | null; }
 
 export interface AiImportResultPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string | null;
   examName?: string | null;

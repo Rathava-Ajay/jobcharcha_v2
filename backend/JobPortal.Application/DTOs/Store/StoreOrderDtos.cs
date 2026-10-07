@@ -83,6 +83,30 @@ public class StoreOrderDto
     public List<StoreOrderItemDto> Items { get; set; } = new();
 }
 
+public class AdminStoreOrderDto
+{
+    public int OrderId { get; set; }
+    public string OrderNumber { get; set; } = null!;
+    public string CustomerEmail { get; set; } = null!;
+    public decimal FinalAmount { get; set; }
+    public string PaymentStatus { get; set; } = null!;
+    public string? PaymentMethod { get; set; }
+    public string? RazorpayOrderId { get; set; }
+    public string? RazorpayPaymentId { get; set; }
+    public DateTime OrderDate { get; set; }
+    public DateTime? PaymentDate { get; set; }
+    public List<string> Items { get; set; } = new();
+}
+
+public class AdminStoreOrderPage
+{
+    public int Total { get; set; }
+    /// <summary>Sum of FinalAmount over Paid orders only (verified revenue). Refunded/Failed/Pending are excluded.</summary>
+    public decimal PaidRevenue { get; set; }
+    public Dictionary<string, int> CountsByStatus { get; set; } = new();
+    public List<AdminStoreOrderDto> Items { get; set; } = new();
+}
+
 public class RefundStoreOrderRequest
 {
     [StringLength(500)]

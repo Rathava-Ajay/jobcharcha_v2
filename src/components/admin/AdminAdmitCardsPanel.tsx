@@ -9,6 +9,8 @@ import { ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
 import { BulkImportExportBar } from './BulkImportExportBar';
 import { OfficialDocumentUpload } from './OfficialDocumentUpload';
+import { Select } from '../ui/Select';
+import { SkipSocialCheckbox, ShareAgainButton } from './SocialShareControls';
 
 const emptyForm: UpsertAdmitCardPayload = {
   title: '',
@@ -92,14 +94,14 @@ export const AdminAdmitCardsPanel: React.FC<Props> = ({ categories, onChanged })
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900">Admit Cards</h2>
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/admin/mobile-post-admitcard')} className="bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer flex items-center gap-1.5">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">Admit Cards</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => navigate('/admin/mobile-post-admitcard')} className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 whitespace-nowrap transition-colors">
             <Smartphone className="w-4 h-4" /> Post via Mobile/AI
           </button>
-          <button onClick={() => { resetForm(); setFormOpen(true); }} className="bg-indigo-600 text-white font-bold text-xs px-4 py-2 rounded-xl cursor-pointer flex items-center gap-1.5">
+          <button onClick={() => { resetForm(); setFormOpen(true); }} className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-bold text-[13px] px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-[0_8px_18px_-10px_rgba(37,99,235,0.8)] transition-colors">
             <PlusCircle className="w-4 h-4" /> New Admit Card
           </button>
         </div>
@@ -108,45 +110,45 @@ export const AdminAdmitCardsPanel: React.FC<Props> = ({ categories, onChanged })
       <BulkImportExportBar entityLabel="Admit Cards" exportPath="/api/admitcards/admin/export" importPath="/api/admitcards/admin/bulk-import" onImported={load} />
 
       {formOpen && (
-        <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 text-xs font-bold">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-heading font-extrabold text-slate-900">{editingId ? 'Edit Admit Card' : 'New Admit Card'}</h3>
-            <button type="button" onClick={resetForm} className="text-slate-400 hover:text-slate-700 cursor-pointer"><X className="w-4 h-4" /></button>
+        <form onSubmit={handleSubmit} className="bg-gradient-to-b from-blue-50/70 to-white border border-blue-200 ring-4 ring-blue-500/5 rounded-2xl p-4 sm:p-6 space-y-4 text-[13px] font-bold">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-[16px] font-extrabold text-slate-900">{editingId ? 'Edit Admit Card' : 'New Admit Card'}</h3>
+            <button type="button" onClick={resetForm} className="w-8 h-8 rounded-lg grid place-items-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"><X className="w-4 h-4" /></button>
           </div>
-          {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3 py-2">{formError}</div>}
+          {formError && <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-xl px-3.5 py-2.5 text-[13px]">{formError}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-slate-700 block mb-1">Title</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Title</label>
               <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div>
-              <label className="text-slate-700 block mb-1">Organization</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Organization</label>
               <input required value={form.organizationName} onChange={(e) => setForm({ ...form, organizationName: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div>
-              <label className="text-slate-700 block mb-1">Category</label>
-              <select value={form.categoryId || ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium">
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Category</label>
+              <Select value={form.categoryId || ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                 <option value="">None</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
-              <label className="text-slate-700 block mb-1">Release Date</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Release Date</label>
               <input type="date" required value={form.admitCardReleaseDate} onChange={(e) => setForm({ ...form, admitCardReleaseDate: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div>
-              <label className="text-slate-700 block mb-1">Exam Date</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Exam Date</label>
               <input type="date" value={form.examDate || ''} onChange={(e) => setForm({ ...form, examDate: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div className="md:col-span-2">
-              <label className="text-slate-700 block mb-1">Download Link</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Download Link</label>
               <input value={form.downloadLink || ''} onChange={(e) => setForm({ ...form, downloadLink: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div className="md:col-span-2">
               <OfficialDocumentUpload
@@ -157,21 +159,22 @@ export const AdminAdmitCardsPanel: React.FC<Props> = ({ categories, onChanged })
               />
             </div>
             <div className="md:col-span-2">
-              <label className="text-slate-700 block mb-1">Description</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Description</label>
               <textarea value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" rows={3} />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" rows={3} />
             </div>
             <div className="md:col-span-2">
-              <label className="text-slate-700 block mb-1">Instructions</label>
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Instructions</label>
               <textarea value={form.instructions || ''} onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 font-medium" rows={3} />
+                className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" rows={3} />
             </div>
             <div className="flex items-end gap-4 pb-1">
               <label className="flex items-center gap-1.5"><input type="checkbox" checked={form.isFeatured} onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })} /> Featured</label>
               <label className="flex items-center gap-1.5"><input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} /> Active</label>
             </div>
           </div>
-          <button type="submit" className="bg-slate-900 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-md">
+          <SkipSocialCheckbox checked={!!form.skipSocial} onChange={(v) => setForm({ ...form, skipSocial: v })} />
+          <button type="submit" className="bg-gradient-to-r from-blue-700 to-indigo-600 hover:from-blue-800 hover:to-indigo-700 text-white font-extrabold text-[14px] px-6 py-3 rounded-xl cursor-pointer shadow-[0_10px_20px_-12px_rgba(37,99,235,0.8)] transition-colors">
             {editingId ? 'Save Changes' : 'Publish Admit Card'}
           </button>
         </form>
@@ -179,22 +182,23 @@ export const AdminAdmitCardsPanel: React.FC<Props> = ({ categories, onChanged })
 
       <div className="space-y-3">
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading admit cards…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading admit cards…</div>
         ) : items.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No admit cards yet.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No admit cards yet.</div>
         ) : items.map((item) => (
-          <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_26px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]">
             <div>
-              <div className="font-bold text-slate-900 text-sm">{item.title}</div>
+              <div className="font-bold text-slate-900 text-[15px] break-words">{item.title}</div>
               <div className="text-slate-500">{item.organizationName} • Release: {item.releaseDate} • <span className="font-bold">{item.status}</span> • <span className="font-bold text-indigo-600">{item.viewsCount.toLocaleString()} views</span></div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => handleEdit(item.id)} className="bg-white border border-slate-200 text-slate-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-              <button onClick={() => handleDelete(item.id)} className="bg-red-50 text-red-700 font-bold px-3 py-1.5 rounded-xl cursor-pointer flex items-center gap-1">
+              <button onClick={() => handleEdit(item.id)} className="bg-white border border-slate-200 hover:border-blue-400 hover:text-blue-700 text-slate-700 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors"><Pencil className="w-3.5 h-3.5" /> Edit</button>
+              <ShareAgainButton category="admitcard" entityId={item.id} />
+              <button onClick={() => handleDelete(item.id)} className="bg-white border border-red-200 text-red-600 hover:bg-red-50 font-bold px-3 py-2 rounded-lg cursor-pointer flex items-center gap-1.5 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" /> {confirmDeleteId === item.id ? 'Confirm Delete?' : 'Delete'}
               </button>
               {confirmDeleteId === item.id && (
-                <button onClick={() => setConfirmDeleteId(null)} className="bg-slate-100 text-slate-600 font-bold px-3 py-1.5 rounded-xl cursor-pointer">Cancel</button>
+                <button onClick={() => setConfirmDeleteId(null)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold px-3 py-2 rounded-lg cursor-pointer transition-colors">Cancel</button>
               )}
             </div>
           </div>

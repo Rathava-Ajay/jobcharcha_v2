@@ -44,9 +44,9 @@ export const AdminUsersPanel: React.FC = () => {
   const unverifiedEmployers = items.filter((i) => i.role === 'employer' && i.isEmployerApproved === false).length;
 
   return (
-    <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 space-y-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="text-lg font-heading font-extrabold text-slate-900">User Accounts</h2>
+        <h2 className="text-[19px] font-extrabold tracking-tight text-slate-900">User Accounts</h2>
         <div className="flex items-center gap-2">
           {unverifiedEmployers > 0 && (
             <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-600 text-[11px] font-bold px-2.5 py-1 rounded-full">
@@ -74,11 +74,11 @@ export const AdminUsersPanel: React.FC = () => {
 
       <div className="space-y-3">
         {loading ? (
-          <div className="text-xs text-slate-400 font-semibold">Loading users…</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">Loading users…</div>
         ) : items.length === 0 ? (
-          <div className="text-xs text-slate-400 font-semibold">No users found.</div>
+          <div className="text-[13px] text-slate-500 font-semibold rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-4 py-8 text-center">No users found.</div>
         ) : items.map((item) => (
-          <div key={item.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div key={item.id} className="p-4 bg-white rounded-xl border border-slate-200 hover:border-blue-300 hover:shadow-[0_12px_26px_-22px_rgba(37,99,235,0.7)] transition flex flex-col md:flex-row md:items-center justify-between gap-3 text-[13px]">
             <div className="space-y-1">
               <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                 {item.firstName} {item.lastName}

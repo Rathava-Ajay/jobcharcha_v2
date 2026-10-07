@@ -43,6 +43,7 @@ export interface ParsedImportantDates {
   admitCardDate?: string | null;
   examDate?: string | null;
   resultDate?: string | null;
+  otherDates?: { label: string; date: string }[];
 }
 
 export interface ParsedAiJob {
@@ -60,6 +61,19 @@ export interface ParsedAiJob {
   location?: string | null;
   lastDate: string;
   applyLink?: string | null;
+  advertisementNumber?: string | null;
+  officialWebsite?: string | null;
+  syllabusLink?: string | null;
+  state?: string | null;
+  district?: string | null;
+  minAge?: number | null;
+  maxAge?: number | null;
+  experienceRequired?: number | null;
+  minSalary?: number | null;
+  maxSalary?: number | null;
+  salaryType?: string | null;
+  applicationFeeAmount?: number | null;
+  applicationFeeDetails?: string | null;
   shortDescription: string;
   overview: string;
   keyHighlights?: string | null;
@@ -95,6 +109,33 @@ function toNumber(v: unknown, fallback = 0): number {
   if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
   return fallback;
 }
+
+/** Positive number or null — the AI sometimes sends "18", "₹25,500" or 0 for "not given". */
+/** First number in a value: 18 → 18, "₹25,500" → 25500, "33 years" → 33. Takes only the FIRST
+ * number so a range the AI wrote as text ("18-33") can't collapse into 1833. */
+function firstNumber(v: unknown): number | null {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  if (typeof v !== 'string') return null;
+  const m = v.match(/\d[\d,]*(?:\.\d+)?/);
+  return m ? Number(m[0].replace(/,/g, '')) : null;
+}
+
+function toPositiveNumberOrNull(v: unknown): number | null {
+  const n = firstNumber(v);
+  return n !== null && n > 0 ? n : null;
+}
+
+/** Like toPositiveNumberOrNull but keeps 0 (a fee of 0 or "0 years experience" is a real value). */
+function toNonNegativeNumberOrNull(v: unknown): number | null {
+  if (typeof v === 'string' && /^\s*(nil|free|no fee|none)\b/i.test(v)) return 0;
+  const n = firstNumber(v);
+  return n !== null && n >= 0 ? n : null;
+}
+
+/** Whole-number fields (backend int columns reject 32.5). */
+const toWhole = (n: number | null) => (n === null ? null : Math.round(n));
+
+const toTrimmedOrNull = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
 
 function toStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
@@ -180,6 +221,11 @@ export function validateAiJobImport(rawText: string): ValidationResult {
   if (toStringArray(obj.lsiKeywords).length === 0) warnings.push('No lsiKeywords returned.');
   if (typeof obj.keyHighlights !== 'string' || obj.keyHighlights.trim() === '') warnings.push('No keyHighlights returned — the "Key Highlights" section will be hidden on the live page.');
   if (typeof obj.importantNotes !== 'string' || obj.importantNotes.trim() === '') warnings.push('No importantNotes returned — the "Important Notes" section will be hidden on the live page.');
+  if (toPositiveNumberOrNull(obj.maxAge) === null) warnings.push('No maxAge returned — the "Age Limit" box and stats tile will be hidden on the live page.');
+  if (toPositiveNumberOrNull(obj.minSalary) === null && toPositiveNumberOrNull(obj.maxSalary) === null) warnings.push('No minSalary/maxSalary returned — the page will show only the salary text, without the pay-range figure.');
+  if (!toTrimmedOrNull(obj.advertisementNumber)) warnings.push('No advertisementNumber returned — check the notification for an Advt. No.');
+  if (!toTrimmedOrNull(obj.officialWebsite)) warnings.push('No officialWebsite returned — "Official Website" will be missing from Important Links.');
+  if (!Array.isArray(obj.applicationFee) || obj.applicationFee.length === 0) warnings.push('No applicationFee rows returned — the "Application Fee" box will be hidden.');
   if (typeof obj.eligibilityDetails !== 'string' || obj.eligibilityDetails.trim() === '') warnings.push('No eligibilityDetails returned — eligibility section will fall back to the plain qualification text.');
 
   if (errors.length > 0) return { errors, warnings };
@@ -238,6 +284,19 @@ export function validateAiJobImport(rawText: string): ValidationResult {
     location: typeof obj.location === 'string' ? obj.location : null,
     lastDate: obj.lastDate as string,
     applyLink: typeof obj.applyLink === 'string' ? obj.applyLink : null,
+    advertisementNumber: toTrimmedOrNull(obj.advertisementNumber),
+    officialWebsite: toTrimmedOrNull(obj.officialWebsite),
+    syllabusLink: toTrimmedOrNull(obj.syllabusLink),
+    state: toTrimmedOrNull(obj.state),
+    district: toTrimmedOrNull(obj.district),
+    minAge: toWhole(toPositiveNumberOrNull(obj.minAge)),
+    maxAge: toWhole(toPositiveNumberOrNull(obj.maxAge)),
+    experienceRequired: toWhole(toNonNegativeNumberOrNull(obj.experienceRequired)),
+    minSalary: toPositiveNumberOrNull(obj.minSalary),
+    maxSalary: toPositiveNumberOrNull(obj.maxSalary),
+    salaryType: toTrimmedOrNull(obj.salaryType),
+    applicationFeeAmount: toNonNegativeNumberOrNull(obj.applicationFeeAmount),
+    applicationFeeDetails: toTrimmedOrNull(obj.applicationFeeDetails),
     shortDescription,
     overview: String(obj.overview ?? ''),
     keyHighlights: typeof obj.keyHighlights === 'string' ? obj.keyHighlights : null,
@@ -257,7 +316,15 @@ export function validateAiJobImport(rawText: string): ValidationResult {
     selectionProcess: toStringArray(obj.selectionProcess),
     examPattern,
     salaryBreakdown: obj.salaryBreakdown && typeof obj.salaryBreakdown === 'object' ? obj.salaryBreakdown as ParsedSalaryBreakdown : null,
-    importantDates: importantDates ?? null,
+    importantDates: importantDates ? {
+      ...importantDates,
+      otherDates: Array.isArray(importantDates.otherDates)
+        ? importantDates.otherDates
+            .map((d) => d as Record<string, unknown>)
+            .filter((d) => typeof d?.label === 'string' && typeof d?.date === 'string' && d.label.trim() && d.date.trim())
+            .map((d) => ({ label: String(d.label).trim(), date: String(d.date).trim() }))
+        : [],
+    } as ParsedImportantDates : null,
     metaTitle,
     metaDescription,
     metaKeywords: typeof obj.metaKeywords === 'string' ? obj.metaKeywords : null,

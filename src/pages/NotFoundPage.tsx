@@ -10,7 +10,7 @@ export default function NotFoundPage() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SeoHead title="Page not found | JobCharcha" description="The page you are looking for does not exist or has moved." path="/404" noindex />
       <Navbar user={user} />
 

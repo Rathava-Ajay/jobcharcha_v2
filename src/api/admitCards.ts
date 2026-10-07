@@ -40,6 +40,8 @@ export interface ApiAdmitCardDetail extends ApiAdmitCardListItem {
 }
 
 export interface UpsertAdmitCardPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string;
   examName?: string;
@@ -65,6 +67,8 @@ export interface UpsertAdmitCardPayload {
 export interface AiImportAdmitCardFaqItem { question: string; answer: string; }
 
 export interface AiImportAdmitCardPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   slug?: string | null;
   examName?: string | null;

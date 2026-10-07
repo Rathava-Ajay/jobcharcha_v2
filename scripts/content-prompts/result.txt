@@ -1,0 +1,39 @@
+{{COMMON}}
+
+CATEGORY: RESULTS - newly declared exam results, merit lists, final selection lists and provisional answer-key-based results (GPSC, GSSSB, OJAS boards, Gujarat Police, SSC, IBPS/SBI, RRB, UPSC, university/board results relevant to job aspirants).
+Where to look: the official result pages of the conducting bodies, their "Latest News/Results" sections, and reputable result trackers (only to discover the item - confirm the facts on the official site).
+
+PAYLOAD for "payload" (follow exactly; use null for unknown optional fields, never invent facts):
+{
+  "title": "keyword-rich, e.g. 'GSSSB Talati Result 2026 - Merit List Declared'",
+  "examName": "exam name",
+  "organizationName": "full organization name (required)",
+  "categoryId": <real id from /api/categories (required)>,
+  "focusKeyword": "[Exam Name] Result [Year] (required)",
+  "secondaryKeywords": ["5-8 realistic search phrases"],
+  "lsiKeywords": ["5-8 related terms"],
+  "resultDate": "YYYY-MM-DD (the date the result was declared)",
+  "examDate": "YYYY-MM-DD or null",
+  "resultLink": "official result/merit-list URL or null",
+  "resultPdf": "official result PDF URL or null",
+  "cutOffMarks": "short cutoff summary or null",
+  "selectedCandidates": "number/summary or null",
+  "state": "Gujarat / other state / All India",
+  "location": "Gujarat or specific state",
+  "shortDescription": "2-3 sentences, max 400 chars, first sentence stands alone as a Google snippet; include org, exam, result date (required)",
+  "description": "(required) plain text using EXACTLY these headings, each on its own line followed by '- ' bullets, in this order: OVERVIEW: / RESULT DETAILS: / CUT OFF MARKS: / SELECTION STAGE CLEARED: / NEXT STAGE INFO: / HOW TO CHECK RESULT: / FREQUENTLY ASKED QUESTIONS: (3 lines like '- Q: ... A: ...')",
+  "faqSchema": [ {"question": "...", "answer": "plain text, 1-2 sentences"} ],
+  "cutOffBreakdown": [ {"postName": "...", "general": "00", "sc": "00", "st": "00", "obc": "00", "ews": "00"} ]  (empty array if not published),
+  "metaTitle": "max 60 chars, '[Focus Keyword] | JobCharcha' (required)",
+  "metaDescription": "max 155 chars, include focus keyword + call to action like 'Check Result Now' (required)",
+  "metaKeywords": "10-12 comma-separated keywords",
+  "ogTitle": "max 60 chars", "ogDescription": "max 160 chars",
+  "internalLinkAnchors": ["3-5 anchor texts"],
+  "autoPublish": true
+}
+LINK RULES (strict - drafts are rejected otherwise):
+- Provide at least one deep link: "resultPdf" (the official result / merit list / select list PDF) and/or "resultLink" (the exact official result page for THIS exam). A bare home page such as https://www.ibps.in or https://www.rbi.org.in is NOT acceptable in either field - open the site's results/notices section and copy the real URL of the result notice, then WebFetch it to confirm it exists and is about this exam. If you can only find a home page, SKIP the item.
+- "sourceUrl" in the wrapper must be that same kind of deep link.
+ONE ITEM PER DOCUMENT: one official result document = exactly one item. Never send two variants of the same result (different titles for the same PDF/list); pick the clearest title.
+DATES: resultDate is the date the result was declared (from the notice itself), never in the future. Leave examDate null unless the notice states it.
+Skip an item if you cannot confirm the result was actually declared (no "expected soon" or rumor posts).

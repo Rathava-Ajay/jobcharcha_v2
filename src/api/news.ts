@@ -26,6 +26,8 @@ export interface ApiNewsDetail extends ApiNewsListItem {
 }
 
 export interface UpsertNewsPayload {
+  /** "Skip social posting" — publish without auto-sharing to Telegram / Facebook / Instagram. */
+  skipSocial?: boolean;
   title: string;
   titleGujarati?: string;
   slug?: string;
@@ -33,7 +35,7 @@ export interface UpsertNewsPayload {
   summary: string;
   content: string;
   contentGujarati?: string;
-  categoryId?: number;
+  categoryId?: number; // required by the API — the admin form enforces it
   source?: string;
   sourceLink?: string;
   publishedDate?: string;
@@ -58,3 +60,8 @@ export const updateNews = (id: number, payload: UpsertNewsPayload) =>
 
 export const deleteNews = (id: number) =>
   apiFetch<void>(`/api/news/${id}`, { method: 'DELETE', auth: true });
+
+export interface ApiNewsCategoryOption { id: number; name: string }
+/** Categories a news article may be filed under (a subset of the site categories). */
+export const getAllowedNewsCategories = () =>
+  apiFetch<ApiNewsCategoryOption[]>('/api/news/admin/categories', { auth: true });

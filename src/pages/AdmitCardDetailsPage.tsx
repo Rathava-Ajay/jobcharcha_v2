@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Building2, Download, Loader2, CalendarDays, FileText, ListChecks, AlertTriangle, Sparkles, HelpCircle } from 'lucide-react';
+import { useParams, Link } from 'react-router-dom';
+import { Download, CalendarDays, FileText, ListChecks, AlertTriangle, HelpCircle, Clock, CheckCircle2, Briefcase, Share2, PenLine } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { useAuth } from '../context/AuthContext';
 import { Footer } from '../components/Footer';
@@ -10,26 +10,12 @@ import { SafeHtml } from '../components/SafeHtml';
 import { SeoHead } from '../components/SeoHead';
 import { DocumentPreview } from '../components/DocumentPreview';
 import { AdUnit } from '../components/ads/AdUnit';
-
-const Section: React.FC<{ icon: React.ElementType; title: string; html?: string; children?: React.ReactNode }> = ({ icon: Icon, title, html, children }) => (
-  <div className="bg-white shadow-sm hover:shadow-md transition-shadow rounded-3xl border border-slate-200 p-6 sm:p-7">
-    <div className="flex items-center gap-2.5 mb-4">
-      <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-        <Icon className="w-4 h-4" />
-      </div>
-      <h2 className="font-heading font-extrabold text-base sm:text-lg text-slate-900">{title}</h2>
-    </div>
-    {html !== undefined ? (
-      <SafeHtml html={html} className="text-xs sm:text-sm text-slate-600 leading-relaxed" />
-    ) : (
-      <div className="text-xs sm:text-sm text-slate-600 leading-relaxed">{children}</div>
-    )}
-  </div>
-);
+import { DetailHeader, DetailSection, DetailBody, FaqList, MobileCta, DetailLoading, DetailNotFound } from '../components/ui/detail';
+import { Card, Pill, btn, cx } from '../components/ui/kit';
+import { fmtDate, daysUntil } from '../utils/dates';
 
 export default function AdmitCardDetailsPage() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [card, setCard] = useState<ApiAdmitCardDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,15 +31,12 @@ export default function AdmitCardDetailsPage() {
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 text-indigo-600 animate-spin" /></div>;
-  }
-
-  if (notFound || !card) {
+  if (loading || notFound || !card) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
-        <h1 className="text-2xl font-heading font-extrabold text-slate-900">Admit card not found</h1>
-        <Link to="/admit-cards" className="bg-slate-900 text-white text-xs font-bold px-5 py-2.5 rounded-xl">Back to Admit Cards</Link>
+      <div className="min-h-screen flex flex-col">
+        <Navbar user={user} />
+        {loading ? <DetailLoading /> : <DetailNotFound title="Admit card not found" back={{ to: '/admit-cards', label: 'Browse all admit cards' }} />}
+        {!loading && <Footer />}
       </div>
     );
   }
@@ -81,8 +64,15 @@ export default function AdmitCardDetailsPage() {
     });
   }
 
+  const released = card.status === 'Released';
+  const examIn = daysUntil(card.examDate);
+  const share = () => {
+    const url = `${window.location.origin}/admit-cards/${card.slug}`;
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`${card.title} — download here: ${url}`)}`, '_blank');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SeoHead
         title={card.metaTitle || `${card.title} - Admit Card | JobCharcha`}
         description={card.metaDescription || card.shortDescription || card.description}
@@ -95,123 +85,78 @@ export default function AdmitCardDetailsPage() {
       />
       <Navbar user={user} />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={() => navigate(-1)} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-4 cursor-pointer">
-          <ArrowLeft className="w-3.5 h-3.5" /> Back
-        </button>
+      <DetailHeader
+        back={{ to: '/admit-cards', label: 'All admit cards' }}
+        org={card.organizationName}
+        logo={card.organizationLogo}
+        pills={<>
+          {released ? <Pill tone="green" icon={CheckCircle2}>Released</Pill> : <Pill tone="amber" icon={Clock}>Coming soon</Pill>}
+          {examIn !== null && examIn >= 0 && examIn <= 14 && <Pill tone="red">Exam in {examIn === 0 ? 'today' : `${examIn} day${examIn === 1 ? '' : 's'}`}</Pill>}
+          {card.isFeatured && <Pill tone="amber">Featured</Pill>}
+        </>}
+        title={card.title}
+        subtitle={card.shortDescription || card.organizationName}
+        facts={[
+          { label: 'Released on', value: fmtDate(card.releaseDate), icon: CalendarDays },
+          { label: 'Exam date', value: card.examDate ? fmtDate(card.examDate) : 'To be announced', icon: CalendarDays, alert: examIn !== null && examIn >= 0 && examIn <= 7 },
+          { label: 'Post', value: card.postName || card.examName || '—', icon: Briefcase },
+        ]}
+        actions={<>
+          {card.downloadUrl && <a href={card.downloadUrl} target="_blank" rel="noopener noreferrer" className={btn.primary}><Download className="w-4 h-4" /> Download admit card</a>}
+          <button type="button" onClick={share} className={btn.secondary}><Share2 className="w-4 h-4" /> Share</button>
+        </>}
+      />
 
-        <div className="bg-slate-900 shadow-lg text-white rounded-3xl p-6 sm:p-8 relative overflow-hidden mb-6">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl"></div>
-          <div className="relative z-10 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
-                card.status === 'Released' ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-              }`}>
-                {card.status}
-              </span>
-              {card.isFeatured && (
-                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-extrabold px-2 py-0.5 rounded flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> Featured
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl sm:text-3xl font-heading font-extrabold leading-snug">{card.title}</h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-semibold flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-indigo-400" /> {card.organizationName}
-            </p>
-            {card.shortDescription && (
-              <p className="text-xs sm:text-sm text-slate-300 max-w-2xl pt-1">{card.shortDescription}</p>
-            )}
-          </div>
-
-          <div className="relative z-10 mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 hover:-translate-y-0.5 transition-transform duration-300">
-              <CalendarDays className="w-3.5 h-3.5 text-indigo-400 mb-1.5" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Release Date</span>
-              <span className="font-extrabold text-white text-sm">{card.releaseDate}</span>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 hover:-translate-y-0.5 transition-transform duration-300">
-              <CalendarDays className="w-3.5 h-3.5 text-indigo-400 mb-1.5" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Exam Date</span>
-              <span className="font-extrabold text-white text-sm">{card.examDate || 'To be announced'}</span>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-3 hover:-translate-y-0.5 transition-transform duration-300">
-              <FileText className="w-3.5 h-3.5 text-indigo-400 mb-1.5" />
-              <span className="text-[10px] font-bold text-slate-400 uppercase block">Post</span>
-              <span className="font-extrabold text-white text-sm truncate block">{card.postName || card.examName || '—'}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {card.description && <Section icon={FileText} title="Overview" html={card.description} />}
-
-            <AdUnit slot="6771704087" format="fluid" layoutKey="-6t+ed+2i-1n-4w" />
-
-            {card.instructions && <Section icon={ListChecks} title="Instructions" html={card.instructions} />}
-            {card.howToDownload && <Section icon={Download} title="How to Download" html={card.howToDownload} />}
-
-            {notes.length > 0 && (
-              <Section icon={AlertTriangle} title="Important Notes">
-                {looksLikeHtml(card.importantNotes) ? (
-                  <SafeHtml html={card.importantNotes!} className="font-semibold text-slate-700" />
-                ) : (
-                  <ul className="space-y-2">
-                    {notes.map((line, idx) => (
-                      <li key={idx} className="flex items-start gap-2 font-semibold text-slate-700">
-                        <span className="text-red-500 mt-0.5">•</span>
-                        <span>{line.replace(/^[^\w]+/u, '')}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Section>
-            )}
-
-            {faqEntries && (
-              <Section icon={HelpCircle} title="Frequently Asked Questions">
-                <div className="space-y-3">
-                  {faqEntries.map((f, idx) => (
-                    <div key={idx} className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <div className="font-bold text-slate-800 mb-1">{f.question}</div>
-                      <div className="font-medium text-slate-600">{f.answer}</div>
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
-          </div>
-
-          <div className="lg:col-span-1">
-            <div className="lg:sticky lg:top-24 bg-white rounded-3xl border border-slate-200 p-6 space-y-4">
+      <div className="flex-1">
+        <DetailBody aside={
+          <>
+            <Card className="p-5">
               {card.downloadUrl ? (
                 <>
-                  <a
-                    href={card.downloadUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black text-sm px-6 py-3.5 rounded-2xl flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <Download className="w-4 h-4" /><span>Download Admit Card</span>
+                  <p className="text-[13px] text-slate-500">Official download</p>
+                  <a href={card.downloadUrl} target="_blank" rel="noopener noreferrer" className={cx(btn.primary, 'w-full py-3 mt-2')}>
+                    <Download className="w-4 h-4" /> Download admit card
                   </a>
-                  <DocumentPreview url={card.downloadUrl} variant="inline" />
+                  <DocumentPreview url={card.downloadUrl} variant="inline" className="block mt-3" />
                 </>
               ) : (
-                <div className="text-center text-xs font-semibold text-slate-400 py-3">Download link not published yet</div>
+                <p className="text-sm text-slate-500 text-center py-2">The download link isn't live yet. <Link to="/job-alerts" className="font-bold text-emerald-700">Get an alert</Link> when it is.</p>
               )}
-              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs">
-                <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold">Category</span><span className="font-bold text-slate-800">{card.category}</span></div>
-                {card.state && <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold">State</span><span className="font-bold text-slate-800">{card.state}</span></div>}
-                <div className="flex justify-between gap-2"><span className="text-slate-400 font-semibold">Views</span><span className="font-bold text-slate-800">{card.viewsCount.toLocaleString()}</span></div>
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5 text-[13px]">
+                <div className="flex justify-between"><span className="text-slate-500">Category</span><b>{card.category}</b></div>
+                {card.state && <div className="flex justify-between"><span className="text-slate-500">State</span><b>{card.state}</b></div>}
+                <div className="flex justify-between"><span className="text-slate-500">Views</span><b>{card.viewsCount.toLocaleString('en-IN')}</b></div>
               </div>
+            </Card>
+            <Card className="p-5">
+              <p className="font-bold flex items-center gap-2"><PenLine className="w-4 h-4 text-emerald-700" /> Last-minute practice</p>
+              <p className="text-[13px] text-slate-500 mt-1">Take a full mock test in the real exam pattern before the exam.</p>
+              <Link to="/mock-tests" className={cx(btn.secondary, btn.small, 'mt-3')}>Start a mock test</Link>
+            </Card>
+            <AdUnit slot="7213818525" format="auto" style={{ minHeight: 250 }} />
+          </>
+        }>
+          <DetailSection icon={FileText} title="Overview" html={card.description} />
+          <AdUnit slot="6771704087" format="fluid" layoutKey="-6t+ed+2i-1n-4w" />
+          <DetailSection icon={Download} title="How to download" html={card.howToDownload} />
+          <DetailSection icon={ListChecks} title="Exam-day instructions" html={card.instructions} />
+          {notes.length > 0 && (
+            <DetailSection icon={AlertTriangle} title="Important notes" tone="warning">
+              {looksLikeHtml(card.importantNotes)
+                ? <SafeHtml html={card.importantNotes!} />
+                : <ul className="list-disc pl-5 space-y-1">{notes.map((l, i) => <li key={i}>{l.replace(/^[^\w]+/u, '')}</li>)}</ul>}
+            </DetailSection>
+          )}
+          {faqEntries && <DetailSection icon={HelpCircle} title="Frequently asked questions"><FaqList items={faqEntries} /></DetailSection>}
+        </DetailBody>
+      </div>
 
-              <AdUnit slot="7213818525" format="auto" style={{ minHeight: 250 }} />
-            </div>
-          </div>
-        </div>
-      </main>
-
+      {card.downloadUrl && (
+        <MobileCta>
+          <button type="button" onClick={share} aria-label="Share" className="w-12 h-12 rounded-xl border border-slate-200 grid place-items-center shrink-0 text-slate-600 cursor-pointer"><Share2 className="w-5 h-5" /></button>
+          <a href={card.downloadUrl} target="_blank" rel="noopener noreferrer" className={cx(btn.primary, 'flex-1 h-12 text-[15px]')}><Download className="w-4 h-4" /> Download admit card</a>
+        </MobileCta>
+      )}
       <Footer />
     </div>
   );

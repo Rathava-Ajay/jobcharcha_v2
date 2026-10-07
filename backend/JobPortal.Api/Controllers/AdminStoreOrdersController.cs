@@ -21,6 +21,11 @@ public class AdminStoreOrdersController : ControllerBase
 
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
+    /// <summary>?status=Paid|Pending|Failed|Refunded (optional), ?page, ?pageSize. Includes verified revenue (Paid only) and counts per status.</summary>
+    [HttpGet]
+    public async Task<IActionResult> List([FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 25) =>
+        Ok(await _storeOrderService.GetAdminOrdersAsync(status, page, pageSize));
+
     [HttpPost("{id:int}/refund")]
     public async Task<IActionResult> Refund(int id, RefundStoreOrderRequest request)
     {

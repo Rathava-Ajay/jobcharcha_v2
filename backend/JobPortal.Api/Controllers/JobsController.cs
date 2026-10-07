@@ -23,22 +23,22 @@ public class JobsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Search([FromQuery] JobQuery query) =>
         Ok(await _jobService.SearchAsync(query));
 
     [HttpGet("latest")]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Latest([FromQuery] int count = 10) =>
         Ok(await _jobService.GetLatestAsync(count));
 
     [HttpGet("trending")]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Trending([FromQuery] int count = 10) =>
         Ok(await _jobService.GetTrendingAsync(count));
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var job = await _jobService.GetBySlugAsync(slug);

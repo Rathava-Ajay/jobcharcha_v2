@@ -23,11 +23,11 @@ public class BlogController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll() => Ok(await _blogService.GetAllAsync());
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var item = await _blogService.GetBySlugAsync(slug);

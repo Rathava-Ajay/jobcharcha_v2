@@ -14,7 +14,7 @@ public class SitemapController : ControllerBase
     }
 
     [HttpGet("/sitemap.xml")]
-    [ResponseCache(Duration = 600)]
+    [ResponseCache(Duration = 600, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> SitemapXml()
     {
         var xmlBytes = await _sitemapService.BuildSitemapXmlAsync();

@@ -11,6 +11,7 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<RazorpaySettings>(configuration.GetSection("Razorpay"));
+        services.AddSingleton(SocialShareOptionsFactory.Create(configuration));
         services.AddHttpClient<IRazorpayClient, RazorpayClient>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IAspirantPlanService, AspirantPlanService>();
@@ -27,6 +28,34 @@ public static class DependencyInjection
         services.AddScoped<IJobFeedSourceService, JobFeedSourceService>();
         services.AddScoped<IJobDraftQueueService, JobDraftQueueService>();
         services.AddScoped<IWatcherAgentSyncService, WatcherAgentSyncService>();
+        services.AddScoped<IContentDraftService, ContentDraftService>();
+        services.AddScoped<IContentSourceService, ContentSourceService>();
+        services.AddHttpClient(ContentLinkChecker.ClientName, c => c.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; JobCharchaLinkCheck/1.0)"))
+            .ConfigurePrimaryHttpMessageHandler(() => new System.Net.Http.HttpClientHandler
+            {
+                AllowAutoRedirect = false, // redirects are followed by hand so every hop can be vetted
+                // Existence check only — nothing from the response is used, and many .gov.in sites ship bad certificates.
+                ServerCertificateCustomValidationCallback = System.Net.Http.HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            });
+        services.AddScoped<IContentLinkChecker, ContentLinkChecker>();
+        services.AddScoped<IContentSettingsService, ContentSettingsService>();
+        services.AddScoped<ISocialShareService, SocialShareService>();
+        services.AddScoped<IAiUsageService, AiUsageService>();
+        services.AddHttpClient<ITelegramClient, TelegramClient>(c => c.Timeout = TimeSpan.FromSeconds(30)).RemoveAllLoggers(); // bot token is in the URL path — keep it out of request logs
+        services.AddScoped<ISocialChannel, TelegramChannel>();
+        services.AddSingleton<MetaTokenCache>();
+        services.AddHttpClient<IMetaGraphClient, MetaGraphClient>(c => c.Timeout = TimeSpan.FromSeconds(60)).RemoveAllLoggers(); // Graph GETs carry tokens in the query string
+        services.AddScoped<SocialStatusService>();
+        services.AddScoped<SocialPreviewService>();
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<SocialShareProcessor>();
+        services.AddSingleton<PosterTemplateStore>();
+        services.AddSingleton<IPosterRenderer, HeadlessPosterRenderer>();
+        services.AddScoped<SocialPosterService>();
+        services.AddScoped<ISocialChannel, FacebookChannel>();
+        services.AddScoped<ISocialChannel, InstagramChannel>();
+        services.AddHttpClient<ISocialImageService, SocialImageService>(c => c.Timeout = TimeSpan.FromSeconds(30));
+        services.AddScoped<IContentSyncService, ContentSyncService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ISettingsService, SettingsService>();

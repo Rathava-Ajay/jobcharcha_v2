@@ -51,7 +51,7 @@ export default function NewsDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <SeoHead
         title={post.metaTitle || `${post.title} - News | JobCharcha`}
         description={post.metaDescription || post.summary}
@@ -67,7 +67,7 @@ export default function NewsDetailsPage() {
           <ArrowLeft className="w-3.5 h-3.5" /> Back
         </button>
 
-        <article className="bg-white rounded-3xl border border-slate-200 shadow-2xs p-6 sm:p-8">
+        <article className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-6 sm:p-8">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {post.isBreaking && (
               <span className="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold text-red-700 bg-red-100 px-2.5 py-1 rounded">

@@ -18,6 +18,7 @@ public class UpsertProductRequest
     [StringLength(300)] public string? GoogleDriveFileId { get; set; }
     [StringLength(1000)] public string? GoogleDriveDownloadUrl { get; set; }
     [StringLength(1000)] public string? GoogleDriveViewUrl { get; set; }
+    [StringLength(300), RegularExpression(@"^[^/\:*?""<>|]+$", ErrorMessage = "Use a file name only, without folders.")] public string? PrivateFileName { get; set; }
     [StringLength(1000)] public string? CoverImageUrl { get; set; }
     [Range(0, long.MaxValue)] public long? FileSize { get; set; }
     [Range(0, 100000)] public int? PageCount { get; set; }

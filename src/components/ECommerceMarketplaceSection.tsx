@@ -7,7 +7,8 @@ import { ApiStoreOrder, checkoutCart, getMyStoreOrders, getStoreDownloadUrl } fr
 import { startStoreRazorpayCheckout } from '../utils/storeRazorpayCheckout';
 import { getWalletBalance } from '../api/wallet';
 import { startWalletTopUpCheckout } from '../utils/walletTopUpCheckout';
-import { trackPDFPurchase } from '../utils/analytics';
+import { AnalyticsItem, trackBeginCheckout, trackPDFPurchase, trackStoreDownload, trackViewItem } from '../utils/analytics';
+import { Select } from './ui/Select';
 
 interface CartLine {
   product: ApiProduct;
@@ -102,12 +103,15 @@ export const ECommerceMarketplaceSection: React.FC = () => {
 
   const subtotal = cart.reduce((sum, item) => sum + (item.product.isFree ? 0 : (item.product.price ?? 0)) * item.quantity, 0);
 
+  const cartItems = (): AnalyticsItem[] => cart.map((c) => ({ item_id: String(c.product.productId), item_name: c.product.title, price: c.product.isFree ? 0 : (c.product.price ?? 0), quantity: c.quantity }));
+
   const handleRazorpayCheckout = async () => {
     if (!isAuthenticated) { requireLogin(); return; }
     if (cart.length === 0) return;
 
     setCheckoutStatus('processing');
     setCheckoutMessage(null);
+    trackBeginCheckout(subtotal, cartItems());
 
     const outcome = await startStoreRazorpayCheckout(
       {
@@ -123,7 +127,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
     );
 
     if (outcome.status === 'success') {
-      trackPDFPurchase(subtotal, String(outcome.result.orderId));
+      trackPDFPurchase(subtotal, String(outcome.result.orderId), cartItems());
       setCheckoutStatus('idle');
       setCart([]);
       setIsCartOpen(false);
@@ -143,13 +147,14 @@ export const ECommerceMarketplaceSection: React.FC = () => {
 
     setCheckoutStatus('processing');
     setCheckoutMessage(null);
+    trackBeginCheckout(subtotal, cartItems());
 
     try {
       const order = await checkoutCart({
         items: cart.map((item) => ({ productId: item.product.productId, quantity: item.quantity })),
         paymentMethod: 'wallet',
       });
-      trackPDFPurchase(order.finalAmount, String(order.orderId));
+      trackPDFPurchase(order.finalAmount, String(order.orderId), cartItems());
       setCheckoutStatus('idle');
       setCart([]);
       setIsCartOpen(false);
@@ -179,6 +184,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
   const handleDownload = async (orderId: number, orderItemId: number) => {
     try {
       const { downloadUrl } = await getStoreDownloadUrl(orderId, orderItemId);
+      trackStoreDownload(orderId);
       window.open(downloadUrl, '_blank', 'noopener,noreferrer');
       loadOrders();
     } catch (err) {
@@ -261,7 +267,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
                     className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:border-emerald-500 shadow-2xs"
                   />
                 </div>
-                <select
+                <Select
                   value={pricingType}
                   onChange={(e) => setPricingType(e.target.value as 'All' | 'Free' | 'Paid')}
                   className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
@@ -269,7 +275,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
                   <option value="All">All Pricing</option>
                   <option value="Free">Free</option>
                   <option value="Paid">Paid</option>
-                </select>
+                </Select>
               </div>
             </div>
 
@@ -311,7 +317,7 @@ export const ECommerceMarketplaceSection: React.FC = () => {
 
                       <div className="p-5 space-y-2">
                         <h3
-                          onClick={() => setSelectedProduct(product)}
+                          onClick={() => { setSelectedProduct(product); trackViewItem({ item_id: String(product.productId), item_name: product.title, price: product.isFree ? 0 : (product.price ?? 0), quantity: 1 }); }}
                           className="font-heading font-extrabold text-sm text-slate-900 hover:text-emerald-600 cursor-pointer line-clamp-2 leading-snug"
                         >
                           {product.title}

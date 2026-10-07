@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.AdmitCards;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -11,18 +12,23 @@ namespace JobPortal.Infrastructure.Services;
 public class AdmitCardService : IAdmitCardService
 {
     private readonly AppDbContext _db;
+    private readonly ISocialShareService? _social;
 
-    public AdmitCardService(AppDbContext db)
+    public AdmitCardService(AppDbContext db, ISocialShareService? social = null)
     {
         _db = db;
+        _social = social;
     }
+
+    private Task ShareAsync(int id, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.AdmitCard, id, skip, userId);
 
     public async Task<List<AdmitCardListItemDto>> GetAllAsync(bool includeInactive = false)
     {
         var query = _db.AdmitCards.AsNoTracking().Include(a => a.Category).AsQueryable();
         if (!includeInactive) query = query.Where(a => a.IsActive);
 
-        var items = await query.OrderByDescending(a => a.AdmitCardReleaseDate).ToListAsync();
+        var items = await query.OrderByDescending(a => a.CreatedDate).ThenByDescending(a => a.Id).ToListAsync();
         return items.Select(ToListItemDto).ToList();
     }
 
@@ -77,6 +83,7 @@ public class AdmitCardService : IAdmitCardService
         };
         _db.AdmitCards.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.AdmitCards.Include(a => a.Category).FirstAsync(a => a.Id == entity.Id);
         return ServiceResult<AdmitCardDto>.Ok(ToFullDto(saved));
     }
@@ -127,6 +134,7 @@ public class AdmitCardService : IAdmitCardService
         };
         _db.AdmitCards.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.AdmitCards.Include(a => a.Category).FirstAsync(a => a.Id == entity.Id);
         return ServiceResult<AdmitCardDto>.Ok(ToFullDto(saved));
     }
@@ -158,10 +166,12 @@ public class AdmitCardService : IAdmitCardService
         entity.HowToDownload = request.HowToDownload;
         entity.ImportantNotes = request.ImportantNotes;
         entity.IsFeatured = request.IsFeatured;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         var saved = await _db.AdmitCards.Include(a => a.Category).FirstAsync(a => a.Id == id);
         return ServiceResult<AdmitCardDto>.Ok(ToFullDto(saved));
     }

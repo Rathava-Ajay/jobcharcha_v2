@@ -43,6 +43,10 @@ public partial class Product
     [StringLength(500)]
     public string? GoogleDriveViewUrl { get; set; }
 
+    /// <summary>File name (no folders) of the paid file in the server-side private folder. When set, buyers get a short-lived link that the API streams; the Drive link is not used.</summary>
+    [StringLength(300)]
+    public string? PrivateFileName { get; set; }
+
     [StringLength(500)]
     public string? CoverImageUrl { get; set; }
 

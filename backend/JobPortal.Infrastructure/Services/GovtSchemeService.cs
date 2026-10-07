@@ -1,4 +1,5 @@
 using JobPortal.Application.Common;
+using JobPortal.Application.DTOs.Content;
 using JobPortal.Application.DTOs.GovtSchemes;
 using JobPortal.Application.Interfaces;
 using JobPortal.Infrastructure.Data;
@@ -10,11 +11,16 @@ namespace JobPortal.Infrastructure.Services;
 public class GovtSchemeService : IGovtSchemeService
 {
     private readonly AppDbContext _db;
+    private readonly ISocialShareService? _social;
 
-    public GovtSchemeService(AppDbContext db)
+    public GovtSchemeService(AppDbContext db, ISocialShareService? social = null)
     {
         _db = db;
+        _social = social;
     }
+
+    private Task ShareAsync(int id, bool skip, string userId) =>
+        _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.Scheme, id, skip, userId);
 
     public async Task<List<GovtSchemeListItemDto>> GetAllAsync(bool includeInactive = false)
     {
@@ -62,6 +68,7 @@ public class GovtSchemeService : IGovtSchemeService
         };
         _db.GovtSchemes.Add(entity);
         await _db.SaveChangesAsync();
+        if (entity.IsActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         return ServiceResult<GovtSchemeDto>.Ok(ToFullDto(entity));
     }
 
@@ -85,10 +92,12 @@ public class GovtSchemeService : IGovtSchemeService
         entity.OfficialNotificationUrl = request.OfficialNotificationUrl;
         entity.IsFeatured = request.IsFeatured;
         entity.DisplayOrder = request.DisplayOrder;
+        var wasActive = entity.IsActive;
         entity.IsActive = request.IsActive;
         entity.UpdatedDate = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        if (request.IsActive && !wasActive) await ShareAsync(entity.Id, request.SkipSocial, userId);
         return ServiceResult<GovtSchemeDto>.Ok(ToFullDto(entity));
     }
 

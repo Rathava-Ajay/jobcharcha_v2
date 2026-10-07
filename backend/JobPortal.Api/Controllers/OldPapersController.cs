@@ -23,16 +23,16 @@ public class OldPapersController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> Search([FromQuery] int? categoryId, [FromQuery] int? year, [FromQuery] string? search) =>
         Ok(await _oldPaperService.SearchAsync(categoryId, year, search));
 
     [HttpGet("years")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetYears() => Ok(await _oldPaperService.GetAvailableYearsAsync());
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var paper = await _oldPaperService.GetBySlugAsync(slug);

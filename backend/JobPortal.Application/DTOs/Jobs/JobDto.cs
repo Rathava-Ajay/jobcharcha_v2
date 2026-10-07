@@ -132,12 +132,22 @@ public class JobQuery
     public decimal? MinSalary { get; set; }
     public decimal? MaxSalary { get; set; }
     public bool? FeaturedOnly { get; set; }
+    /// <summary>"newest" (default: featured first, then latest posted), "deadline" (soonest last date
+    /// first), "popular" (most viewed) or "posts" (most vacancies).</summary>
+    public string? Sort { get; set; }
+    /// <summary>Only jobs whose last date falls within the next N days (today included).</summary>
+    public int? ClosingWithinDays { get; set; }
+    /// <summary>Hide jobs whose last date has already passed.</summary>
+    public bool? OpenOnly { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
 
 public class UpsertJobRequest
 {
+    /// <summary>"Skip social posting" — publish without auto-sharing to Telegram/Facebook/Instagram.</summary>
+    public bool SkipSocial { get; set; }
+
     [Required(AllowEmptyStrings = false), StringLength(300, MinimumLength = 3)]
     public string Title { get; set; } = null!;
 

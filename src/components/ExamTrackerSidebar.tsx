@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, Plus, X, Sparkles, BookOpen, AlertCircle, ChevronRight, FileText } from 'lucide-react';
+import { Select } from './ui/Select';
 
 interface SavedExam {
   id: string;
@@ -169,7 +170,7 @@ export const ExamTrackerSidebar: React.FC<ExamTrackerSidebarProps> = ({ isOpen, 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Category</label>
-                  <select
+                  <Select
                     value={newExamCategory}
                     onChange={(e) => setNewExamCategory(e.target.value)}
                     className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-2 py-1.5 text-slate-800"
@@ -180,7 +181,7 @@ export const ExamTrackerSidebar: React.FC<ExamTrackerSidebarProps> = ({ isOpen, 
                     <option value="Railways">Railways</option>
                     <option value="Defense">Defense</option>
                     <option value="State PSC">State PSC</option>
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 block mb-0.5">Exam Date</label>

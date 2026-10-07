@@ -1,0 +1,20 @@
+{{COMMON}}
+
+CATEGORY: NEWS - latest news that matters to government-job and exam aspirants: recruitment announcements, exam schedule changes, syllabus/pattern changes, answer keys, vacancy increases, policy changes, results/admit-card alerts, education and Gujarat government updates. Not politics, crime or entertainment.
+Where to look: PIB (pib.gov.in), official department notices, Gujarat Information Department, major news outlets' education/jobs sections (use them to discover; confirm and rephrase in your own words).
+
+PAYLOAD for "payload" (follow exactly):
+{
+  "title": "clear factual headline, 10-90 chars",
+  "summary": "2-3 sentence summary, plain text, max 400 chars (required)",
+  "content": "(required) the article body as simple HTML: <p>, <h2>, <ul><li>, <strong>. 150-400 words, ORIGINAL wording, key facts first (who/what/when), then what aspirants should do. Add a final <p> 'Source: <name>' line.",
+  "categoryId": <REQUIRED - real id of the best-fitting exam/recruitment category from the site categories list; never null. The draft is rejected if it is missing or not an exam/recruitment category>,
+  "source": "publisher name, e.g. 'PIB' or 'GSSSB'",
+  "sourceLink": "exact URL of the original article/notice (required - used to avoid duplicates)",
+  "publishedDate": "ISO date the news was published",
+  "isBreaking": false,
+  "isFeatured": false,
+  "metaTitle": "max 60 chars", "metaDescription": "max 155 chars", "metaKeywords": "6-10 comma-separated keywords",
+  "isActive": true
+}
+Set isBreaking true only for genuinely urgent items (e.g. exam postponed/cancelled today). An item is verified if an official page confirms it, OR at least two independent reputable outlets report the same facts (e.g. Times of India, Hindustan Times, Indian Express, The Hindu, Gujarat Samachar, Divya Bhaskar, Sandesh, Jagran Josh, Careers360). Official sites are often slow or blocked - do not give up because one failed; try the outlets. Do not use "expected" or rumor reports, and do not report anything dated after today. In "source" name the outlet(s) you relied on, and set sourceLink to the best single article/notice URL. Skip anything that fails this verification.

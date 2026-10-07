@@ -9,6 +9,7 @@ import {
   ApiCutOffExamOption, ApiCutOffPrediction, CUTOFF_CATEGORIES,
 } from '../api/cutoffPredictor';
 import { ApiError } from '../api/client';
+import { Select } from '../components/ui/Select';
 
 const TREND_STYLE: Record<string, { icon: React.ElementType; className: string }> = {
   Rising: { icon: TrendingUp, className: 'text-rose-700 bg-rose-50 border-rose-200' },
@@ -73,25 +74,25 @@ export default function CutoffPredictorPage() {
   const TrendIcon = trendMeta?.icon;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto">
-          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer">
+      <div className="bg-white border-b border-slate-200 py-5 sm:py-7">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <button onClick={() => navigate('/')} className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 mb-3 cursor-pointer">
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
           </button>
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
             <Calculator className="w-3.5 h-3.5" /> Historical Cutoff Analytics
           </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Cutoff Predictor</h1>
-          <p className="text-xs sm:text-sm text-slate-300">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Cutoff Predictor</h1>
+          <p className="text-[13px] sm:text-sm text-slate-500">
             Category-wise historical cutoffs and a next-year trend estimate, computed from verified past results.
           </p>
         </div>
       </div>
 
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-5 sm:py-7">
         {examsLoading ? (
           <div className="py-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-indigo-600 animate-spin" /></div>
         ) : exams.length === 0 ? (
@@ -106,34 +107,34 @@ export default function CutoffPredictorPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Exam</label>
-                  <select
+                  <Select
                     value={selectedSlug}
                     onChange={(e) => setSelectedSlug(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer"
                   >
                     {exams.map((e) => <option key={e.slug} value={e.slug}>{e.examName}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Post</label>
-                  <select
+                  <Select
                     value={selectedPostName}
                     onChange={(e) => setSelectedPostName(e.target.value)}
                     disabled={postNames.length === 0}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer disabled:opacity-50"
                   >
                     {postNames.map((p) => <option key={p} value={p}>{p}</option>)}
-                  </select>
+                  </Select>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Category</label>
-                  <select
+                  <Select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 px-3 py-2.5 focus:outline-none focus:border-indigo-500 font-medium cursor-pointer"
                   >
                     {CUTOFF_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  </Select>
                 </div>
               </div>
 

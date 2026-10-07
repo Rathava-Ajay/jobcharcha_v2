@@ -14,15 +14,15 @@ export const LanguageSwitcher: React.FC<{ className?: string }> = ({ className =
   const current = i18n.resolvedLanguage === 'hi' ? 'hi' : 'en';
 
   return (
-    <div className={`flex items-center gap-1 bg-slate-100/80 rounded-xl p-1 ${className}`}>
-      <Languages className="w-3.5 h-3.5 text-slate-500 ml-1" />
+    <div role="group" aria-label="Language" className={`flex items-center gap-0.5 border border-slate-200 bg-white rounded-full p-0.5 ${className}`}>
+      <Languages className="w-3.5 h-3.5 text-slate-400 mx-1" aria-hidden />
       {LANGS.map((lang) => (
         <button
           key={lang.code}
           onClick={() => i18n.changeLanguage(lang.code)}
           aria-pressed={current === lang.code}
-          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
-            current === lang.code ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          className={`px-2.5 py-1 rounded-full text-xs font-bold transition-colors cursor-pointer ${
+            current === lang.code ? 'bg-slate-900 text-white' : 'text-slate-500 hover:text-slate-800'
           }`}
         >
           {lang.label}

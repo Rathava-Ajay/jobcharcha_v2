@@ -25,11 +25,11 @@ export const TagInput: React.FC<Props> = ({ values, onChange, placeholder = 'Typ
   };
 
   return (
-    <div className="w-full bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 flex flex-wrap gap-1.5 focus-within:border-emerald-500">
+    <div className="w-full bg-slate-50/70 border border-slate-200 rounded-xl px-2 py-2 flex flex-wrap gap-1.5 focus-within:bg-white focus-within:border-blue-600 focus-within:ring-4 focus-within:ring-blue-600/10">
       {values.map((v, i) => (
-        <span key={`${v}-${i}`} className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-1 rounded-lg">
+        <span key={`${v}-${i}`} className="inline-flex items-center gap-1 bg-blue-50 border border-blue-100 text-blue-800 text-[12.5px] font-bold px-2.5 py-1 rounded-full">
           {v}
-          <button type="button" onClick={() => onChange(values.filter((_, idx) => idx !== i))} className="hover:text-emerald-950 cursor-pointer" aria-label={`Remove ${v}`}>
+          <button type="button" onClick={() => onChange(values.filter((_, idx) => idx !== i))} className="hover:text-blue-950 cursor-pointer" aria-label={`Remove ${v}`}>
             <X className="w-3 h-3" />
           </button>
         </span>

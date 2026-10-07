@@ -60,6 +60,14 @@ Manual rebuild any time: `sudo -u www-data systemctl start jobcharcha-prerender.
 
 ```nginx
 root /var/www/jobcharcha/current;   # the symlink prerender.sh flips
+# Compression — without this JS/CSS go out uncompressed (vendor-react 228 KB instead of ~75 KB).
+gzip on;
+gzip_comp_level 6;
+gzip_min_length 1024;
+gzip_vary on;
+gzip_proxied any;
+gzip_types text/css application/javascript text/javascript application/json image/svg+xml text/xml application/xml font/ttf;
+
 
 # Prerendered file if it exists, else the SPA shell.
 location / {
@@ -67,7 +75,9 @@ location / {
 }
 
 # Long-cache hashed assets.
-location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; }
+location /assets/ { expires 1y; add_header Cache-Control "public, immutable"; access_log off; }
+# Icons, fonts and the PWA manifest change rarely.
+location /icons/ { expires 30d; add_header Cache-Control "public"; }
 
 # The sitemap + robots are served by the API host — proxy them from this host so the URL in
 # robots.txt (https://jobcharcha.com/sitemap.xml) actually resolves.

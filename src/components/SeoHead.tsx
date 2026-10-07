@@ -13,6 +13,7 @@ interface SeoHeadProps {
   noindex?: boolean;
 }
 
+const DEFAULT_OG_IMAGE = 'https://jobcharcha.com/icons/og-image.png';
 const MANAGED_ATTR = 'data-seo-managed';
 
 function upsertMeta(attrName: 'name' | 'property', attrValue: string, content: string) {
@@ -58,12 +59,12 @@ export function SeoHead({ title, description, keywords, ogTitle, ogDescription, 
     if (effectiveOgDescription) upsertMeta('property', 'og:description', effectiveOgDescription);
     upsertMeta('property', 'og:url', url);
     upsertMeta('property', 'og:type', 'website');
-    if (ogImage) upsertMeta('property', 'og:image', ogImage);
+    upsertMeta('property', 'og:image', ogImage || DEFAULT_OG_IMAGE);
 
     upsertMeta('name', 'twitter:card', 'summary_large_image');
     upsertMeta('name', 'twitter:title', ogTitle || title);
     if (effectiveOgDescription) upsertMeta('name', 'twitter:description', effectiveOgDescription);
-    if (ogImage) upsertMeta('name', 'twitter:image', ogImage);
+    upsertMeta('name', 'twitter:image', ogImage || DEFAULT_OG_IMAGE);
 
     // Drop any managed JSON-LD already in <head> — e.g. baked in by the build-time prerender —
     // so hydration doesn't leave two identical structured-data blocks on the page.

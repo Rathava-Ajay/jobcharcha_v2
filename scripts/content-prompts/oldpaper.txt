@@ -1,0 +1,29 @@
+{{COMMON}}
+
+CATEGORY: OLD PAPERS - previous-year question papers (and answer keys / solutions) that the conducting body or an official education board has published as PDFs: GPSC, GSSSB, OJAS exams, Gujarat Police, TET/TAT, SSC, IBPS, RRB, UPSC and similar.
+Where to look: the official "Previous Question Papers / Answer Key / Question Paper" sections of the conducting bodies. "Latest" here means the most recent official papers: ignore the general freshness window above and instead take papers/answer keys whose exam was held within the last 18 months (newest first). Public question-paper PDFs on official sites are rare, so also try GPSC, GSSSB, GSEB, GTU/university and UPSC/SSC "previous question papers" archive pages and the Gujarat Government OJAS "Question Paper / Answer Key" sections.
+COPYRIGHT RULE: only link PDFs hosted on the official/government site. Never link pirated mirrors, paywalled, or third-party-hosted copies. Never reproduce question text yourself - you only describe the paper.
+VERIFY each link before sending: run  curl -s -o /dev/null -I -w "%{http_code}" "<pdf url>"  and only send items whose PDF link answers 200.
+
+PAYLOAD for "payload" (follow exactly; omit unknown optional fields):
+{
+  "title": "e.g. 'GSSSB Junior Clerk Question Paper 2024 (Paper 1) with Answer Key'",
+  "examName": "exam name (required)",
+  "categoryId": <real id from /api/categories, or null>,
+  "year": <exam year as a number (required)>,
+  "subject": "subject / paper name or null",
+  "paperType": "one of: Prelims, Mains, Written Exam, CBT, Answer Key, Other",
+  "description": "2-4 sentences in your own words: which exam, date held, shift/paper, how to use the paper",
+  "paperPdfLink": "(required) official PDF URL, verified 200",
+  "solutionPdfLink": "official answer-key / solution PDF URL or null",
+  "totalQuestions": <number or null>, "totalMarks": <number or null>, "duration": <minutes or null>,
+  "isFeatured": false,
+  "isActive": true
+}
+QUESTION PAPER vs ANSWER KEY (strict):
+- "paperPdfLink" must be a PDF that actually contains the QUESTION PAPER (the questions). Open it with WebFetch and confirm it contains questions and options before using it. A "Provisional Answer Key", "Final Answer Key", "Result", "Notification", "Advertisement" or "Syllabus" PDF is NOT a question paper.
+- "solutionPdfLink" must be a DIFFERENT PDF from paperPdfLink: an answer key or solution document. If there is no separate answer key, set it to null - never repeat the same URL in both fields.
+- If the official site only published an answer key (no question paper), use paperType "Answer Key", put that PDF in paperPdfLink, leave solutionPdfLink null, and make the title say "Answer Key" (not "Question Paper"). Never describe an answer key as a question paper in the title or description.
+- Title format: "<Exam name> <Paper/Stage> Question Paper <Year>" or "... Answer Key <Year>", matching what the PDF really is. Use the real exam year; put the advertisement number in the description, not the title.
+- The pdf links must be deep links to the actual PDF files on the official site (verified HTTP 200 as described above), not listing pages.
+Skip the item if you cannot confirm the year, cannot reach the PDF, or cannot tell what kind of document it is.

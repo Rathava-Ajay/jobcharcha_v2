@@ -83,6 +83,35 @@ public class AuthServiceLockoutTests
     }
 
     [Fact]
+    public async Task ResetPasswordAsync_LiftsLockout_AndNewPasswordWorks()
+    {
+        var (service, db) = await SeedAsync(TestDb.NewDbName());
+        for (var i = 0; i < 5; i++) await service.LoginAsync(Login("wrong"));
+        Assert.Equal("AccountLocked", (await service.LoginAsync(Login(Password))).ErrorCode);
+
+        await service.ForgotPasswordAsync(new ForgotPasswordRequest { Email = Email });
+        var token = (await db.AspNetUsers.AsNoTracking().SingleAsync()).PasswordResetToken!;
+        var reset = await service.ResetPasswordAsync(new ResetPasswordRequest { Email = Email, Token = token, NewPassword = "Brand-new-pass-2" });
+
+        Assert.True(reset.Succeeded);
+        Assert.True((await service.LoginAsync(Login("Brand-new-pass-2"))).Succeeded);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_SuspendedAccount_IsRejected()
+    {
+        var (service, db) = await SeedAsync(TestDb.NewDbName());
+        var auth = (await service.LoginAsync(Login(Password))).Data!;
+        var rotated = (await service.RefreshAsync(auth.RefreshToken)).Data!; // refresh rotates the token
+
+        var user = await db.AspNetUsers.SingleAsync();
+        user.IsActive = false;
+        await db.SaveChangesAsync();
+
+        Assert.Equal("InvalidRefreshToken", (await service.RefreshAsync(rotated.RefreshToken)).ErrorCode);
+    }
+
+    [Fact]
     public async Task LoginAsync_ExpiredLockout_AllowsSignIn()
     {
         var (service, db) = await SeedAsync(TestDb.NewDbName());

@@ -5,6 +5,7 @@ export interface ApiProduct {
   title: string;
   slug: string;
   shortDescription?: string | null;
+  privateFileName?: string | null;
   description?: string | null;
   category: string;
   subCategory?: string | null;
@@ -34,6 +35,7 @@ export interface UpsertProductPayload {
   googleDriveFileId?: string;
   googleDriveDownloadUrl?: string;
   googleDriveViewUrl?: string;
+  privateFileName?: string;
   coverImageUrl?: string;
   fileSize?: number;
   pageCount?: number;

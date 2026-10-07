@@ -23,16 +23,20 @@ public class NewsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 60)]
+    [ResponseCache(Duration = 60, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll() => Ok(await _newsService.GetAllAsync());
 
     [HttpGet("{slug}")]
-    [ResponseCache(Duration = 120)]
+    [ResponseCache(Duration = 120, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetBySlug(string slug)
     {
         var item = await _newsService.GetBySlugAsync(slug);
         return item is null ? NotFound() : Ok(item);
     }
+
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.SuperAdmin}")]
+    [HttpGet("admin/categories")]
+    public async Task<IActionResult> GetAllowedCategories() => Ok(await _newsService.GetAllowedCategoriesAsync());
 
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.SuperAdmin}")]
     [HttpGet("admin/all")]

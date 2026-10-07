@@ -21,7 +21,7 @@ public class ExamsController : ControllerBase
     private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
     [HttpGet]
-    [ResponseCache(Duration = 300)]
+    [ResponseCache(Duration = 300, VaryByQueryKeys = new[] { "*" })]
     public async Task<IActionResult> GetAll([FromQuery] int? categoryId) =>
         Ok(await _examService.GetAllAsync(categoryId));
 

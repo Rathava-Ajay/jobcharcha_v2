@@ -1,158 +1,104 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, MapPin, Briefcase, Loader2, ArrowLeft, Building2, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Search, MapPin, Building2 } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
-import { useAuth } from '../context/AuthContext';
 import { Footer } from '../components/Footer';
 import { SeoHead } from '../components/SeoHead';
+import { useAuth } from '../context/AuthContext';
 import { searchPublicEmployerJobs, ApiPublicEmployerJobListItem } from '../api/employerJobs';
+import { PrivateJobRow } from '../components/ui/JobRow';
+import { PageHeader, Card, Chip, RowSkeleton, EmptyState, btn } from '../components/ui/kit';
+
+const JOB_TYPES = ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance'];
+const WORK_MODES = ['On-site', 'Hybrid', 'Remote'];
 
 export default function PrivateJobsPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const search = params.get('search') ?? '';
+  const city = params.get('city') ?? '';
+  const jobType = params.get('type') ?? '';
+  const mode = params.get('mode') ?? '';
 
-  const [search, setSearch] = useState('');
-  const [city, setCity] = useState('');
+  const [searchText, setSearchText] = useState(search);
+  const [cityText, setCityText] = useState(city);
   const [jobs, setJobs] = useState<ApiPublicEmployerJobListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-  }, []);
+  const set = (patch: Record<string, string>) => {
+    const next = new URLSearchParams(params);
+    for (const [k, v] of Object.entries(patch)) { if (v) next.set(k, v); else next.delete(k); }
+    setParams(next);
+  };
 
-  const fetchJobs = useCallback(() => {
+  useEffect(() => {
     setLoading(true);
-    searchPublicEmployerJobs({ search: search || undefined, city: city || undefined })
+    searchPublicEmployerJobs({ search: search || undefined, city: city || undefined, jobType: jobType || undefined })
       .then(setJobs)
       .catch(() => setJobs([]))
       .finally(() => setLoading(false));
-  }, [search, city]);
+  }, [search, city, jobType]);
 
-  useEffect(() => {
-    const handle = setTimeout(fetchJobs, 250);
-    return () => clearTimeout(handle);
-  }, [fetchJobs]);
+  // Work mode isn't a server-side filter; narrow the fetched list here.
+  const shown = mode ? jobs.filter((j) => j.workMode?.toLowerCase() === mode.toLowerCase()) : jobs;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <Navbar user={user} />
       <SeoHead title="Private Jobs & Corporate Vacancies | JobCharcha" description="Verified private-sector and corporate job openings across India — full-time, remote and contract roles you can apply to directly online." path="/private-jobs" />
 
-      <div className="bg-slate-900 text-white py-10 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-white mb-4 cursor-pointer"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
-          </button>
-          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full text-xs font-semibold mb-3">
-            <Building2 className="w-3.5 h-3.5" />
-            <span>Private & Corporate Recruitment</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight mb-2">Private Jobs & Corporate Vacancies</h1>
-          <p className="text-xs sm:text-sm text-slate-300 mb-6">
-            {jobs.length > 0 ? `${jobs.length} live listings from verified employers` : loading ? 'Loading listings…' : 'No listings match your search'} — posted directly by companies hiring on JobCharcha.
-          </p>
-
-          <div className="shadow-sm bg-white rounded-2xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="sm:col-span-2 relative">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title, company, keyword..."
-                className="w-full bg-slate-50 text-xs font-medium pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
-              />
-            </div>
-            <div className="relative">
-              <MapPin className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="City / State"
-                className="w-full bg-slate-50 text-xs font-medium pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-emerald-500 text-slate-800"
-              />
-            </div>
-          </div>
+      <PageHeader
+        title="Private jobs"
+        subtitle={loading ? 'Loading listings…' : `${shown.length} live openings posted directly by employers on JobCharcha`}
+        crumbs={[{ label: 'Home', to: '/' }, { label: 'Private jobs' }]}
+        aside={user?.role !== 'employer' ? (
+          <Link to="/join/employer" className={`${btn.secondary} hidden sm:inline-flex`}><Building2 className="w-4 h-4" /> Post a job</Link>
+        ) : undefined}
+      >
+        <form
+          role="search"
+          onSubmit={(e) => { e.preventDefault(); set({ search: searchText.trim(), city: cityText.trim() }); }}
+          className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr_auto] gap-2 max-w-3xl"
+        >
+          <label className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 focus-within:border-indigo-600 focus-within:bg-white">
+            <Search className="w-4 h-4 text-slate-400 shrink-0" />
+            <input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Role, skill or company" aria-label="Search private jobs" className="w-full bg-transparent py-2.5 text-sm outline-none" />
+          </label>
+          <label className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3.5 focus-within:border-indigo-600 focus-within:bg-white">
+            <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+            <input value={cityText} onChange={(e) => setCityText(e.target.value)} placeholder="City" aria-label="City" className="w-full bg-transparent py-2.5 text-sm outline-none" />
+          </label>
+          <button type="submit" className={btn.dark}>Search</button>
+        </form>
+        <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+          <Chip active={!jobType} onClick={() => set({ type: '' })}>All types</Chip>
+          {JOB_TYPES.map((t) => <Chip key={t} active={jobType === t} onClick={() => set({ type: jobType === t ? '' : t })}>{t}</Chip>)}
+          <span className="w-px bg-slate-200 mx-1 shrink-0" />
+          {WORK_MODES.map((m) => <Chip key={m} active={mode === m} onClick={() => set({ mode: mode === m ? '' : m })}>{m}</Chip>)}
         </div>
-      </div>
+      </PageHeader>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
-        {loading ? (
-          <div className="py-20 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-          </div>
-        ) : jobs.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center">
-            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-lg font-bold text-slate-800">No private jobs posted yet</h3>
-            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">Check back soon, or try a different search.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {jobs.map((job) => (
-              <div
-                key={job.id}
-                onClick={() => navigate(`/private-jobs/${job.slug}`)}
-                className={`bg-white shadow-sm hover:shadow-md transition-shadow rounded-2xl p-5 border cursor-pointer flex flex-col justify-between relative group ${
-                  job.isFeatured ? 'border-amber-300/70' : 'border-slate-200'
-                }`}
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200/80">
-                      {job.jobType} • {job.workMode}
-                    </span>
-                    {job.isFeatured && (
-                      <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-600 fill-amber-600" /> Featured
-                      </span>
-                    )}
-                  </div>
-
-                  <h3 className="font-heading font-bold text-slate-900 text-base leading-snug group-hover:text-indigo-700 transition-colors">
-                    {job.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-1">
-                    <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{job.companyName}</span>
-                    {job.isCompanyVerified && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                  </p>
-
-                  <div className="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Location</span>
-                      <span className="font-medium text-slate-700 truncate flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" /> {job.city}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold block">Salary</span>
-                      <span className="font-semibold text-emerald-700 truncate block">
-                        {job.hideSalary || (!job.salaryMin && !job.salaryMax) ? 'Not disclosed' : `${job.salaryMin || '—'} – ${job.salaryMax || '—'}`}
-                      </span>
-                    </div>
-                  </div>
-
-                  {job.isUrgent && (
-                    <div className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded-md">
-                      <Zap className="w-3 h-3" /> Urgent Hiring
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-                  <span className="text-indigo-600 group-hover:underline">View Details & Apply</span>
-                  <span className="text-slate-400 text-[11px] font-normal">Posted {new Date(job.createdDate).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 sm:py-7">
+        <Card>
+          {loading ? <RowSkeleton rows={5} /> : shown.length === 0 ? (
+            <EmptyState
+              title="No private jobs match your search"
+              body="Try another role or city, or check back soon — employers post new openings every day."
+              action={<button type="button" onClick={() => { setSearchText(''); setCityText(''); setParams(new URLSearchParams()); }} className={btn.secondary}>Clear search</button>}
+            />
+          ) : shown.map((j) => <PrivateJobRow key={j.id} job={j} />)}
+        </Card>
+        {user?.role !== 'employer' && (
+          <Card className="mt-5 p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <Building2 className="w-8 h-8 text-indigo-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold">Hiring? Post a job on JobCharcha</p>
+              <p className="text-[13px] text-slate-500">Reach lakhs of job seekers across Gujarat. Verified company badge included.</p>
+            </div>
+            <Link to="/join/employer" className={btn.dark}>Post a job</Link>
+          </Card>
         )}
       </main>
-
       <Footer />
     </div>
   );

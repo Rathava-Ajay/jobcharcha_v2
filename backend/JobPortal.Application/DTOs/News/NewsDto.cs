@@ -38,8 +38,17 @@ public class NewsListItemDto
     public bool IsFeatured { get; set; }
 }
 
+public class NewsCategoryOptionDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+}
+
 public class UpsertNewsRequest
 {
+    /// <summary>"Skip social posting" — publish without auto-sharing to Telegram/Facebook/Instagram.</summary>
+    public bool SkipSocial { get; set; }
+
     [Required(AllowEmptyStrings = false), StringLength(300, MinimumLength = 3)]
     public string Title { get; set; } = null!;
 
@@ -54,7 +63,8 @@ public class UpsertNewsRequest
     public string Content { get; set; } = null!;
 
     [StringLength(200000)] public string? ContentGujarati { get; set; }
-    [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
+    /// <summary>Required, and must be one of the allowed news categories (see GET api/news/admin/categories).</summary>
+    [Required(ErrorMessage = "Choose a category for this news article."), Range(1, int.MaxValue)] public int? CategoryId { get; set; }
     [StringLength(200)] public string? Source { get; set; }
     [StringLength(500)] public string? SourceLink { get; set; }
     public DateTime PublishedDate { get; set; } = DateTime.UtcNow;

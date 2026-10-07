@@ -1,0 +1,23 @@
+{{COMMON}}
+
+CATEGORY: GOVERNMENT SCHEMES - Central and Gujarat government welfare/education/skill/employment/agriculture/women/startup schemes that citizens and students can apply for - new launches, new application windows, and important updates (changed eligibility, benefits or deadlines) to existing schemes.
+Where to look: india.gov.in, myscheme.gov.in, pib.gov.in, gujaratindia.gov.in, digitalgujarat.gov.in, ministry/department sites. Always link the official scheme or application page.
+
+PAYLOAD for "payload" (follow exactly):
+{
+  "title": "official scheme name, e.g. 'Mukhyamantri Yuva Swavalamban Yojana'",
+  "ministry": "ministry / department that runs it (required)",
+  "category": "one of: Education, Employment, Skill Development, Agriculture, Women & Child, Health, Housing, Startup & Business, Social Welfare, Other (required)",
+  "eligibility": "(required) who can apply - one eligibility point per line, plain text, '- ' bullets",
+  "benefits": "(required) what the beneficiary gets (amounts, scholarship, loan, subsidy) - one point per line, plain text, '- ' bullets",
+  "description": "simple HTML overview: <h2>About the scheme</h2><p>...</p><h2>How to apply</h2><ol><li>...</li></ol><h2>Documents required</h2><ul><li>...</li></ul><h2>Important dates</h2> (only if stated) - ORIGINAL wording, 150-400 words",
+  "applyLink": "(required) official application / scheme page URL",
+  "officialNotificationUrl": "official notification/guideline PDF URL or null",
+  "isFeatured": false,
+  "displayOrder": 0,
+  "isActive": true
+}
+APPLY LINK (strict): "applyLink" must be the scheme's official application or information page, and you must WebFetch it to confirm it opens. If the portal you found does not open, look for the scheme's official page on myscheme.gov.in, india.gov.in or the ministry/department site and use that instead; if nothing official opens, SKIP the item.
+FIGURES: amounts, income limits, age limits and dates must come from an official page. If a figure appears only on a third-party site, still include it but write it as "reported as ...; confirm on the official portal" so nothing unverified reads as fact.
+ONE ITEM PER SCHEME: do not send the same scheme twice under different names (e.g. "X Yojana" and "X Yojana 2.0 launch"); send the scheme once with the newest verified details.
+Only include schemes that are currently running or newly announced; skip discontinued ones.

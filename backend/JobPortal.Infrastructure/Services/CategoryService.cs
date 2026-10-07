@@ -21,19 +21,23 @@ public class CategoryService : ICategoryService
         var query = _db.Categories.AsNoTracking();
         if (!includeInactive) query = query.Where(c => c.IsActive);
 
+        // Public lists count only OPEN jobs (active and not past their last date) so the numbers match the
+        // jobs list's "open only" total. Admin (includeInactive) keeps the raw active count.
+        var today = DateTime.UtcNow.Date;
         var raw = await query
             .OrderBy(c => c.DisplayOrder)
-            .Select(c => new { Category = c, JobCount = c.Jobs.Count(j => j.IsActive) })
+            .Select(c => new { Category = c, JobCount = c.Jobs.Count(j => j.IsActive && (includeInactive || j.LastDate >= today)) })
             .ToListAsync();
         return raw.Select(x => ToDto(x.Category, x.JobCount)).ToList();
     }
 
     public async Task<List<CategoryDto>> GetFeaturedAsync()
     {
+        var today = DateTime.UtcNow.Date;
         var raw = await _db.Categories.AsNoTracking()
             .Where(c => c.IsActive && c.ShowOnHomepage)
             .OrderBy(c => c.DisplayOrder)
-            .Select(c => new { Category = c, JobCount = c.Jobs.Count(j => j.IsActive) })
+            .Select(c => new { Category = c, JobCount = c.Jobs.Count(j => j.IsActive && j.LastDate >= today) })
             .ToListAsync();
         return raw.Select(x => ToDto(x.Category, x.JobCount)).ToList();
     }

@@ -229,7 +229,9 @@ public class AuthService : IAuthService
         var user = await _db.AspNetUsers.Include(u => u.Roles)
             .FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
 
-        if (user is null || user.RefreshTokenExpiry is null || user.RefreshTokenExpiry < DateTime.UtcNow)
+        // A suspended or deleted account must not be able to mint fresh access tokens.
+        if (user is null || user.IsDeleted || !user.IsActive
+            || user.RefreshTokenExpiry is null || user.RefreshTokenExpiry < DateTime.UtcNow)
             return ServiceResult<AuthResult>.Fail("InvalidRefreshToken", "Refresh token is invalid or expired.");
 
         var auth = await BuildAuthResultAsync(user);
@@ -250,7 +252,7 @@ public class AuthService : IAuthService
     public async Task<ServiceResult> ForgotPasswordAsync(ForgotPasswordRequest request)
     {
         var normalizedEmail = request.Email.Trim().ToUpperInvariant();
-        var user = await _db.AspNetUsers.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+        var user = await _db.AspNetUsers.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail && !u.IsDeleted);
         if (user is null)
             return ServiceResult.Ok(); // don't leak account existence
 
@@ -267,7 +269,7 @@ public class AuthService : IAuthService
     public async Task<ServiceResult> ResetPasswordAsync(ResetPasswordRequest request)
     {
         var normalizedEmail = request.Email.Trim().ToUpperInvariant();
-        var user = await _db.AspNetUsers.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+        var user = await _db.AspNetUsers.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail && !u.IsDeleted);
         if (user is null || user.PasswordResetToken != request.Token ||
             user.PasswordResetExpiry is null || user.PasswordResetExpiry < DateTime.UtcNow)
             return ServiceResult.Fail("InvalidToken", "Reset token is invalid or expired.");
@@ -275,6 +277,9 @@ public class AuthService : IAuthService
         user.PasswordHash = _hasher.HashPassword(user, request.NewPassword);
         user.PasswordResetToken = null;
         user.PasswordResetExpiry = null;
+        // The lockout message tells users to reset their password, so a reset must lift the lockout.
+        user.AccessFailedCount = 0;
+        user.LockoutEnd = null;
         user.SecurityStamp = Guid.NewGuid().ToString();
         user.RefreshToken = null;
         user.RefreshTokenExpiry = null;

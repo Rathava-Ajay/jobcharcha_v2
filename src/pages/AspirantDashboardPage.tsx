@@ -1,53 +1,54 @@
 import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Briefcase, FileText, CreditCard, UserCircle, Bookmark } from 'lucide-react';
-import { DashboardShell } from '../components/routing/DashboardShell';
+import { Briefcase, FileText, CreditCard, UserCircle, Bookmark, LayoutDashboard } from 'lucide-react';
+import { DashboardLayout, DashNavGroup } from '../components/dashboard/DashboardLayout';
 import { MyApplicationsSection } from '../components/MyApplicationsSection';
 import { MockTestHistorySection } from '../components/MockTestHistorySection';
 import { PaymentHistorySection } from '../components/PaymentHistorySection';
 import { SavedJobsSection } from '../components/aspirant/SavedJobsSection';
 import { CareerHubTab } from '../components/aspirant/CareerHubTab';
+import { DashboardOverview } from '../components/aspirant/DashboardOverview';
 import { useAuth } from '../context/AuthContext';
 import { UserProfile } from '../types';
 
-type Tab = 'career' | 'applications' | 'saved' | 'mock-tests' | 'payments';
+type Tab = 'overview' | 'career' | 'applications' | 'saved' | 'mock-tests' | 'payments';
 
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'career', label: 'Career Hub', icon: UserCircle },
-  { id: 'applications', label: 'Applications', icon: Briefcase },
-  { id: 'saved', label: 'Saved Jobs', icon: Bookmark },
-  { id: 'mock-tests', label: 'Mock Tests', icon: FileText },
-  { id: 'payments', label: 'Payments', icon: CreditCard },
+const GROUPS: DashNavGroup[] = [
+  { items: [{ id: 'overview', label: 'Overview', icon: LayoutDashboard }] },
+  { title: 'My career', items: [
+    { id: 'career', label: 'Career Hub', icon: UserCircle },
+    { id: 'applications', label: 'Applications', icon: Briefcase },
+    { id: 'saved', label: 'Saved Jobs', icon: Bookmark },
+  ] },
+  { title: 'Practice & billing', items: [
+    { id: 'mock-tests', label: 'Mock Tests', icon: FileText },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
+  ] },
 ];
+const TAB_IDS = GROUPS.flatMap((g) => g.items.map((i) => i.id));
+const SUBTITLES: Record<Tab, string> = {
+  overview: 'Your deadlines, matching jobs and progress at a glance',
+  career: 'Profile, résumé and job preferences employers see',
+  applications: 'Track every job you applied to',
+  saved: 'Jobs you bookmarked, with their last dates',
+  'mock-tests': 'Your attempts, scores and ranks',
+  payments: 'Plans and receipts',
+};
 
 export default function AspirantDashboardPage() {
   const { user, setUser } = useAuth();
   const [searchParams] = useSearchParams();
   const initial = searchParams.get('tab') as Tab | null;
   const [tab, setTab] = useState<Tab>(
-    TABS.some((t) => t.id === initial) ? (initial as Tab) : 'career',
+    TAB_IDS.includes(initial ?? '') ? (initial as Tab) : 'overview',
   );
   if (!user) return null;
 
   return (
-    <DashboardShell>
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-1 py-2 overflow-x-auto">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
-                tab === id ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" /> {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {tab === 'career' ? (
+    <DashboardLayout groups={GROUPS} active={tab} onSelect={(id) => setTab(id as Tab)} subtitle={SUBTITLES[tab]}>
+      {tab === 'overview' ? (
+        <DashboardOverview user={user} onOpenTab={setTab} />
+      ) : tab === 'career' ? (
         <CareerHubTab />
       ) : tab === 'applications' ? (
         <MyApplicationsSection
@@ -61,6 +62,6 @@ export default function AspirantDashboardPage() {
       ) : (
         <PaymentHistorySection />
       )}
-    </DashboardShell>
+    </DashboardLayout>
   );
 }
