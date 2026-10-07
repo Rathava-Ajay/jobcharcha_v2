@@ -16,7 +16,7 @@ export default defineConfig(() => {
         manifest: {
           name: 'JobCharcha - Government & Private Jobs',
           short_name: 'JobCharcha',
-          description: "India's leading portal for government recruitment notifications, admit cards, results, and mock tests.",
+          description: "Gujarat and central government recruitment notifications, admit cards, results and mock tests, checked against the official source.",
           start_url: '/',
           display: 'standalone',
           background_color: '#1d4ed8',

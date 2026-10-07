@@ -47,7 +47,7 @@ export default function LandingPage() {
   const [planRole, setPlanRole] = useState<'aspirant' | 'employer'>('aspirant');
 
   useEffect(() => {
-    document.title = 'JobCharcha - Verified Government & Private Job Vacancies 2026';
+    document.title = 'JobCharcha - Gujarat & Central Government Jobs, Results & Admit Cards';
     searchJobs({ closingWithinDays: 10, sort: 'deadline', pageSize: 4 }).then((r) => setClosing(r.items)).catch(() => setClosing([]));
     getResults().then(setResults).catch(() => setResults([]));
     getAdmitCards().then(setAdmitCards).catch(() => setAdmitCards([]));

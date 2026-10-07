@@ -9,7 +9,7 @@ import { Logo } from '../components/brand/Logo';
 type JoinRole = 'aspirant' | 'employer';
 
 const ASPIRANT_POINTS = [
-  { icon: BriefcaseBusiness, text: 'Browse verified government & private job vacancies' },
+  { icon: BriefcaseBusiness, text: 'Browse government & private job vacancies' },
   { icon: BellRing, text: 'Free job alerts by email — never miss a deadline' },
   { icon: FileCheck2, text: 'CBT mock tests with instant scoring & analytics' },
   { icon: LineChart, text: 'Track every application from one dashboard' },
