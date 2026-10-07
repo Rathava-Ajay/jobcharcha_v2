@@ -55,9 +55,10 @@ public class JobAlertDispatchService : IJobAlertDispatchService
         var subject = $"New Job Alert: {job.Title}";
         var frontendBaseUrl = (_config["App:FrontendBaseUrl"] ?? "http://localhost:3000").TrimEnd('/');
 
+        var links = CommunityLinks.From(_config, frontendBaseUrl);
         foreach (var pref in toSend)
         {
-            var html = BuildEmailBody(job, pref, frontendBaseUrl);
+            var html = BuildEmailBody(job, pref, frontendBaseUrl, links);
             await _emailSender.SendAsync(pref.Email, subject, html);
             _db.AlertDispatchLogs.Add(new AlertDispatchLog { AlertPreferenceId = pref.Id, JobId = jobId, SentAt = DateTime.UtcNow });
         }
@@ -81,20 +82,10 @@ public class JobAlertDispatchService : IJobAlertDispatchService
         return locationHaystack.Contains(a.PreferredCities, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string BuildEmailBody(Job job, AlertPreference pref, string frontendBaseUrl)
+    private static string BuildEmailBody(Job job, AlertPreference pref, string frontendBaseUrl, CommunityLinks links)
     {
         var unsubscribeUrl = $"{frontendBaseUrl}/unsubscribe/{pref.UnsubscribeToken}";
         var jobUrl = $"{frontendBaseUrl}/jobs/{job.Slug}";
-        return $"""
-            <div style="font-family: sans-serif; max-width: 560px;">
-              <h2 style="color:#0f172a;">{job.Title}</h2>
-              <p style="color:#334155;">{job.OrganizationName}{(job.Location is not null ? $" &middot; {job.Location}" : "")}</p>
-              <p><a href="{jobUrl}" style="background:#059669;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;">View Job Details</a></p>
-              <p style="color:#94a3b8;font-size:12px;margin-top:32px;">
-                You're receiving this because you subscribed to JobCharcha job alerts.
-                <a href="{unsubscribeUrl}">Unsubscribe</a>
-              </p>
-            </div>
-            """;
+        return JobAlertEmailTemplate.Build(job, job.Category?.Name ?? "Job", jobUrl, unsubscribeUrl, links);
     }
 }

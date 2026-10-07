@@ -202,7 +202,7 @@ export default function LoginPage() {
             <input type="text" required value={resetToken} onChange={(e) => setResetToken(e.target.value)} placeholder="Paste the code emailed to you" autoComplete="one-time-code" className={INPUT} />
           </Field>
           <Field label="New password" icon={KeyRound}>
-            <input type={showPassword ? 'text' : 'password'} required minLength={6} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 6 characters" autoComplete="new-password" className={INPUT + ' pr-11'} />
+            <input type={showPassword ? 'text' : 'password'} required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" className={INPUT + ' pr-11'} />
             <EyeToggle shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
           </Field>
           <PrimaryButton disabled={submitting}>{submitting ? 'Resetting…' : 'Reset password'}</PrimaryButton>
@@ -241,8 +241,8 @@ export default function LoginPage() {
               <button type="button" onClick={() => setMode('forgot')} className="text-[12.5px] text-blue-700 font-bold hover:underline cursor-pointer">Forgot password?</button>
             ) : undefined}
           >
-            <input type={showPassword ? 'text' : 'password'} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === 'register' ? 'At least 6 characters' : '••••••••'} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} className={INPUT + ' pr-11'} />
+            <input type={showPassword ? 'text' : 'password'} required minLength={mode === 'register' ? 8 : undefined} value={password} onChange={(e) => setPassword(e.target.value)}
+              placeholder={mode === 'register' ? 'At least 8 characters' : '••••••••'} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} className={INPUT + ' pr-11'} />
             <EyeToggle shown={showPassword} onToggle={() => setShowPassword((v) => !v)} />
           </Field>
 
