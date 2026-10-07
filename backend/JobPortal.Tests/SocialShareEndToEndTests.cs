@@ -167,6 +167,7 @@ public class SocialShareEndToEndTests : IDisposable
         // A Gujarati headline: the photo and the messages must carry it intact.
         var news = await r.News.CreateAsync(new UpsertNewsRequest
         {
+            CategoryId = NewsTestData.CategoryId,
             Title = "ગુજરાત સરકારી ભરતી: GSSSB દ્વારા નવી પરીક્ષા તારીખો જાહેર",
             Summary = "GSSSB has announced the revised exam calendar for clerk and technical posts.", Content = "<p>Details inside.</p>", Source = "GSSSB", IsActive = true,
         }, "admin-1");
@@ -313,11 +314,11 @@ public class SocialShareEndToEndTests : IDisposable
     public async Task SkipSocial_And_ShareAgain_WorkOnARealPublishedPost()
     {
         var r = Build();
-        var skipped = await r.News.CreateAsync(new UpsertNewsRequest { Title = "Skip me", Summary = "s", Content = "c", IsActive = true, SkipSocial = true }, "admin-1");
+        var skipped = await r.News.CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "Skip me", Summary = "s", Content = "c", IsActive = true, SkipSocial = true }, "admin-1");
         Assert.True(skipped.Succeeded);
         Assert.Empty(await r.Db.SocialShareJobs.ToListAsync());
 
-        var kept = await r.News.CreateAsync(new UpsertNewsRequest { Title = "Share me", Summary = "s", Content = "c", IsActive = true }, "admin-1");
+        var kept = await r.News.CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "Share me", Summary = "s", Content = "c", IsActive = true }, "admin-1");
         foreach (var j in await r.Db.SocialShareJobs.ToListAsync()) j.Status = SocialShareStatus.Posted;     // pretend the first round finished
         await r.Db.SaveChangesAsync();
 

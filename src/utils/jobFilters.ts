@@ -1,7 +1,8 @@
 /**
  * Filter vocabularies shared by the home search and the jobs list. The backend matches
  * qualification and location with a case-insensitive "contains", so each option sends the
- * shortest stem that catches the common spellings ("Graduat" → Graduate / Graduation).
+ * shortest stem that catches the common spellings ("Graduat" → Graduate / Graduation); the API also
+ * expands the 10th / 12th / Graduat / Post Grad stems to synonyms (Matric, Class 12, Bachelor, Master…).
  */
 
 export const QUALIFICATION_OPTIONS: { label: string; value: string }[] = [
@@ -13,6 +14,10 @@ export const QUALIFICATION_OPTIONS: { label: string; value: string }[] = [
   { label: 'Post Graduate', value: 'Post Grad' },
   { label: 'B.Ed / PTC', value: 'B.Ed' },
 ];
+
+/** Homepage shows a department card / chip only when it has at least this many open jobs.
+ * Smaller categories stay reachable from the /jobs category filter. */
+export const HOMEPAGE_MIN_CATEGORY_JOBS = 5;
 
 export const LOCATION_OPTIONS: { label: string; value: string }[] = [
   { label: 'Gujarat', value: 'Gujarat' },

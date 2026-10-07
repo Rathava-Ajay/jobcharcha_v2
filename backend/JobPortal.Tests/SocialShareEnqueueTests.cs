@@ -27,6 +27,7 @@ public class SocialShareEnqueueTests
 
     private static UpsertNewsRequest Article(bool active = true, bool skip = false) => new()
     {
+        CategoryId = NewsTestData.CategoryId,
         Title = "GSSSB announces exam calendar <b>2026</b>",
         Summary = "Calendar released.",
         Content = "<p>Calendar released.</p>",

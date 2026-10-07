@@ -34,7 +34,7 @@ public class SocialPreviewTests
     public async Task Preview_RendersTheRealPost_WithoutCredentials_OrStoringAnything()
     {
         var (preview, news, db) = Build();
-        var id = (await news.CreateAsync(new UpsertNewsRequest { Title = "Gujarat Anganwadi Recruitment 2026 - 6843 Worker & Helper Posts", Summary = "s", Content = "c", IsActive = true }, "a")).Data!.Id;
+        var id = (await news.CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "Gujarat Anganwadi Recruitment 2026 - 6843 Worker & Helper Posts", Summary = "s", Content = "c", IsActive = true }, "a")).Data!.Id;
 
         var result = await preview.RenderAsync("news", id);
 
@@ -48,7 +48,7 @@ public class SocialPreviewTests
     public async Task Preview_RefusesUnknownCategoriesAndUnpublishedPosts()
     {
         var (preview, news, _) = Build();
-        var draft = (await news.CreateAsync(new UpsertNewsRequest { Title = "Draft", Summary = "s", Content = "c", IsActive = false }, "a")).Data!.Id;
+        var draft = (await news.CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "Draft", Summary = "s", Content = "c", IsActive = false }, "a")).Data!.Id;
 
         Assert.Equal("InvalidCategory", (await preview.RenderAsync("oldpaper", 1)).ErrorCode);
         Assert.Equal("NotFound", (await preview.RenderAsync("news", draft)).ErrorCode);
@@ -69,11 +69,16 @@ public class SocialPreviewTests
         var plain = TestDb.Create(name);
         var options = new DbContextOptionsBuilder<JobPortal.Infrastructure.Data.AppDbContext>().UseInMemoryDatabase(name).Options;
         await using var db = new NoSocialTablesDb(options);
+        // This context has its own in-memory store (different options), so it needs its own news category.
+        db.Categories.Add(new JobPortal.Infrastructure.Data.Entities.Category { Id = NewsTestData.CategoryId, Name = "Exam", Slug = NewsTestData.Slug, Icon = "x", CreatedDate = DateTime.UtcNow, IsActive = true });
+        await db.SaveChangesAsync();
 
         var cfg = new SocialShareOptions { PublicBaseUrl = "http://localhost:3000" };
         var social = new SocialShareService(db, cfg, NullLogger<SocialShareService>.Instance);
         var images = new SocialImageService(db, new NoStorage(), new HttpClient(), cfg, NullLogger<SocialImageService>.Instance);
-        var id = (await new NewsService(db, social).CreateAsync(new UpsertNewsRequest { Title = "Anganwadi", Summary = "s", Content = "c", IsActive = true }, "a")).Data!.Id;
+        var created = await new NewsService(db, social).CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "Anganwadi", Summary = "s", Content = "c", IsActive = true }, "a");
+        Assert.True(created.Succeeded, created.Error);
+        var id = created.Data!.Id;
 
         var result = await new SocialPreviewService(db, social, images, NullLogger<SocialPreviewService>.Instance).RenderAsync("news", id);
 

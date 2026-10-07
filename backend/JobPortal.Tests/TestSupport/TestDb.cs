@@ -23,7 +23,17 @@ public static class TestDb
             // methods stay testable without a real DB.
             .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
             .Options;
-        return new AppDbContext(options);
+        var db = new AppDbContext(options);
+        if (!db.Categories.Any(c => c.Id == NewsTestData.CategoryId))
+        {
+            db.Categories.Add(new Infrastructure.Data.Entities.Category
+            {
+                Id = NewsTestData.CategoryId, Name = "Exam Preparation / Study Material", Slug = NewsTestData.Slug, Icon = "x",
+                CreatedDate = DateTime.UtcNow, IsActive = true,
+            });
+            db.SaveChanges();
+        }
+        return db;
     }
 
     /// <summary>Same store as <see cref="Create"/>, but with a RowVersion generator wired up so

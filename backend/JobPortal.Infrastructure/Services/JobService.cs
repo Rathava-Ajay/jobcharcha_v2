@@ -53,6 +53,32 @@ public class JobService : IJobService
         });
     }
 
+    /// <summary>
+    /// QualificationRequired is free text ("Bachelor's Degree", "Class 12 pass", "Master's / MBA"...), so each
+    /// filter stem the site sends (see src/utils/jobFilters.ts) also matches its common spellings.
+    /// Any other value falls back to a plain case-insensitive contains.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> QualificationSynonyms = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["10th"] = new[] { "10th", "Class 10", "Class X", "Matric", "SSC Pass" },
+        ["12th"] = new[] { "12th", "Class 12", "10+2", "HSC", "Higher Secondary", "Intermediate" },
+        ["Graduat"] = new[] { "Graduat", "Bachelor", "Degree", "B.E.", "B.Tech", "B.Sc", "B.Com", "B.A.", "BCA", "BBA", "LLB", "MBBS" },
+        ["Post Grad"] = new[] { "Post Grad", "Postgrad", "Master", "M.Sc", "M.Tech", "M.E.", "MBA", "MCA", "PGDM", "Ph.D" },
+    };
+
+    public static System.Linq.Expressions.Expression<Func<Job, bool>> QualificationMatches(string value)
+    {
+        var terms = QualificationSynonyms.TryGetValue(value.Trim(), out var t) ? t : new[] { value.Trim() };
+        var j = System.Linq.Expressions.Expression.Parameter(typeof(Job), "j");
+        var prop = System.Linq.Expressions.Expression.Property(j, nameof(Job.QualificationRequired));
+        var contains = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
+        System.Linq.Expressions.Expression body = System.Linq.Expressions.Expression.NotEqual(prop, System.Linq.Expressions.Expression.Constant(null, typeof(string)));
+        System.Linq.Expressions.Expression any = terms
+            .Select(term => (System.Linq.Expressions.Expression)System.Linq.Expressions.Expression.Call(prop, contains, System.Linq.Expressions.Expression.Constant(term)))
+            .Aggregate(System.Linq.Expressions.Expression.OrElse);
+        return System.Linq.Expressions.Expression.Lambda<Func<Job, bool>>(System.Linq.Expressions.Expression.AndAlso(body, any), j);
+    }
+
     public async Task<PagedResult<JobListItemDto>> SearchAsync(JobQuery query, bool includeInactive = false)
     {
         var q = _db.Jobs.AsNoTracking().Include(j => j.Category).AsQueryable();
@@ -70,7 +96,7 @@ public class JobService : IJobService
                               j.District != null && j.District.Contains(query.Location) ||
                               j.State != null && j.State.Contains(query.Location));
         if (!string.IsNullOrWhiteSpace(query.Qualification) && query.Qualification != "All Qualifications")
-            q = q.Where(j => j.QualificationRequired != null && j.QualificationRequired.Contains(query.Qualification));
+            q = q.Where(QualificationMatches(query.Qualification));
         if (query.MinSalary.HasValue)
             q = q.Where(j => j.MaxSalary == null || j.MaxSalary >= query.MinSalary);
         if (query.MaxSalary.HasValue)

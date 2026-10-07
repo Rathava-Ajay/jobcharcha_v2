@@ -16,7 +16,7 @@ export default defineConfig(() => {
         manifest: {
           name: 'JobCharcha - Government & Private Jobs',
           short_name: 'JobCharcha',
-          description: "Gujarat and central government recruitment notifications, admit cards, results and mock tests, checked against the official source.",
+          description: "Gujarat and central government job notifications: GPSC, GSSSB, OJAS, Police, SSC, Railway, Bank. Admit cards, results, mock tests and job alerts.",
           start_url: '/',
           display: 'standalone',
           background_color: '#1d4ed8',

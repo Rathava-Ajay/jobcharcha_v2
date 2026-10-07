@@ -21,7 +21,7 @@ public class SocialTemplateTests
         return (db, new NewsService(db, social), social);
     }
 
-    private static UpsertNewsRequest Post(string title, bool skip = false) => new() { Title = title, Summary = "s", Content = "c", IsActive = true, SkipSocial = skip };
+    private static UpsertNewsRequest Post(string title, bool skip = false) => new() { CategoryId = NewsTestData.CategoryId, Title = title, Summary = "s", Content = "c", IsActive = true, SkipSocial = skip };
 
     private static async Task<int> PublishAndGetTemplate(AppDbContext db, NewsService news, string title)
     {
@@ -46,7 +46,7 @@ public class SocialTemplateTests
         var (db, news, _) = Build();
         Assert.Equal(0, await PublishAndGetTemplate(db, news, "first"));
         await news.CreateAsync(Post("skipped", skip: true), "a");
-        await news.CreateAsync(new UpsertNewsRequest { Title = "draft", Summary = "s", Content = "c", IsActive = false }, "a");
+        await news.CreateAsync(new UpsertNewsRequest { CategoryId = NewsTestData.CategoryId, Title = "draft", Summary = "s", Content = "c", IsActive = false }, "a");
         Assert.Equal(1, await PublishAndGetTemplate(db, news, "second"));
     }
 

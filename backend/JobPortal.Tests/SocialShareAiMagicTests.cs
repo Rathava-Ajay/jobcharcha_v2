@@ -29,7 +29,7 @@ public class SocialShareAiMagicTests
                             downloadLink = "https://ssc.gov.in/admit/cgl", shortDescription = "s", description = "d", metaTitle = "m", metaDescription = "md" }),
         ("scheme", new { title = "Mukhyamantri Yuva Swavalamban Yojana 2026", ministry = "Education Department", category = "Education",
                          eligibility = "Gujarat students with 80% in HSC", benefits = "Tuition fee assistance", applyLink = "https://mysy.guj.nic.in" }),
-        ("news", new { title = "GSSSB announces revised exam calendar", summary = "Revised dates released.", content = "<p>Details.</p>", source = "GSSSB", sourceLink = "https://gsssb.gujarat.gov.in/n/1" }),
+        ("news", new { title = "GSSSB announces revised exam calendar", summary = "Revised dates released.", content = "<p>Details.</p>", categoryId = NewsTestData.CategoryId, source = "GSSSB", sourceLink = "https://gsssb.gujarat.gov.in/n/1" }),
     };
 
     [Fact]

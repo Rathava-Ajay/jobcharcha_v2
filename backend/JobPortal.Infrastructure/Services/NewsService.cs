@@ -22,12 +22,19 @@ public class NewsService : INewsService
     private Task ShareAsync(int id, bool skip, string userId) =>
         _social is null ? Task.CompletedTask : _social.EnqueueAsync(ContentCategories.News, id, skip, userId);
 
+    /// <summary>How long a news item keeps its "Breaking" badge after it is published.</summary>
+    public const int BreakingDays = 7;
+
+    private static bool IsStillBreaking(News n) => n.IsBreaking && n.PublishedDate >= DateTime.UtcNow.Date.AddDays(-BreakingDays);
+
     public async Task<List<NewsListItemDto>> GetAllAsync(bool includeInactive = false)
     {
         var query = _db.News.AsNoTracking().Include(n => n.Category).AsQueryable();
         if (!includeInactive) query = query.Where(n => n.IsActive);
 
-        var items = await query.OrderByDescending(n => n.IsBreaking).ThenByDescending(n => n.PublishedDate).ToListAsync();
+        // "Breaking" only counts for the first BreakingDays days; an old flagged item must not pin itself to the top.
+        var breakingCutoff = DateTime.UtcNow.Date.AddDays(-BreakingDays);
+        var items = await query.OrderByDescending(n => n.IsBreaking && n.PublishedDate >= breakingCutoff).ThenByDescending(n => n.PublishedDate).ToListAsync();
         return items.Select(ToListItemDto).ToList();
     }
 
@@ -48,8 +55,30 @@ public class NewsService : INewsService
         return entity is null ? null : ToFullDto(entity);
     }
 
+    public async Task<List<NewsCategoryOptionDto>> GetAllowedCategoriesAsync()
+    {
+        var all = await _db.Categories.AsNoTracking().Where(c => c.IsActive).OrderBy(c => c.DisplayOrder)
+            .Select(c => new { c.Id, c.Name, c.Slug }).ToListAsync();
+        return all.Where(c => NewsCategoryRules.AllowedSlugs.Contains(c.Slug))
+            .Select(c => new NewsCategoryOptionDto { Id = c.Id, Name = c.Name }).ToList();
+    }
+
+    /// <summary>A news article must be filed under one of the allowed, active categories (null is not accepted).</summary>
+    private async Task<ServiceResult<NewsDto>?> ValidateCategoryAsync(int? categoryId)
+    {
+        if (categoryId is null)
+            return ServiceResult<NewsDto>.Fail("CategoryRequired", "Choose a category for this news article.");
+        var allowed = await GetAllowedCategoriesAsync();
+        return allowed.Any(c => c.Id == categoryId)
+            ? null
+            : ServiceResult<NewsDto>.Fail("InvalidCategory", $"Category must be one of: {string.Join(", ", allowed.Select(c => c.Name))}.");
+    }
+
     public async Task<ServiceResult<NewsDto>> CreateAsync(UpsertNewsRequest request, string userId)
     {
+        var categoryError = await ValidateCategoryAsync(request.CategoryId);
+        if (categoryError is not null) return categoryError;
+
         var slug = string.IsNullOrWhiteSpace(request.Slug) ? Slugify(request.Title) : Slugify(request.Slug);
         slug = await EnsureUniqueSlugAsync(slug, null);
 
@@ -87,6 +116,8 @@ public class NewsService : INewsService
     {
         var entity = await _db.News.FindAsync(id);
         if (entity is null) return ServiceResult<NewsDto>.Fail("NotFound", "News article not found.");
+        var categoryError = await ValidateCategoryAsync(request.CategoryId);
+        if (categoryError is not null) return categoryError;
 
         var slug = string.IsNullOrWhiteSpace(request.Slug) ? Slugify(request.Title) : Slugify(request.Slug);
         if (slug != entity.Slug) slug = await EnsureUniqueSlugAsync(slug, id);
@@ -149,7 +180,7 @@ public class NewsService : INewsService
         Summary = n.Summary,
         CategoryName = n.Category?.Name ?? "General",
         PublishedDate = n.PublishedDate.ToString("yyyy-MM-dd"),
-        IsBreaking = n.IsBreaking,
+        IsBreaking = IsStillBreaking(n),
         IsFeatured = n.IsFeatured,
     };
 
@@ -169,7 +200,7 @@ public class NewsService : INewsService
         SourceLink = n.SourceLink,
         PublishedDate = n.PublishedDate.ToString("yyyy-MM-dd"),
         Views = n.Views,
-        IsBreaking = n.IsBreaking,
+        IsBreaking = IsStillBreaking(n),
         IsFeatured = n.IsFeatured,
         MetaTitle = n.MetaTitle,
         MetaDescription = n.MetaDescription,

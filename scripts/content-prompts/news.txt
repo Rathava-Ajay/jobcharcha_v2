@@ -8,7 +8,7 @@ PAYLOAD for "payload" (follow exactly):
   "title": "clear factual headline, 10-90 chars",
   "summary": "2-3 sentence summary, plain text, max 400 chars (required)",
   "content": "(required) the article body as simple HTML: <p>, <h2>, <ul><li>, <strong>. 150-400 words, ORIGINAL wording, key facts first (who/what/when), then what aspirants should do. Add a final <p> 'Source: <name>' line.",
-  "categoryId": <real id from /api/categories, or null>,
+  "categoryId": <REQUIRED - real id of the best-fitting exam/recruitment category from the site categories list; never null. The draft is rejected if it is missing or not an exam/recruitment category>,
   "source": "publisher name, e.g. 'PIB' or 'GSSSB'",
   "sourceLink": "exact URL of the original article/notice (required - used to avoid duplicates)",
   "publishedDate": "ISO date the news was published",

@@ -23,6 +23,7 @@ public class ContentDraftServiceTests
             title,
             summary = "GSSSB has released its exam calendar.",
             content = "<p>GSSSB has released the exam calendar for the year.</p>",
+            categoryId = NewsTestData.CategoryId,
             source = "GSSSB",
             sourceLink = link,
         }),
@@ -116,6 +117,7 @@ public class ContentDraftServiceTests
             title = "Edited headline by admin",
             summary = "Edited summary.",
             content = "<p>Edited body.</p>",
+            categoryId = NewsTestData.CategoryId,
         });
         var approved = await service.ApproveAsync(draftId, new ApproveContentDraftRequest { Payload = edited }, "admin-1");
         Assert.True(approved.Succeeded);

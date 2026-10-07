@@ -26,6 +26,7 @@ public class ContentAutoPublishTests
             title = "GSSSB announces exam calendar",
             summary = "GSSSB has released its exam calendar.",
             content = "<p>GSSSB has released the exam calendar for the year.</p>",
+            categoryId = NewsTestData.CategoryId,
             source = "GSSSB",
             sourceLink = link,
         }),

@@ -18,7 +18,7 @@ import { getResults, ApiResultListItem } from '../api/results';
 import { getFeaturedCategories, ApiCategory } from '../api/categories';
 import { getTodayQuiz, ApiDailyQuiz } from '../api/dailyQuiz';
 import { Chip, DeadlinePill, OrgAvatar, Pill, SectionHeader, cx } from '../components/ui/kit';
-import { QUALIFICATION_OPTIONS } from '../utils/jobFilters';
+import { QUALIFICATION_OPTIONS, HOMEPAGE_MIN_CATEGORY_JOBS } from '../utils/jobFilters';
 import { useSavedGovtJobs } from '../utils/localPrefs';
 import { daysSince, daysUntil, fmtShortDate } from '../utils/dates';
 import { Select } from '../components/ui/Select';
@@ -47,7 +47,7 @@ export default function LandingPage() {
   const [planRole, setPlanRole] = useState<'aspirant' | 'employer'>('aspirant');
 
   useEffect(() => {
-    document.title = 'JobCharcha - Gujarat & Central Government Jobs, Results & Admit Cards';
+    document.title = 'JobCharcha - Gujarat & Central Govt Jobs, Results 2026';
     searchJobs({ closingWithinDays: 10, sort: 'deadline', pageSize: 4 }).then((r) => setClosing(r.items)).catch(() => setClosing([]));
     getResults().then(setResults).catch(() => setResults([]));
     getAdmitCards().then(setAdmitCards).catch(() => setAdmitCards([]));
@@ -72,7 +72,11 @@ export default function LandingPage() {
     return () => clearTimeout(timer);
   }, [location.hash, latestLoading]);
 
-  const popular = categories.length ? categories.slice(0, 6).map((c) => c.name) : FALLBACK_POPULAR.slice(0, 6);
+  // Busiest departments first; thin ones (< HOMEPAGE_MIN_CATEGORY_JOBS open jobs) are left off the homepage.
+  const homeCategories = [...categories]
+    .filter((c) => c.jobCount >= HOMEPAGE_MIN_CATEGORY_JOBS)
+    .sort((a, b) => b.jobCount - a.jobCount);
+  const popular = homeCategories.length ? homeCategories.slice(0, 6).map((c) => c.name) : FALLBACK_POPULAR.slice(0, 6);
   const releasedAdmits = admitCards.filter((a) => a.status === 'Released');
   const newResults = results.filter((r) => (daysSince(r.resultDate) ?? 99) <= 7).length;
 
@@ -195,11 +199,11 @@ export default function LandingPage() {
             </aside>
           </section>
 
-          {categories.length > 0 && (
+          {homeCategories.length > 0 && (
             <section className="mt-8 sm:mt-10">
               <SectionHeader title={t('home.departments')} action={{ label: t('home.allCategories'), to: '/jobs' }} />
               <div className="grid grid-cols-3 sm:grid-cols-5 xl:grid-cols-10 gap-2 sm:gap-2.5">
-                {categories.slice(0, 10).map((c, i) => (
+                {homeCategories.slice(0, 10).map((c, i) => (
                   <Link key={c.id} to={`/jobs?category=${encodeURIComponent(c.name)}`}
                     className={cx('min-w-0 bg-white border border-slate-200 rounded-2xl px-1.5 py-3 flex flex-col items-center gap-1.5 text-center hover:border-blue-500', i >= 9 && 'hidden sm:flex')}>
                     <OrgAvatar name={c.name} size="md" />
@@ -211,7 +215,7 @@ export default function LandingPage() {
             </section>
           )}
 
-          <LatestByCategory categories={categories} />
+          <LatestByCategory categories={homeCategories} />
         </div>
 
         <div id="schemes-section" className="scroll-mt-24"><SchemesNewsSection /></div>

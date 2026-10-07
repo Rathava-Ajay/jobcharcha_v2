@@ -718,7 +718,7 @@ export const AdminDashboardSection: React.FC = () => {
 
         {/* NEWS CMS */}
         {activeTab === 'news' && (
-          <AdminNewsPanel categories={categories} />
+          <AdminNewsPanel />
         )}
 
         {/* OLD PAPERS CMS */}

@@ -35,6 +35,10 @@ public class NewsController : ControllerBase
     }
 
     [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.SuperAdmin}")]
+    [HttpGet("admin/categories")]
+    public async Task<IActionResult> GetAllowedCategories() => Ok(await _newsService.GetAllowedCategoriesAsync());
+
+    [Authorize(Roles = $"{AppRoles.Admin},{AppRoles.SuperAdmin}")]
     [HttpGet("admin/all")]
     public async Task<IActionResult> GetAllForAdmin() => Ok(await _newsService.GetAllAsync(includeInactive: true));
 

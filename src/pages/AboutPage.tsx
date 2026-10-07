@@ -8,13 +8,13 @@ export default function AboutPage() {
     <StaticPage
       eyebrow="Our Mission"
       title="About JobCharcha"
-      subtitle="India's independent portal for government recruitment guidance, admit cards, results, and CBT mock tests."
+      subtitle="An independent portal for Gujarat and central government job alerts, results, admit cards and mock tests."
     >
       <section>
         <h2>Who We Are</h2>
         <p>
           JobCharcha is an independent educational and recruitment information portal built to help job aspirants across
-          India — with a focus on Gujarat state government exams — find verified vacancy notifications, admit cards,
+          India — with a focus on Gujarat state government exams — find vacancy notifications, admit cards,
           results, and exam preparation resources in one place. We aggregate publicly available recruitment information
           from official sources and present it in a clear, searchable format alongside CBT-style mock tests to help
           candidates prepare.

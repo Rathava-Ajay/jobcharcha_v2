@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlusCircle, Trash2, Pencil, X } from 'lucide-react';
 import {
-  adminGetAllNews, createNews, updateNews, deleteNews, getNewsBySlug,
-  ApiNewsListItem, UpsertNewsPayload,
+  adminGetAllNews, createNews, updateNews, deleteNews, getNewsBySlug, getAllowedNewsCategories,
+  ApiNewsListItem, ApiNewsCategoryOption, UpsertNewsPayload,
 } from '../../api/news';
-import { ApiCategory } from '../../api/categories';
 import { ApiError } from '../../api/client';
 import { OfficialDocumentUpload } from './OfficialDocumentUpload';
 import { Select } from '../ui/Select';
@@ -19,11 +18,8 @@ const emptyForm: UpsertNewsPayload = {
   isActive: true,
 };
 
-interface Props {
-  categories: ApiCategory[];
-}
-
-export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
+export const AdminNewsPanel: React.FC = () => {
+  const [categories, setCategories] = useState<ApiNewsCategoryOption[]>([]);
   const [items, setItems] = useState<ApiNewsListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<UpsertNewsPayload>(emptyForm);
@@ -38,12 +34,17 @@ export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { getAllowedNewsCategories().then(setCategories).catch(() => setCategories([])); }, []);
 
   const resetForm = () => { setForm(emptyForm); setEditingId(null); setFormOpen(false); setFormError(null); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    if (!form.categoryId || !categories.some((c) => c.id === form.categoryId)) {
+      setFormError('Choose a category for this news article.');
+      return;
+    }
     try {
       if (editingId) await updateNews(editingId, form);
       else await createNews(form);
@@ -107,10 +108,10 @@ export const AdminNewsPanel: React.FC<Props> = ({ categories }) => {
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" />
             </div>
             <div>
-              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Category</label>
-              <Select value={form.categoryId || ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
+              <label className="text-slate-700 block mb-1.5 text-[12.5px]">Category *</label>
+              <Select required value={form.categoryId && categories.some((c) => c.id === form.categoryId) ? form.categoryId : ''} onChange={(e) => setForm({ ...form, categoryId: e.target.value ? Number(e.target.value) : undefined })}
                 className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-[14px] font-medium text-slate-900 outline-none transition-colors hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
-                <option value="">None</option>
+                <option value="">Select a category…</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
             </div>
