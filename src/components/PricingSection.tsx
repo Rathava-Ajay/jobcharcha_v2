@@ -14,6 +14,7 @@ import { useAuth } from '../context/AuthContext';
 import { getPlans, ApiAspirantPlan } from '../api/plans';
 import { getEmployerPlans } from '../api/employerBilling';
 import { startRazorpayCheckout } from '../utils/razorpayCheckout';
+import { trackPlanPurchase } from '../utils/analytics';
 import { startEmployerRazorpayCheckout } from '../utils/employerRazorpayCheckout';
 
 interface PricingSectionProps {
@@ -71,6 +72,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({
     if (outcome.status === 'success') {
       setCheckoutStatus('success');
       setCheckoutMessage(`Plan activated — unlocks all premium mock tests for ${selectedAspirantPlan.durationDays} days.`);
+      trackPlanPurchase(selectedAspirantPlan.price, selectedAspirantPlan.id, selectedAspirantPlan.name);
       refreshProfile().catch(() => {});
     } else if (outcome.status === 'failed') {
       setCheckoutStatus('failed');

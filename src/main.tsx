@@ -4,6 +4,9 @@ import {BrowserRouter} from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import './i18n';
+import { initMetaPixel } from './utils/analytics';
+
+initMetaPixel();
 
 const rootEl = document.getElementById('root')!;
 const app = (

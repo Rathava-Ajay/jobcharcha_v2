@@ -4,7 +4,7 @@ import { getCategories, ApiCategory } from '../api/categories';
 import { subscribeAlerts } from '../api/alerts';
 import { getSettings } from '../api/settings';
 import { ApiError } from '../api/client';
-import { trackEmailSignup, trackWhatsAppJoin } from '../utils/analytics';
+import { trackEmailSignup, trackTelegramJoin, trackWhatsAppJoin } from '../utils/analytics';
 import { Select } from './ui/Select';
 
 interface JobAlertSubscriptionProps {
@@ -139,6 +139,7 @@ export const JobAlertSubscription: React.FC<JobAlertSubscriptionProps> = ({ onCl
                     <a
                       href={telegramChannelUrl}
                       target="_blank"
+                      onClick={trackTelegramJoin}
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer"
                     >

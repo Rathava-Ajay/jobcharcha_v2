@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { ApiError } from '../api/client';
 import { AcknowledgmentCheckbox } from '../components/employer/AcknowledgmentCheckbox';
 import { AuthLayout } from '../components/AuthLayout';
+import { trackSignUp } from '../utils/analytics';
 
 type Role = 'aspirant' | 'employer' | 'admin';
 
@@ -87,6 +88,7 @@ export default function LoginPage() {
           campaign: attribution.campaign,
         });
         try { sessionStorage.removeItem(ATTRIBUTION_KEY); } catch { /* ignore */ }
+        trackSignUp(role as 'aspirant' | 'employer');
         goToDashboard(user.role);
       }
     } catch (err) {
